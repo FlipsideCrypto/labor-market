@@ -48,13 +48,19 @@ contract ContractTest is PRBTest, Cheats {
             _marketUri: "ipfs://111",
             _marketId: 1
         });
+
+        changePrank(alice);
+        tokenBank.setApprovalForAll(address(tempMarket), true);
+
         vm.stopPrank();
     }
 
     function test_CreateServiceRequest() public {
+        // Instrument an admin
         vm.startPrank(bob);
 
-        tempMarket.submitRequest({
+        // Create a request
+        uint256 requestId = tempMarket.submitRequest({
             pToken: address(tokenBank),
             pTokenId: PAYMENT_TOKEN_ID,
             pTokenQ: 100,
@@ -64,9 +70,43 @@ contract ContractTest is PRBTest, Cheats {
             requestUri: "ipfs://222"
         });
 
+        // Verify the request was created
         assertEq(tempMarket.serviceRequestId(), 1);
-        assertEq(tempMarket.getRequest(1).serviceRequester, bob);
-        assertEq(tempMarket.getRequest(1).pToken, address(tokenBank));
-        vm.stopPrank();
+        assertEq(tempMarket.getRequest(requestId).serviceRequester, bob);
+        assertEq(tempMarket.getRequest(requestId).pToken, address(tokenBank));
+
+        // Signal the request
+        changePrank(alice);
+        tempMarket.signal(requestId);
+
+        // Verify signaling logic
+        assertTrue(tempMarket.hasSignaled(requestId, alice));
+
+        assertEq(tokenBank.balanceOf(alice, PARTICIPATION_TOKEN_ID), 85);
+        assertEq(
+            tokenBank.balanceOf(address(tempMarket), PARTICIPATION_TOKEN_ID),
+            15
+        );
+
+        // Fulfill the request
+        uint256 submissionId = tempMarket.provide(requestId, "IPFS://333");
+
+        // Verify the submission
+        // assertEq(tokenBank.balanceOf(alice, PARTICIPATION_TOKEN_ID), 100);
+        // assertEq(
+        //     tokenBank.balanceOf(address(tempMarket), PARTICIPATION_TOKEN_ID),
+        //     0
+        // );
+
+        assertEq(tempMarket.getSubmission(submissionId).serviceProvider, alice);
+        assertEq(tempMarket.getSubmission(submissionId).uri, "IPFS://333");
+
+        changePrank(bob);
+        // Review the request
+        tempMarket.review(requestId, submissionId, 10);
+
+        // Claim the reward
+        changePrank(alice);
+        tempMarket.claim(submissionId);
     }
 }
