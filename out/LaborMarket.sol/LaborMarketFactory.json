@@ -1,0 +1,108 @@
+{
+  "abi": [],
+  "bytecode": {
+    "object": "0x6080604052348015600f57600080fd5b50601680601d6000396000f3fe6080604052600080fdfea164736f6c6343000811000a",
+    "sourceMap": "57:30:18:-:0;;;;;;;;;;;;;;;;;;;",
+    "linkReferences": {}
+  },
+  "deployedBytecode": {
+    "object": "0x6080604052600080fdfea164736f6c6343000811000a",
+    "sourceMap": "57:30:18:-:0;;;;;",
+    "linkReferences": {}
+  },
+  "methodIdentifiers": {},
+  "rawMetadata": "{\"compiler\":{\"version\":\"0.8.17+commit.8df45f5f\"},\"language\":\"Solidity\",\"output\":{\"abi\":[],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"src/LaborMarket.sol\":\"LaborMarketFactory\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"none\"},\"optimizer\":{\"enabled\":true,\"runs\":10000},\"remappings\":[\":@prb/test/=lib/prb-test/src/\",\":ds-test/=lib/solmate/lib/ds-test/src/\",\":forge-std/=lib/forge-std/src/\",\":prb-test/=lib/prb-test/src/\",\":solmate/=lib/solmate/src/\"]},\"sources\":{\"src/LaborMarket.sol\":{\"keccak256\":\"0xb768bb9d654d8b3181d6472457cd8fa8201aeec25eec8d4fdaa2735820434645\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://549997145ab3decf1645c83ab3971d559abccc7d43c72c6303e175beb51dde2f\",\"dweb:/ipfs/QmQ82rkz2jZk7y6Hoh9PgFi2naUi3TGy7yRUTPBNBrUo13\"]}},\"version\":1}",
+  "metadata": {
+    "compiler": {
+      "version": "0.8.17+commit.8df45f5f"
+    },
+    "language": "Solidity",
+    "output": {
+      "abi": [],
+      "devdoc": {
+        "kind": "dev",
+        "methods": {},
+        "version": 1
+      },
+      "userdoc": {
+        "kind": "user",
+        "methods": {},
+        "version": 1
+      }
+    },
+    "settings": {
+      "remappings": [
+        ":@prb/test/=lib/prb-test/src/",
+        ":ds-test/=lib/solmate/lib/ds-test/src/",
+        ":forge-std/=lib/forge-std/src/",
+        ":prb-test/=lib/prb-test/src/",
+        ":solmate/=lib/solmate/src/"
+      ],
+      "optimizer": {
+        "enabled": true,
+        "runs": 10000
+      },
+      "metadata": {
+        "bytecodeHash": "none"
+      },
+      "compilationTarget": {
+        "src/LaborMarket.sol": "LaborMarketFactory"
+      },
+      "libraries": {}
+    },
+    "sources": {
+      "src/LaborMarket.sol": {
+        "keccak256": "0xb768bb9d654d8b3181d6472457cd8fa8201aeec25eec8d4fdaa2735820434645",
+        "urls": [
+          "bzz-raw://549997145ab3decf1645c83ab3971d559abccc7d43c72c6303e175beb51dde2f",
+          "dweb:/ipfs/QmQ82rkz2jZk7y6Hoh9PgFi2naUi3TGy7yRUTPBNBrUo13"
+        ],
+        "license": "MIT"
+      }
+    },
+    "version": 1
+  },
+  "ast": {
+    "absolutePath": "src/LaborMarket.sol",
+    "id": 25673,
+    "exportedSymbols": {
+      "LaborMarketFactory": [
+        25672
+      ]
+    },
+    "nodeType": "SourceUnit",
+    "src": "32:56:18",
+    "nodes": [
+      {
+        "id": 25671,
+        "nodeType": "PragmaDirective",
+        "src": "32:23:18",
+        "literals": [
+          "solidity",
+          "0.8",
+          ".17"
+        ]
+      },
+      {
+        "id": 25672,
+        "nodeType": "ContractDefinition",
+        "src": "57:30:18",
+        "abstract": false,
+        "baseContracts": [],
+        "canonicalName": "LaborMarketFactory",
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "fullyImplemented": true,
+        "linearizedBaseContracts": [
+          25672
+        ],
+        "name": "LaborMarketFactory",
+        "nameLocation": "66:18:18",
+        "scope": 25673,
+        "usedErrors": []
+      }
+    ],
+    "license": "MIT"
+  },
+  "id": 18
+}

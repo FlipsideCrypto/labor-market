@@ -1,0 +1,108 @@
+{
+  "abi": [],
+  "bytecode": {
+    "object": "0x6080604052348015600f57600080fd5b50601680601d6000396000f3fe6080604052600080fdfea164736f6c6343000811000a",
+    "sourceMap": "57:29:17:-:0;;;;;;;;;;;;;;;;;;;",
+    "linkReferences": {}
+  },
+  "deployedBytecode": {
+    "object": "0x6080604052600080fdfea164736f6c6343000811000a",
+    "sourceMap": "57:29:17:-:0;;;;;",
+    "linkReferences": {}
+  },
+  "methodIdentifiers": {},
+  "rawMetadata": "{\"compiler\":{\"version\":\"0.8.17+commit.8df45f5f\"},\"language\":\"Solidity\",\"output\":{\"abi\":[],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"src/EnforcementModule.sol\":\"EnforcementModule\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"none\"},\"optimizer\":{\"enabled\":true,\"runs\":10000},\"remappings\":[\":@prb/test/=lib/prb-test/src/\",\":ds-test/=lib/solmate/lib/ds-test/src/\",\":forge-std/=lib/forge-std/src/\",\":prb-test/=lib/prb-test/src/\",\":solmate/=lib/solmate/src/\"]},\"sources\":{\"src/EnforcementModule.sol\":{\"keccak256\":\"0xe7dea00571d9f75755a7f3c49e1b8d6ec6d24a3ed14490448dd2783fdaf5db5b\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://ec8df67479badefb548fc528329d615b692c5599c59407388c05a578379bc566\",\"dweb:/ipfs/QmYKwK1QEKkmmYGvNpeXpBd4cdi13ymKju1r99mV5cAeCH\"]}},\"version\":1}",
+  "metadata": {
+    "compiler": {
+      "version": "0.8.17+commit.8df45f5f"
+    },
+    "language": "Solidity",
+    "output": {
+      "abi": [],
+      "devdoc": {
+        "kind": "dev",
+        "methods": {},
+        "version": 1
+      },
+      "userdoc": {
+        "kind": "user",
+        "methods": {},
+        "version": 1
+      }
+    },
+    "settings": {
+      "remappings": [
+        ":@prb/test/=lib/prb-test/src/",
+        ":ds-test/=lib/solmate/lib/ds-test/src/",
+        ":forge-std/=lib/forge-std/src/",
+        ":prb-test/=lib/prb-test/src/",
+        ":solmate/=lib/solmate/src/"
+      ],
+      "optimizer": {
+        "enabled": true,
+        "runs": 10000
+      },
+      "metadata": {
+        "bytecodeHash": "none"
+      },
+      "compilationTarget": {
+        "src/EnforcementModule.sol": "EnforcementModule"
+      },
+      "libraries": {}
+    },
+    "sources": {
+      "src/EnforcementModule.sol": {
+        "keccak256": "0xe7dea00571d9f75755a7f3c49e1b8d6ec6d24a3ed14490448dd2783fdaf5db5b",
+        "urls": [
+          "bzz-raw://ec8df67479badefb548fc528329d615b692c5599c59407388c05a578379bc566",
+          "dweb:/ipfs/QmYKwK1QEKkmmYGvNpeXpBd4cdi13ymKju1r99mV5cAeCH"
+        ],
+        "license": "MIT"
+      }
+    },
+    "version": 1
+  },
+  "ast": {
+    "absolutePath": "src/EnforcementModule.sol",
+    "id": 25670,
+    "exportedSymbols": {
+      "EnforcementModule": [
+        25669
+      ]
+    },
+    "nodeType": "SourceUnit",
+    "src": "32:55:17",
+    "nodes": [
+      {
+        "id": 25668,
+        "nodeType": "PragmaDirective",
+        "src": "32:23:17",
+        "literals": [
+          "solidity",
+          "0.8",
+          ".17"
+        ]
+      },
+      {
+        "id": 25669,
+        "nodeType": "ContractDefinition",
+        "src": "57:29:17",
+        "abstract": false,
+        "baseContracts": [],
+        "canonicalName": "EnforcementModule",
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "fullyImplemented": true,
+        "linearizedBaseContracts": [
+          25669
+        ],
+        "name": "EnforcementModule",
+        "nameLocation": "66:17:17",
+        "scope": 25670,
+        "usedErrors": []
+      }
+    ],
+    "license": "MIT"
+  },
+  "id": 17
+}

@@ -1,0 +1,108 @@
+{
+  "abi": [],
+  "bytecode": {
+    "object": "0x6080604052348015600f57600080fd5b50601680601d6000396000f3fe6080604052600080fdfea164736f6c6343000811000a",
+    "sourceMap": "57:20:20:-:0;;;;;;;;;;;;;;;;;;;",
+    "linkReferences": {}
+  },
+  "deployedBytecode": {
+    "object": "0x6080604052600080fdfea164736f6c6343000811000a",
+    "sourceMap": "57:20:20:-:0;;;;;",
+    "linkReferences": {}
+  },
+  "methodIdentifiers": {},
+  "rawMetadata": "{\"compiler\":{\"version\":\"0.8.17+commit.8df45f5f\"},\"language\":\"Solidity\",\"output\":{\"abi\":[],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"src/PayCurve.sol\":\"PayCurve\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"none\"},\"optimizer\":{\"enabled\":true,\"runs\":10000},\"remappings\":[\":@prb/test/=lib/prb-test/src/\",\":ds-test/=lib/solmate/lib/ds-test/src/\",\":forge-std/=lib/forge-std/src/\",\":prb-test/=lib/prb-test/src/\",\":solmate/=lib/solmate/src/\"]},\"sources\":{\"src/PayCurve.sol\":{\"keccak256\":\"0x385361d6977f2256dfa9a080bea627ad770c94303ce62b6787f7c27868197bcb\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://c231482c4e82fe6fdc366d63890a7719bc0c4798ff6ba9915cfe21a6b8db4835\",\"dweb:/ipfs/QmdmRMt1ZtuJ11hetsza7Jx12m4zxGmq6Zf41pzJ9ChGcg\"]}},\"version\":1}",
+  "metadata": {
+    "compiler": {
+      "version": "0.8.17+commit.8df45f5f"
+    },
+    "language": "Solidity",
+    "output": {
+      "abi": [],
+      "devdoc": {
+        "kind": "dev",
+        "methods": {},
+        "version": 1
+      },
+      "userdoc": {
+        "kind": "user",
+        "methods": {},
+        "version": 1
+      }
+    },
+    "settings": {
+      "remappings": [
+        ":@prb/test/=lib/prb-test/src/",
+        ":ds-test/=lib/solmate/lib/ds-test/src/",
+        ":forge-std/=lib/forge-std/src/",
+        ":prb-test/=lib/prb-test/src/",
+        ":solmate/=lib/solmate/src/"
+      ],
+      "optimizer": {
+        "enabled": true,
+        "runs": 10000
+      },
+      "metadata": {
+        "bytecodeHash": "none"
+      },
+      "compilationTarget": {
+        "src/PayCurve.sol": "PayCurve"
+      },
+      "libraries": {}
+    },
+    "sources": {
+      "src/PayCurve.sol": {
+        "keccak256": "0x385361d6977f2256dfa9a080bea627ad770c94303ce62b6787f7c27868197bcb",
+        "urls": [
+          "bzz-raw://c231482c4e82fe6fdc366d63890a7719bc0c4798ff6ba9915cfe21a6b8db4835",
+          "dweb:/ipfs/QmdmRMt1ZtuJ11hetsza7Jx12m4zxGmq6Zf41pzJ9ChGcg"
+        ],
+        "license": "MIT"
+      }
+    },
+    "version": 1
+  },
+  "ast": {
+    "absolutePath": "src/PayCurve.sol",
+    "id": 25679,
+    "exportedSymbols": {
+      "PayCurve": [
+        25678
+      ]
+    },
+    "nodeType": "SourceUnit",
+    "src": "32:46:20",
+    "nodes": [
+      {
+        "id": 25677,
+        "nodeType": "PragmaDirective",
+        "src": "32:23:20",
+        "literals": [
+          "solidity",
+          "0.8",
+          ".17"
+        ]
+      },
+      {
+        "id": 25678,
+        "nodeType": "ContractDefinition",
+        "src": "57:20:20",
+        "abstract": false,
+        "baseContracts": [],
+        "canonicalName": "PayCurve",
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "fullyImplemented": true,
+        "linearizedBaseContracts": [
+          25678
+        ],
+        "name": "PayCurve",
+        "nameLocation": "66:8:20",
+        "scope": 25679,
+        "usedErrors": []
+      }
+    ],
+    "license": "MIT"
+  },
+  "id": 20
+}
