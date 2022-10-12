@@ -177,10 +177,10 @@ contract ContractTest is PRBTest, Cheats {
         changePrank(bob);
 
         for (uint256 i; i < 113; i++) {
-            if (i < 66) {
+            if (i < 67) {
                 // BAD
                 tempMarket.review(requestId, i + 1, 0);
-            } else if (i < 102) {
+            } else if (i < 103) {
                 // OK
                 tempMarket.review(requestId, i + 1, 1);
             } else {
