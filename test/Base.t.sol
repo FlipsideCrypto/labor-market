@@ -200,6 +200,6 @@ contract ContractTest is PRBTest, Cheats {
             totalPaid += amt;
         }
 
-        return assertAlmostEq(totalPaid, 1000e18, 0.001e18);
+        return assertAlmostEq(totalPaid, 1000e18, 0.000001e18);
     }
 }
