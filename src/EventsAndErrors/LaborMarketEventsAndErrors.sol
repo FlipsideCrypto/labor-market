@@ -11,7 +11,8 @@ contract LaborMarketEventsAndErrors {
         address participationBadge,
         address payCurve,
         address enforcementCriteria,
-        uint256 repMultiplier,
+        uint256 repParticipantMultiplier,
+        uint256 repMaintainerMultiplier,
         string marketUri
     );
 
@@ -22,7 +23,8 @@ contract LaborMarketEventsAndErrors {
         address participationBadge,
         address payCurve,
         address enforcementCriteria,
-        uint256 repMultiplier,
+        uint256 repParticipantMultiplier,
+        uint256 repMaintainerMultiplier,
         string marketUri
     );
 
@@ -117,4 +119,10 @@ contract LaborMarketEventsAndErrors {
 
     /// @notice Thrown if a user tries to fulfill a request twice
     error AlreadySubmitted();
+
+    /// @notice Thrown if a maintainer tries to review own submission
+    error CannotReviewOwnSubmission();
+
+    /// @notice Thrown if a user tries to claim while still in review
+    error InReview();
 }

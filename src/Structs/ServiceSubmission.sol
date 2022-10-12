@@ -5,6 +5,7 @@ pragma solidity 0.8.17;
 
 struct ServiceSubmission {
     address serviceProvider;
+    uint256 requestId;
     uint256 timestamp;
     string uri;
     uint256 score;

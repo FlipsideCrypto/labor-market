@@ -9,47 +9,71 @@ import {PRBTest} from "@prb/test/PRBTest.sol";
 // Contracts to test
 import {LaborMarket} from "src/LaborMarket.sol";
 import {MetricNetwork} from "src/MetricNetwork.sol";
+import {EnforcementModule} from "src/EnforcementModule.sol";
+import {EnforcementCriteria} from "src/EnforcementCriteria.sol";
+import {PaymentModule} from "src/PaymentModule.sol";
+import {PayCurve} from "src/PayCurve.sol";
+
 import {HelperTokens} from "./Helpers/HelperTokens.sol";
 
 contract ContractTest is PRBTest, Cheats {
     HelperTokens public tokenBank;
     MetricNetwork public metricNetwork;
     LaborMarket public tempMarket;
+    EnforcementModule public enforcementModule;
+    EnforcementCriteria public enforcementCriteria;
+    PaymentModule public paymentModule;
+    PayCurve public payCurve;
 
-    uint256 public constant DELEGATE_TOKEN_ID = 0;
-    uint256 public constant PARTICIPATION_TOKEN_ID = 1;
-    uint256 public constant PAYMENT_TOKEN_ID = 2;
+    uint256 private constant DELEGATE_TOKEN_ID = 0;
+    uint256 private constant PARTICIPATION_TOKEN_ID = 1;
+    uint256 private constant PAYMENT_TOKEN_ID = 2;
 
-    address public deployer = address(0xDe);
+    address private deployer = address(0xDe);
 
-    address public bob = address(0x1);
-    address public alice = address(0x2);
+    address private bob = address(0x1);
+    address private alice = address(0x2);
 
     function setUp() public {
         vm.startPrank(deployer);
+
         metricNetwork = new MetricNetwork(15, 15);
+        enforcementModule = new EnforcementModule();
+        enforcementCriteria = new EnforcementCriteria(
+            address(enforcementModule)
+        );
+
+        paymentModule = new PaymentModule();
+        payCurve = new PayCurve();
 
         tokenBank = new HelperTokens("ipfs://000");
 
         tokenBank.freeMint(bob, DELEGATE_TOKEN_ID, 1);
         tokenBank.freeMint(alice, DELEGATE_TOKEN_ID, 1);
-        tokenBank.freeMint(bob, PARTICIPATION_TOKEN_ID, 100);
+        tokenBank.freeMint(bob, PARTICIPATION_TOKEN_ID, 1000);
         tokenBank.freeMint(alice, PARTICIPATION_TOKEN_ID, 100);
+        tokenBank.freeMint(bob, PAYMENT_TOKEN_ID, 1000e18);
 
         tempMarket = new LaborMarket({
             _metricNetwork: address(metricNetwork),
+            _enforcementModule: address(enforcementModule),
+            _paymentModule: address(paymentModule),
             _delegateBadge: address(tokenBank),
             _delegateTokenId: DELEGATE_TOKEN_ID,
             _participationBadge: address(tokenBank),
             _participationTokenId: PARTICIPATION_TOKEN_ID,
-            _payCurve: address(0x0),
-            _enforcementCriteria: address(0x0),
-            _repMultiplier: 1,
+            _payCurve: address(payCurve),
+            _enforcementCriteria: address(enforcementCriteria),
+            _repParticipantMultiplier: 1,
+            _repMaintainerMultiplier: 1,
             _marketUri: "ipfs://111",
             _marketId: 1
         });
 
         changePrank(alice);
+        tokenBank.setApprovalForAll(address(tempMarket), true);
+
+        changePrank(bob);
         tokenBank.setApprovalForAll(address(tempMarket), true);
 
         vm.stopPrank();
@@ -63,7 +87,7 @@ contract ContractTest is PRBTest, Cheats {
         uint256 requestId = tempMarket.submitRequest({
             pToken: address(tokenBank),
             pTokenId: PAYMENT_TOKEN_ID,
-            pTokenQ: 100,
+            pTokenQ: 100e18,
             signalExp: block.timestamp + 1 hours,
             submissionExp: block.timestamp + 1 days,
             enforcementExp: block.timestamp + 1 weeks,
@@ -103,10 +127,79 @@ contract ContractTest is PRBTest, Cheats {
 
         changePrank(bob);
         // Review the request
-        tempMarket.review(requestId, submissionId, 10);
+        tempMarket.review(requestId, submissionId, 2);
 
         // Claim the reward
         changePrank(alice);
         tempMarket.claim(submissionId);
+    }
+
+    function test_ExampleEnforcementTest() public {
+        /**
+        | pTokens: 1000
+        | Participants: 112
+        | Likert ratings: (1, BAD), (2, OK), (3, GOOD)
+        | Bucket distribution: (1, 66), (2, 36), (3, 10)
+        | Payout distribution: (1, 0), (2, 20%), (3, 80%)
+        | Expected Tokens per person per bucket: (1, 0), (2, 5.5), (3, 80)
+        */
+
+        vm.startPrank(bob);
+
+        // Create a request
+        uint256 requestId = tempMarket.submitRequest({
+            pToken: address(tokenBank),
+            pTokenId: PAYMENT_TOKEN_ID,
+            pTokenQ: 100e18,
+            signalExp: block.timestamp + 1 hours,
+            submissionExp: block.timestamp + 1 days,
+            enforcementExp: block.timestamp + 1 weeks,
+            requestUri: "ipfs://222"
+        });
+
+        // Signal the request on 112 accounts
+        for (uint256 i; i < 113; i++) {
+            address user = address(uint160(1337 + i));
+            changePrank(user);
+
+            // Mint required tokens
+            tokenBank.freeMint(user, DELEGATE_TOKEN_ID, 1);
+            tokenBank.freeMint(user, PARTICIPATION_TOKEN_ID, 100);
+
+            // Aprove the market
+            tokenBank.setApprovalForAll(address(tempMarket), true);
+
+            tempMarket.signal(requestId);
+            tempMarket.provide(requestId, "NaN");
+        }
+
+        // Have bob review the submissions
+        changePrank(bob);
+
+        for (uint256 i; i < 113; i++) {
+            if (i < 66) {
+                // BAD
+                tempMarket.review(requestId, i + 1, 0);
+            } else if (i < 102) {
+                // OK
+                tempMarket.review(requestId, i + 1, 1);
+            } else {
+                // GOOD
+                tempMarket.review(requestId, i + 1, 2);
+            }
+        }
+
+        uint256 totalPaid;
+
+        for (uint256 i; i < 113; i++) {
+            address user = address(uint160(1337 + i));
+            changePrank(user);
+
+            // Claim
+            uint256 amt = tempMarket.claim(i + 1);
+            totalPaid += amt;
+        }
+
+        return assertAlmostEq(totalPaid, 1000e18, 0.001e18);
     }
 }

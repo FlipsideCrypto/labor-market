@@ -2,8 +2,10 @@
 pragma solidity 0.8.17;
 
 // Interfacing
-import {MetricNetwork} from "./MetricNetwork.sol";
 import {ERC1155, ERC1155TokenReceiver} from "solmate/tokens/ERC1155.sol";
+import {MetricNetwork} from "./MetricNetwork.sol";
+import {EnforcementModule} from "./EnforcementModule.sol";
+import {PaymentModule} from "./PaymentModule.sol";
 
 // Structs
 import {ServiceRequest} from "./Structs/ServiceRequest.sol";
@@ -14,6 +16,8 @@ import {LaborMarketEventsAndErrors} from "./EventsAndErrors/LaborMarketEventsAnd
 
 contract LaborMarket is LaborMarketEventsAndErrors, ERC1155TokenReceiver {
     MetricNetwork public metricNetwork;
+    EnforcementModule public enforcementModule;
+    PaymentModule public paymentModule;
 
     ERC1155 public delegateBadge;
     ERC1155 public participationBadge;
@@ -24,7 +28,8 @@ contract LaborMarket is LaborMarketEventsAndErrors, ERC1155TokenReceiver {
     address public payCurve;
     address public enforcementCriteria;
 
-    uint256 public repMultiplier;
+    uint256 public repParticipantMultiplier;
+    uint256 public repMaintainerMultiplier;
     string public marketUri;
     uint256 public immutable marketId;
 
@@ -44,24 +49,30 @@ contract LaborMarket is LaborMarketEventsAndErrors, ERC1155TokenReceiver {
 
     constructor(
         address _metricNetwork,
+        address _enforcementModule,
+        address _paymentModule,
         address _delegateBadge,
         uint256 _delegateTokenId,
         address _participationBadge,
         uint256 _participationTokenId,
         address _payCurve,
         address _enforcementCriteria,
-        uint256 _repMultiplier,
+        uint256 _repParticipantMultiplier,
+        uint256 _repMaintainerMultiplier,
         string memory _marketUri,
         uint256 _marketId
     ) {
         metricNetwork = MetricNetwork(_metricNetwork);
+        enforcementModule = EnforcementModule(_enforcementModule);
+        paymentModule = PaymentModule(_paymentModule);
         delegateBadge = ERC1155(_delegateBadge);
         delegateTokenId = _delegateTokenId;
         participationBadge = ERC1155(_participationBadge);
         participationTokenId = _participationTokenId;
         payCurve = _payCurve;
         enforcementCriteria = _enforcementCriteria;
-        repMultiplier = _repMultiplier;
+        repParticipantMultiplier = _repParticipantMultiplier;
+        repMaintainerMultiplier = _repMaintainerMultiplier;
         marketUri = _marketUri;
         marketId = _marketId;
     }
@@ -92,6 +103,15 @@ contract LaborMarket is LaborMarketEventsAndErrors, ERC1155TokenReceiver {
         });
 
         serviceRequests[serviceRequestId] = serviceRequest;
+
+        // TODO: Move this to payment module
+        ERC1155(pToken).safeTransferFrom(
+            msg.sender,
+            address(this),
+            pTokenId,
+            pTokenQ,
+            ""
+        );
 
         emit RequestCreated(
             msg.sender,
@@ -135,10 +155,36 @@ contract LaborMarket is LaborMarketEventsAndErrors, ERC1155TokenReceiver {
         emit RequestSignal(msg.sender, requestId, signalAmt);
     }
 
+    // TODO: Signal review
+    // function signal(uint256 requestId) external permittedParticipant {
+    //     if (requestId > serviceRequestId) {
+    //         revert RequestDoesNotExist(requestId);
+    //     }
+    //     if (block.timestamp > serviceRequests[requestId].signalExp) {
+    //         revert SignalDeadlinePassed();
+    //     }
+    //     if (hasSignaled[requestId][msg.sender]) {
+    //         revert AlreadySignaled();
+    //     }
+
+    //     uint256 signalAmt = _balanceReputation(
+    //         msg.sender,
+    //         address(this),
+    //         metricNetwork.baseSignal()
+    //     );
+
+    //     hasSignaled[requestId][msg.sender] = true;
+
+    //     unchecked {
+    //         ++signalCount[requestId];
+    //     }
+
+    //     emit RequestSignal(msg.sender, requestId, signalAmt);
+    // }
+
     // Fulfill a service request
     function provide(uint256 requestId, string calldata uri)
         external
-        permittedParticipant
         returns (uint256 submissionId)
     {
         if (requestId > serviceRequestId) {
@@ -160,6 +206,7 @@ contract LaborMarket is LaborMarketEventsAndErrors, ERC1155TokenReceiver {
 
         ServiceSubmission memory serviceSubmission = ServiceSubmission({
             serviceProvider: msg.sender,
+            requestId: requestId,
             timestamp: block.timestamp,
             uri: uri,
             score: 0
@@ -191,11 +238,19 @@ contract LaborMarket is LaborMarketEventsAndErrors, ERC1155TokenReceiver {
         if (block.timestamp > serviceRequests[requestId].enforcementExp) {
             revert EnforcementDeadlinePassed();
         }
+        // TODO: Fix this --> likert scores start at 0 if using enums
         if (serviceSubmissions[submissionId].score != 0) {
             revert AlreadyReviewed();
         }
+        if (serviceSubmissions[submissionId].serviceProvider == msg.sender) {
+            revert CannotReviewOwnSubmission();
+        }
 
-        // score = EnforcementModule.review(submissionId, score);
+        score = enforcementModule.review(
+            enforcementCriteria,
+            submissionId,
+            score
+        );
 
         serviceSubmissions[submissionId].score = score;
 
@@ -205,12 +260,18 @@ contract LaborMarket is LaborMarketEventsAndErrors, ERC1155TokenReceiver {
     }
 
     // Claim reward for a service submission
-    function claim(uint256 submissionId) external permittedParticipant {
+    function claim(uint256 submissionId) external returns (uint256) {
         if (submissionId > serviceSubmissionId) {
             revert SubmissionDoesNotExist(submissionId);
         }
-        if (serviceSubmissions[submissionId].score == 0) {
+        if (serviceSubmissions[submissionId].score == 99999) {
             revert NotReviewed();
+        }
+        if (
+            serviceRequests[serviceSubmissions[submissionId].requestId]
+                .enforcementExp < block.timestamp
+        ) {
+            revert InReview();
         }
         if (serviceSubmissions[submissionId].serviceProvider != msg.sender) {
             revert NotServiceProvider();
@@ -219,13 +280,18 @@ contract LaborMarket is LaborMarketEventsAndErrors, ERC1155TokenReceiver {
             revert AlreadyClaimed();
         }
 
-        uint256 amount = 1;
-        // uint256 amount = PaymentModule.pay(uint256 requestId, uint256 submissionId)
+        uint256 curveIndex = enforcementModule.verifyIndex(
+            enforcementCriteria,
+            submissionId
+        );
         // _balanceReputation(from, to, amount);
+        uint256 amount = paymentModule.claim(payCurve, curveIndex);
 
         hasClaimed[submissionId][msg.sender] = true;
 
         emit RequestPayClaimed(msg.sender, submissionId, amount);
+
+        return amount;
     }
 
     // Withdraw a service request given that it has not been signaled
@@ -245,7 +311,8 @@ contract LaborMarket is LaborMarketEventsAndErrors, ERC1155TokenReceiver {
         address _participationBadge,
         address _payCurve,
         address _enforcementCriteria,
-        uint256 _repMultiplier,
+        uint256 _repParticipantMultiplier,
+        uint256 _repMaintainerMultiplier,
         string calldata _marketUri
     ) external onlyPermissioned {
         if (serviceRequestId > 0) revert MarketActive();
@@ -253,7 +320,8 @@ contract LaborMarket is LaborMarketEventsAndErrors, ERC1155TokenReceiver {
         participationBadge = ERC1155(_participationBadge);
         payCurve = _payCurve;
         enforcementCriteria = _enforcementCriteria;
-        repMultiplier = _repMultiplier;
+        repParticipantMultiplier = _repParticipantMultiplier;
+        repMaintainerMultiplier = _repMaintainerMultiplier;
         marketUri = _marketUri;
 
         emit MarketParametersUpdated(
@@ -262,7 +330,8 @@ contract LaborMarket is LaborMarketEventsAndErrors, ERC1155TokenReceiver {
             _participationBadge,
             _payCurve,
             _enforcementCriteria,
-            _repMultiplier,
+            _repParticipantMultiplier,
+            _repMaintainerMultiplier,
             _marketUri
         );
     }
@@ -303,7 +372,8 @@ contract LaborMarket is LaborMarketEventsAndErrors, ERC1155TokenReceiver {
         if (
             (delegateBadge.balanceOf(msg.sender, delegateTokenId) < 1) ||
             (participationBadge.balanceOf(msg.sender, participationTokenId) <
-                (metricNetwork.baseReputation() * repMultiplier))
+                (metricNetwork.baseParticipantReputation() *
+                    repParticipantMultiplier))
         ) revert NotQualified();
         _;
     }
@@ -313,6 +383,10 @@ contract LaborMarket is LaborMarketEventsAndErrors, ERC1155TokenReceiver {
     }
 
     modifier onlyMaintainer() {
+        if (
+            participationBadge.balanceOf(msg.sender, participationTokenId) <
+            (metricNetwork.baseMaintainerReputation() * repMaintainerMultiplier)
+        ) revert NotQualified();
         _;
     }
 }
