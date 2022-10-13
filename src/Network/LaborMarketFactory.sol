@@ -18,7 +18,6 @@ contract LaborMarketFactory is
      * @notice Allows an individual to deploy a new Labor Market given they meet the version funding requirements.
      * @param _implementation The address of the implementation to be used.
      * @param _deployer The address that will be the deployer of the Labor Market contract.
-     * @param _metricNetwork The address of the Metric Network contract.
      * @param _enforcementModule The address of the Enforcement Module contract.
      * @param _paymentModule The address of the Payment Module contract.
      * @param _delegateBadge The address of the Delegation badge.

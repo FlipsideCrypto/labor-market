@@ -67,7 +67,7 @@ contract LaborMarket is
         if (
             (delegateBadge.balanceOf(msg.sender, delegateTokenId) < 1) ||
             (participationBadge.balanceOf(msg.sender, participationTokenId) <
-                (network.baseParticipantThreshold() *
+                (network.baseProviderThreshold() *
                     repParticipantMultiplier))
         ) revert NotQualified();
         _;
