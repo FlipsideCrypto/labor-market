@@ -4,31 +4,40 @@ pragma solidity 0.8.17;
 /// @dev Core dependencies.
 import { LaborMarketInterface } from "./interfaces/LaborMarketInterface.sol";
 import { LaborMarketEventsAndErrors } from "./LaborMarketEventsAndErrors.sol";
-
-// Interfacing
-import { Network } from "../Network.sol";
-import { EnforcementModule } from "../Modules/Enforcement/EnforcementModule.sol";
-import { PaymentModule } from "../Modules/Payment/PaymentModule.sol";
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol"; 
+import { ERC1155HolderUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/utils/ERC1155HolderUpgradeable.sol";
+import { ERC721HolderUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
 
 // Structs
 import {ServiceRequest} from "../Structs/ServiceRequest.sol";
 import {ServiceSubmission} from "../Structs/ServiceSubmission.sol";
 
-// Events & Errors
-
 /// @dev Helpers.
 import { StringsUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
+
+/// @dev Helper interfaces.
+import { MetricNetwork } from "../MetricNetwork.sol";
+import { EnforcementModule } from "../Modules/Enforcement/EnforcementModule.sol";
+import { PaymentModule } from "../Modules/Payment/PaymentModule.sol";
+import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+
+/// @dev Supported interfaces. 
+import { IERC1155ReceiverUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155ReceiverUpgradeable.sol";
+import { IERC721ReceiverUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
 
 contract LaborMarket is 
       LaborMarketInterface
     , LaborMarketEventsAndErrors
+    , OwnableUpgradeable
+    , ERC1155HolderUpgradeable 
+    , ERC721HolderUpgradeable
 {
     Network public network;
     EnforcementModule public enforcementModule;
     PaymentModule public paymentModule;
 
-    ERC1155 public delegateBadge;
-    ERC1155 public participationBadge;
+    IERC1155 public delegateBadge;
+    IERC1155 public participationBadge;
 
     uint256 public delegateTokenId;
     uint256 public participationTokenId;
@@ -39,7 +48,6 @@ contract LaborMarket is
     uint256 public repParticipantMultiplier;
     uint256 public repMaintainerMultiplier;
     string public marketUri;
-    uint256 public immutable marketId;
 
     mapping(uint256 => uint256) public signalCount;
 
@@ -54,6 +62,28 @@ contract LaborMarket is
 
     uint256 public serviceRequestId;
     uint256 public serviceSubmissionId;
+
+    modifier permittedParticipant() {
+        if (
+            (delegateBadge.balanceOf(msg.sender, delegateTokenId) < 1) ||
+            (participationBadge.balanceOf(msg.sender, participationTokenId) <
+                (metricNetwork.baseParticipantReputation() *
+                    repParticipantMultiplier))
+        ) revert NotQualified();
+        _;
+    }
+
+    modifier onlyPermissioned() {
+        _;
+    }
+
+    modifier onlyMaintainer() {
+        if (
+            participationBadge.balanceOf(msg.sender, participationTokenId) <
+            (metricNetwork.baseMaintainerReputation() * repMaintainerMultiplier)
+        ) revert NotQualified();
+        _;
+    }
 
     function initialize(
           address _network
@@ -78,8 +108,8 @@ contract LaborMarket is
         paymentModule = PaymentModule(_paymentModule);
 
         /// @dev Configure the Labor Market access control.
-        delegateBadge = ERC1155(_delegateBadge);
-        participationBadge = ERC1155(_participationBadge);
+        delegateBadge = IERC1155(_delegateBadge);
+        participationBadge = IERC1155(_participationBadge);
 
         delegateTokenId = _delegateTokenId;
         participationTokenId = _participationTokenId;
@@ -118,7 +148,7 @@ contract LaborMarket is
         serviceRequests[serviceRequestId] = serviceRequest;
 
         // TODO: Move this to payment module
-        ERC1155(pToken).safeTransferFrom(
+        IERC1155(pToken).safeTransferFrom(
             msg.sender,
             address(this),
             pTokenId,
@@ -329,8 +359,8 @@ contract LaborMarket is
         string calldata _marketUri
     ) external onlyPermissioned {
         if (serviceRequestId > 0) revert MarketActive();
-        delegateBadge = ERC1155(_delegateBadge);
-        participationBadge = ERC1155(_participationBadge);
+        delegateBadge = IERC1155(_delegateBadge);
+        participationBadge = IERC1155(_participationBadge);
         payCurve = _payCurve;
         enforcementCriteria = _enforcementCriteria;
         repParticipantMultiplier = _repParticipantMultiplier;
@@ -338,7 +368,6 @@ contract LaborMarket is
         marketUri = _marketUri;
 
         emit MarketParametersUpdated(
-            marketId,
             _delegateBadge,
             _participationBadge,
             _payCurve,
@@ -379,27 +408,5 @@ contract LaborMarket is
         returns (ServiceSubmission memory)
     {
         return serviceSubmissions[submissionId];
-    }
-
-    modifier permittedParticipant() {
-        if (
-            (delegateBadge.balanceOf(msg.sender, delegateTokenId) < 1) ||
-            (participationBadge.balanceOf(msg.sender, participationTokenId) <
-                (network.baseProviderThreshold() *
-                    repParticipantMultiplier))
-        ) revert NotQualified();
-        _;
-    }
-
-    modifier onlyPermissioned() {
-        _;
-    }
-
-    modifier onlyMaintainer() {
-        if (
-            participationBadge.balanceOf(msg.sender, participationTokenId) <
-            (network.baseMaintainerThreshold() * repMaintainerMultiplier)
-        ) revert NotQualified();
-        _;
     }
 }
