@@ -135,13 +135,14 @@ contract ContractTest is PRBTest, Cheats {
         tempMarket.signal(requestId);
 
         // Verify signaling logic
-        assertTrue(tempMarket.hasSignaled(requestId, alice));
+        assertTrue(tempMarket.submissionSignals(requestId, alice));
 
         // Fulfill the request
         uint256 submissionId = tempMarket.provide(requestId, "IPFS://333");
 
         changePrank(bob);
         // Review the request
+        tempMarket.signalReview(submissionId);
         tempMarket.review(requestId, submissionId, 2);
 
         // Claim the reward
@@ -194,12 +195,15 @@ contract ContractTest is PRBTest, Cheats {
         for (uint256 i; i < 113; i++) {
             if (i < 67) {
                 // BAD
+                tempMarket.signalReview(i + 1);
                 tempMarket.review(requestId, i + 1, 0);
             } else if (i < 103) {
                 // OK
+                tempMarket.signalReview(i + 1);
                 tempMarket.review(requestId, i + 1, 1);
             } else {
                 // GOOD
+                tempMarket.signalReview(i + 1);
                 tempMarket.review(requestId, i + 1, 2);
             }
         }

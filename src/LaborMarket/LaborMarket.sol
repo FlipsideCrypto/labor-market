@@ -8,7 +8,7 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {ERC1155HolderUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC1155/utils/ERC1155HolderUpgradeable.sol";
 import {ERC721HolderUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
 
-// Structs
+/// @dev Structs
 import {ServiceRequest} from "../Structs/ServiceRequest.sol";
 import {ServiceSubmission} from "../Structs/ServiceSubmission.sol";
 
@@ -54,7 +54,9 @@ contract LaborMarket is
     mapping(uint256 => ServiceRequest) public serviceRequests;
     mapping(uint256 => ServiceSubmission) public serviceSubmissions;
 
-    mapping(uint256 => mapping(address => bool)) public hasSignaled;
+    mapping(uint256 => mapping(address => bool)) public submissionSignals;
+    mapping(uint256 => mapping(address => bool)) public reviewSignals;
+
     mapping(uint256 => mapping(address => bool)) public hasSubmitted;
     mapping(uint256 => mapping(address => bool)) public hasClaimed;
 
@@ -166,19 +168,14 @@ contract LaborMarket is
         if (block.timestamp > serviceRequests[requestId].signalExp) {
             revert SignalDeadlinePassed();
         }
-        if (hasSignaled[requestId][msg.sender]) {
+        if (submissionSignals[requestId][msg.sender]) {
             revert AlreadySignaled();
         }
 
-        uint256 signalAmt = _balanceReputation(
-            msg.sender,
-            address(this),
-            network.baseSignalStake()
-        );
+        // Lock reputation here
+        uint256 signalAmt = 1;
 
-        signalAmt = 1;
-
-        hasSignaled[requestId][msg.sender] = true;
+        submissionSignals[requestId][msg.sender] = true;
 
         unchecked {
             ++signalCount[requestId];
@@ -188,31 +185,21 @@ contract LaborMarket is
     }
 
     // TODO: Signal review
-    // function signal(uint256 requestId) external permittedParticipant {
-    //     if (requestId > serviceRequestId) {
-    //         revert RequestDoesNotExist(requestId);
-    //     }
-    //     if (block.timestamp > serviceRequests[requestId].signalExp) {
-    //         revert SignalDeadlinePassed();
-    //     }
-    //     if (hasSignaled[requestId][msg.sender]) {
-    //         revert AlreadySignaled();
-    //     }
+    function signalReview(uint256 submissionId) external onlyMaintainer {
+        if (submissionId > serviceSubmissionId) {
+            revert SubmissionDoesNotExist(submissionId);
+        }
+        if (reviewSignals[submissionId][msg.sender]) {
+            revert AlreadySignaled();
+        }
 
-    //     uint256 signalAmt = _balanceReputation(
-    //         msg.sender,
-    //         address(this),
-    //         network.baseSignalStake()
-    //     );
+        // Lock reputation here
+        uint256 signalAmt = 1;
 
-    //     hasSignaled[requestId][msg.sender] = true;
+        reviewSignals[submissionId][msg.sender] = true;
 
-    //     unchecked {
-    //         ++signalCount[requestId];
-    //     }
-
-    //     emit RequestSignal(msg.sender, requestId, signalAmt);
-    // }
+        emit ReviewSignal(msg.sender, submissionId, signalAmt);
+    }
 
     // Fulfill a service request
     function provide(uint256 requestId, string calldata uri)
@@ -225,7 +212,7 @@ contract LaborMarket is
         if (block.timestamp > serviceRequests[requestId].submissionExp) {
             revert SubmissionDeadlinePassed();
         }
-        if (!hasSignaled[requestId][msg.sender]) {
+        if (!submissionSignals[requestId][msg.sender]) {
             revert NotSignaled();
         }
         if (hasSubmitted[requestId][msg.sender]) {
@@ -248,7 +235,7 @@ contract LaborMarket is
 
         hasSubmitted[requestId][msg.sender] = true;
 
-        //_balanceReputation(from, to, amount);
+        // Unlock reputation here for submission signal
 
         emit RequestFulfilled(msg.sender, requestId, serviceSubmissionId);
 
@@ -270,6 +257,9 @@ contract LaborMarket is
         if (block.timestamp > serviceRequests[requestId].enforcementExp) {
             revert EnforcementDeadlinePassed();
         }
+        if (!reviewSignals[submissionId][msg.sender]) {
+            revert NotSignaled();
+        }
         // TODO: Fix this --> likert scores start at 0 if using enums
         if (serviceSubmissions[submissionId].score != 0) {
             revert AlreadyReviewed();
@@ -282,7 +272,7 @@ contract LaborMarket is
 
         serviceSubmissions[submissionId].score = score;
 
-        // _balanceReputation(from, to, amount);
+        // Unlock maintainer reputation here
 
         emit RequestReviewed(msg.sender, requestId, submissionId, score);
     }
@@ -310,7 +300,8 @@ contract LaborMarket is
 
         uint256 curveIndex = enforcementModule.verify(submissionId);
 
-        // _balanceReputation(from, to, amount);
+        // Increase/(decrease) reputation here for submitter
+
         uint256 amount = paymentModule.curvePoint(curveIndex);
 
         hasClaimed[submissionId][msg.sender] = true;
@@ -359,22 +350,6 @@ contract LaborMarket is
             _repMaintainerMultiplier,
             _marketUri
         );
-    }
-
-    function _balanceReputation(
-        address from,
-        address to,
-        uint256 amount
-    ) internal returns (uint256) {
-        participationBadge.safeTransferFrom(
-            from,
-            to,
-            participationTokenId,
-            amount,
-            ""
-        );
-
-        return amount;
     }
 
     function getRequest(uint256 requestId)

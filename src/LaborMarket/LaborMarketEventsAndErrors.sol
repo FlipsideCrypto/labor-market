@@ -47,6 +47,13 @@ contract LaborMarketEventsAndErrors {
         uint256 signalAmount
     );
 
+    /// @notice emitted when a maintainer signals a review
+    event ReviewSignal(
+        address indexed signaler,
+        uint256 indexed requestId,
+        uint256 signalAmount
+    );
+
     /// @notice emitted when a service request is withdrawn
     event RequestWithdrawn(uint256 indexed requestId);
 
