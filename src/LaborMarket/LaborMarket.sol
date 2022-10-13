@@ -33,17 +33,14 @@ contract LaborMarket is
     ERC721HolderUpgradeable
 {
     LaborMarketNetwork public network;
-    EnforcementCriteriaInterface public enforcementModule;
-    PayCurveInterface public paymentModule;
+    EnforcementCriteriaInterface public enforcementCriteria;
+    PayCurveInterface public paymentCurve;
 
     IERC1155 public delegateBadge;
     IERC1155 public participationBadge;
 
     uint256 public delegateTokenId;
     uint256 public participationTokenId;
-
-    address public payCurve;
-    address public enforcementCriteria;
 
     uint256 public repParticipantMultiplier;
     uint256 public repMaintainerMultiplier;
@@ -88,8 +85,8 @@ contract LaborMarket is
 
     function initialize(
         address _network,
-        address _enforcementModule,
-        address _paymentModule,
+        address _enforcementCriteria,
+        address _paymentCurve,
         address _delegateBadge,
         uint256 _delegateTokenId,
         address _participationBadge,
@@ -102,8 +99,10 @@ contract LaborMarket is
         network = LaborMarketNetwork(_network);
 
         /// @dev Configure the Labor Market state control.
-        enforcementModule = EnforcementCriteriaInterface(_enforcementModule);
-        paymentModule = PayCurveInterface(_paymentModule);
+        enforcementCriteria = EnforcementCriteriaInterface(
+            _enforcementCriteria
+        );
+        paymentCurve = PayCurveInterface(_paymentCurve);
 
         /// @dev Configure the Labor Market access control.
         delegateBadge = IERC1155(_delegateBadge);
@@ -268,7 +267,7 @@ contract LaborMarket is
             revert CannotReviewOwnSubmission();
         }
 
-        score = enforcementModule.review(submissionId, score);
+        score = enforcementCriteria.review(submissionId, score);
 
         serviceSubmissions[submissionId].score = score;
 
@@ -298,11 +297,11 @@ contract LaborMarket is
             revert AlreadyClaimed();
         }
 
-        uint256 curveIndex = enforcementModule.verify(submissionId);
+        uint256 curveIndex = enforcementCriteria.verify(submissionId);
 
         // Increase/(decrease) reputation here for submitter
 
-        uint256 amount = paymentModule.curvePoint(curveIndex);
+        uint256 amount = paymentCurve.curvePoint(curveIndex);
 
         hasClaimed[submissionId][msg.sender] = true;
 
@@ -326,17 +325,19 @@ contract LaborMarket is
     function setMarketParameters(
         address _delegateBadge,
         address _participationBadge,
-        address _payCurve,
         address _enforcementCriteria,
+        address _paymentCurve,
         uint256 _repParticipantMultiplier,
         uint256 _repMaintainerMultiplier,
         string calldata _marketUri
     ) external onlyPermissioned {
         if (serviceRequestId > 0) revert MarketActive();
         delegateBadge = IERC1155(_delegateBadge);
+        enforcementCriteria = EnforcementCriteriaInterface(
+            _enforcementCriteria
+        );
+        paymentCurve = PayCurveInterface(_paymentCurve);
         participationBadge = IERC1155(_participationBadge);
-        payCurve = _payCurve;
-        enforcementCriteria = _enforcementCriteria;
         repParticipantMultiplier = _repParticipantMultiplier;
         repMaintainerMultiplier = _repMaintainerMultiplier;
         marketUri = _marketUri;
@@ -344,8 +345,8 @@ contract LaborMarket is
         emit MarketParametersUpdated(
             _delegateBadge,
             _participationBadge,
-            _payCurve,
             _enforcementCriteria,
+            _paymentCurve,
             _repParticipantMultiplier,
             _repMaintainerMultiplier,
             _marketUri
