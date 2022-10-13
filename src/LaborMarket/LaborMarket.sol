@@ -16,7 +16,7 @@ import {ServiceSubmission} from "../Structs/ServiceSubmission.sol";
 import { StringsUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 
 /// @dev Helper interfaces.
-import { MetricNetwork } from "../MetricNetwork.sol";
+import { LaborMarketNetwork } from "../Network/LaborMarketNetwork.sol";
 import { EnforcementModule } from "../Modules/Enforcement/EnforcementModule.sol";
 import { PaymentModule } from "../Modules/Payment/PaymentModule.sol";
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
@@ -32,7 +32,7 @@ contract LaborMarket is
     , ERC1155HolderUpgradeable 
     , ERC721HolderUpgradeable
 {
-    MetricNetwork public metricNetwork;
+    LaborMarketNetwork public metricNetwork;
     EnforcementModule public enforcementModule;
     PaymentModule public paymentModule;
 
@@ -101,7 +101,7 @@ contract LaborMarket is
         initializer
     {
         /// @dev Connect to the higher level network to pull the active states.
-        metricNetwork = MetricNetwork(_metricNetwork);
+        metricNetwork = LaborMarketNetwork(_metricNetwork);
 
         /// @dev Configure the Labor Market state control.
         enforcementModule = EnforcementModule(_enforcementModule);
