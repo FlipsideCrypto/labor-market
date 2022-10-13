@@ -16,7 +16,7 @@ import {ServiceSubmission} from "../Structs/ServiceSubmission.sol";
 import { StringsUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 
 /// @dev Helper interfaces.
-import { MetricNetwork } from "../MetricNetwork.sol";
+import { Network } from "../Network.sol";
 import { EnforcementModule } from "../Modules/Enforcement/EnforcementModule.sol";
 import { PaymentModule } from "../Modules/Payment/PaymentModule.sol";
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
@@ -67,7 +67,7 @@ contract LaborMarket is
         if (
             (delegateBadge.balanceOf(msg.sender, delegateTokenId) < 1) ||
             (participationBadge.balanceOf(msg.sender, participationTokenId) <
-                (metricNetwork.baseParticipantReputation() *
+                (metricNetwork.baseParticipantThreshold() *
                     repParticipantMultiplier))
         ) revert NotQualified();
         _;
@@ -80,7 +80,7 @@ contract LaborMarket is
     modifier onlyMaintainer() {
         if (
             participationBadge.balanceOf(msg.sender, participationTokenId) <
-            (metricNetwork.baseMaintainerReputation() * repMaintainerMultiplier)
+            (metricNetwork.baseMaintainerThreshold() * repMaintainerMultiplier)
         ) revert NotQualified();
         _;
     }

@@ -32,7 +32,6 @@ contract LaborMarketFactory is
     function createLaborMarket( 
           address _implementation
         , address _deployer
-        , address _metricNetwork
         , address _enforcementModule
         , address _paymentModule
         , address _delegateBadge
@@ -66,7 +65,6 @@ contract LaborMarketFactory is
             , licenseKey
             , version.amount
             , _deployer
-            , _metricNetwork
             , _enforcementModule
             , _paymentModule
             , _delegateBadge
