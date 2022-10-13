@@ -16,7 +16,7 @@ import {ServiceSubmission} from "../Structs/ServiceSubmission.sol";
 import { StringsUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 
 /// @dev Helper interfaces.
-import { Network } from "../Network.sol";
+import { LaborMarketNetwork } from "../Network/LaborMarketNetwork.sol";
 import { EnforcementModule } from "../Modules/Enforcement/EnforcementModule.sol";
 import { PaymentModule } from "../Modules/Payment/PaymentModule.sol";
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
@@ -32,7 +32,7 @@ contract LaborMarket is
     , ERC1155HolderUpgradeable 
     , ERC721HolderUpgradeable
 {
-    Network public network;
+    LaborMarketNetwork public network;
     EnforcementModule public enforcementModule;
     PaymentModule public paymentModule;
 
@@ -67,7 +67,7 @@ contract LaborMarket is
         if (
             (delegateBadge.balanceOf(msg.sender, delegateTokenId) < 1) ||
             (participationBadge.balanceOf(msg.sender, participationTokenId) <
-                (metricNetwork.baseParticipantThreshold() *
+                (network.baseParticipantThreshold() *
                     repParticipantMultiplier))
         ) revert NotQualified();
         _;
@@ -80,7 +80,7 @@ contract LaborMarket is
     modifier onlyMaintainer() {
         if (
             participationBadge.balanceOf(msg.sender, participationTokenId) <
-            (metricNetwork.baseMaintainerThreshold() * repMaintainerMultiplier)
+            (network.baseMaintainerThreshold() * repMaintainerMultiplier)
         ) revert NotQualified();
         _;
     }
@@ -101,7 +101,7 @@ contract LaborMarket is
         initializer
     {
         /// @dev Connect to the higher level network to pull the active states.
-        network = Network(_network);
+        network = LaborMarketNetwork(_network);
 
         /// @dev Configure the Labor Market state control.
         enforcementModule = EnforcementModule(_enforcementModule);

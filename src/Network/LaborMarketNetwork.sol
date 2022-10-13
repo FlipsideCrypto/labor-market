@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 
 import { LaborMarketFactory } from "./LaborMarketFactory.sol";
 
-contract MetricNetwork is 
+contract LaborMarketNetwork is 
     LaborMarketFactory
 {
     uint256 public baseSignal;
