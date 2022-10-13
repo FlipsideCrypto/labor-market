@@ -2,39 +2,39 @@
 pragma solidity 0.8.17;
 
 /// @dev Core dependencies.
-import { LaborMarketInterface } from "./interfaces/LaborMarketInterface.sol";
-import { LaborMarketEventsAndErrors } from "./LaborMarketEventsAndErrors.sol";
-import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol"; 
-import { ERC1155HolderUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/utils/ERC1155HolderUpgradeable.sol";
-import { ERC721HolderUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
+import {LaborMarketInterface} from "./interfaces/LaborMarketInterface.sol";
+import {LaborMarketEventsAndErrors} from "./LaborMarketEventsAndErrors.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {ERC1155HolderUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC1155/utils/ERC1155HolderUpgradeable.sol";
+import {ERC721HolderUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
 
 // Structs
 import {ServiceRequest} from "../Structs/ServiceRequest.sol";
 import {ServiceSubmission} from "../Structs/ServiceSubmission.sol";
 
 /// @dev Helpers.
-import { StringsUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
+import {StringsUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 
 /// @dev Helper interfaces.
-import { LaborMarketNetwork } from "../Network/LaborMarketNetwork.sol";
-import { EnforcementModule } from "../Modules/Enforcement/EnforcementModule.sol";
-import { PaymentModule } from "../Modules/Payment/PaymentModule.sol";
-import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import {LaborMarketNetwork} from "../Network/LaborMarketNetwork.sol";
+import {EnforcementCriteriaInterface} from "../Modules/Enforcement/interfaces/EnforcementCriteriaInterface.sol";
+import {PayCurveInterface} from "../Modules/Payment/interfaces/PayCurveInterface.sol";
+import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 
-/// @dev Supported interfaces. 
-import { IERC1155ReceiverUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155ReceiverUpgradeable.sol";
-import { IERC721ReceiverUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
+/// @dev Supported interfaces.
+import {IERC1155ReceiverUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155ReceiverUpgradeable.sol";
+import {IERC721ReceiverUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
 
-contract LaborMarket is 
-      LaborMarketInterface
-    , LaborMarketEventsAndErrors
-    , OwnableUpgradeable
-    , ERC1155HolderUpgradeable 
-    , ERC721HolderUpgradeable
+contract LaborMarket is
+    LaborMarketInterface,
+    LaborMarketEventsAndErrors,
+    OwnableUpgradeable,
+    ERC1155HolderUpgradeable,
+    ERC721HolderUpgradeable
 {
     LaborMarketNetwork public network;
-    EnforcementModule public enforcementModule;
-    PaymentModule public paymentModule;
+    EnforcementCriteriaInterface public enforcementModule;
+    PayCurveInterface public paymentModule;
 
     IERC1155 public delegateBadge;
     IERC1155 public participationBadge;
@@ -67,8 +67,7 @@ contract LaborMarket is
         if (
             (delegateBadge.balanceOf(msg.sender, delegateTokenId) < 1) ||
             (participationBadge.balanceOf(msg.sender, participationTokenId) <
-                (network.baseProviderThreshold() *
-                    repParticipantMultiplier))
+                (network.baseProviderThreshold() * repParticipantMultiplier))
         ) revert NotQualified();
         _;
     }
@@ -86,26 +85,23 @@ contract LaborMarket is
     }
 
     function initialize(
-          address _network
-        , address _enforcementModule
-        , address _paymentModule
-        , address _delegateBadge
-        , uint256 _delegateTokenId
-        , address _participationBadge
-        , uint256 _participationTokenId
-        , uint256 _repParticipantMultiplier
-        , uint256 _repMaintainerMultiplier
-        , string memory _marketUri
-    )
-        external
-        initializer
-    {
+        address _network,
+        address _enforcementModule,
+        address _paymentModule,
+        address _delegateBadge,
+        uint256 _delegateTokenId,
+        address _participationBadge,
+        uint256 _participationTokenId,
+        uint256 _repParticipantMultiplier,
+        uint256 _repMaintainerMultiplier,
+        string memory _marketUri
+    ) external initializer {
         /// @dev Connect to the higher level network to pull the active states.
         network = LaborMarketNetwork(_network);
 
         /// @dev Configure the Labor Market state control.
-        enforcementModule = EnforcementModule(_enforcementModule);
-        paymentModule = PaymentModule(_paymentModule);
+        enforcementModule = EnforcementCriteriaInterface(_enforcementModule);
+        paymentModule = PayCurveInterface(_paymentModule);
 
         /// @dev Configure the Labor Market access control.
         delegateBadge = IERC1155(_delegateBadge);
@@ -147,15 +143,6 @@ contract LaborMarket is
 
         serviceRequests[serviceRequestId] = serviceRequest;
 
-        // TODO: Move this to payment module
-        IERC1155(pToken).safeTransferFrom(
-            msg.sender,
-            address(this),
-            pTokenId,
-            pTokenQ,
-            ""
-        );
-
         emit RequestCreated(
             msg.sender,
             serviceRequestId,
@@ -188,6 +175,8 @@ contract LaborMarket is
             address(this),
             network.baseSignalStake()
         );
+
+        signalAmt = 1;
 
         hasSignaled[requestId][msg.sender] = true;
 
@@ -289,11 +278,7 @@ contract LaborMarket is
             revert CannotReviewOwnSubmission();
         }
 
-        score = enforcementModule.review(
-            enforcementCriteria,
-            submissionId,
-            score
-        );
+        score = enforcementModule.review(submissionId, score);
 
         serviceSubmissions[submissionId].score = score;
 
@@ -323,12 +308,10 @@ contract LaborMarket is
             revert AlreadyClaimed();
         }
 
-        uint256 curveIndex = enforcementModule.verifyIndex(
-            enforcementCriteria,
-            submissionId
-        );
+        uint256 curveIndex = enforcementModule.verify(submissionId);
+
         // _balanceReputation(from, to, amount);
-        uint256 amount = paymentModule.claim(payCurve, curveIndex);
+        uint256 amount = paymentModule.curvePoint(curveIndex);
 
         hasClaimed[submissionId][msg.sender] = true;
 

@@ -24,7 +24,6 @@ contract EnforcementCriteria {
 
     function review(uint256 submissionId, uint256 score)
         external
-        onlyEnforcement
         returns (uint256)
     {
         if (score > uint256(Likert.GOOD)) revert invalidScore();
@@ -38,12 +37,7 @@ contract EnforcementCriteria {
         return uint256(Likert(score));
     }
 
-    function verify(uint256 submissionId)
-        external
-        view
-        onlyEnforcement
-        returns (uint256)
-    {
+    function verify(uint256 submissionId) external view returns (uint256) {
         uint256 score = submissionToScore[submissionId];
         uint256 alloc = (1e18 / getTotalBucket(Likert(score)));
 
