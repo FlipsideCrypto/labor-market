@@ -15,15 +15,15 @@ import {ServiceSubmission} from "../Structs/ServiceSubmission.sol";
 /// @dev Helpers.
 import { StringsUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 
-/// @dev Supported interfaces. 
-import { IERC1155ReceiverUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155ReceiverUpgradeable.sol";
-import { IERC721ReceiverUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
-
 /// @dev Helper interfaces.
 import { MetricNetwork } from "../MetricNetwork.sol";
 import { EnforcementModule } from "../Modules/Enforcement/EnforcementModule.sol";
 import { PaymentModule } from "../Modules/Payment/PaymentModule.sol";
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+
+/// @dev Supported interfaces. 
+import { IERC1155ReceiverUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155ReceiverUpgradeable.sol";
+import { IERC721ReceiverUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
 
 contract LaborMarket is 
       LaborMarketInterface

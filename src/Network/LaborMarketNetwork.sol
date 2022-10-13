@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.17;
 
-import { LaborMarketFactory } from "./LaborMarket/LaborMarketFactory.sol";
+import { LaborMarketFactory } from "./LaborMarketFactory.sol";
 
 contract MetricNetwork is 
     LaborMarketFactory

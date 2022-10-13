@@ -9,7 +9,7 @@ import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC11
 
 /// @dev Helpers.
 import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
-import { LaborMarketInterface } from "./interfaces/LaborMarketInterface.sol";
+import { LaborMarketInterface } from "../LaborMarket/interfaces/LaborMarketInterface.sol";
 
 /// @dev Supported interfaces.
 import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
