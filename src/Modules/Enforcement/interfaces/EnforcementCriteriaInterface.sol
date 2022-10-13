@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-interface IEnforcementCriteria {
+interface EnforcementCriteriaInterface {
     function review(uint256 submissionId, uint256 score)
         external
         returns (uint256);

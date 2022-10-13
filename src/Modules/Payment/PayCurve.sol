@@ -1,8 +1,19 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.17;
 
-contract PayCurve {
-    function curvePoint(uint256 x) public pure returns (uint256) {
+import { PayCurveInterface } from "./interfaces/PayCurveInterface.sol";
+
+contract PayCurve is 
+    PayCurveInterface 
+{
+    function curvePoint(uint256 x) 
+        public 
+        pure 
+        returns (
+            uint256
+        ) 
+    {
         return x**2;
     }
 }

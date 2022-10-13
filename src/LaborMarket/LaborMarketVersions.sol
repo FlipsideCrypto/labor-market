@@ -5,7 +5,6 @@ pragma solidity ^0.8.17;
 /// @dev Core dependencies.
 import { LaborMarketVersionsInterface } from "./interfaces/LaborMarketVersionsInterface.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-// TODO: Implement use of.
 import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 
 /// @dev Helpers.
@@ -23,7 +22,7 @@ contract LaborMarketVersions is
     using Clones for address;
 
     /*//////////////////////////////////////////////////////////////
-                           PROTOCOL STATE
+                            PROTOCOL STATE
     //////////////////////////////////////////////////////////////*/
 
     /// @dev All of the versions that are actively running.

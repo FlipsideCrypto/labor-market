@@ -18,7 +18,6 @@ contract LaborMarketEventsAndErrors {
 
     /// @notice emitted when labor market parameters are updated
     event MarketParametersUpdated(
-        uint256 indexed marketId,
         address delegateBadge,
         address participationBadge,
         address payCurve,

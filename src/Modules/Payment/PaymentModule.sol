@@ -1,21 +1,41 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {IPayCurve} from "./Interfaces/IPayCurve.sol";
+import { PayCurveInterface } from "./interfaces/PayCurveInterface.sol";
 
 contract PaymentModule {
-    function earned(address payCurve, uint256 x) public returns (uint256) {
-        return IPayCurve(payCurve).curvePoint(x);
+    modifier onlyMarket() {
+        _;
     }
 
-    function claim(address payCurve, uint256 x) public returns (uint256) {
-        uint256 amount = earned(payCurve, x);
+    function earned(
+          address payCurve
+        , uint256 x
+    ) 
+        public 
+        returns (
+            uint256
+        ) 
+    {
+        return PayCurveInterface(payCurve).curvePoint(x);
+    }
+
+    function claim(
+          address payCurve
+        , uint256 x
+    ) 
+        public 
+        returns (
+            uint256
+        ) 
+    {
+        uint256 amount = earned(
+              payCurve
+            , x
+        );
+        
         return amount;
     }
 
     function pay() public {}
-
-    modifier onlyMarket() {
-        _;
-    }
 }
