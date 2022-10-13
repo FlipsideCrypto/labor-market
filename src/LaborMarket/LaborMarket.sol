@@ -6,7 +6,7 @@ import { LaborMarketInterface } from "./interfaces/LaborMarketInterface.sol";
 import { LaborMarketEventsAndErrors } from "./LaborMarketEventsAndErrors.sol";
 
 // Interfacing
-import { MetricNetwork } from "../MetricNetwork.sol";
+import { Network } from "../Network.sol";
 import { EnforcementModule } from "../Modules/Enforcement/EnforcementModule.sol";
 import { PaymentModule } from "../Modules/Payment/PaymentModule.sol";
 
@@ -23,7 +23,7 @@ contract LaborMarket is
       LaborMarketInterface
     , LaborMarketEventsAndErrors
 {
-    MetricNetwork public metricNetwork;
+    Network public network;
     EnforcementModule public enforcementModule;
     PaymentModule public paymentModule;
 
@@ -56,7 +56,7 @@ contract LaborMarket is
     uint256 public serviceSubmissionId;
 
     function initialize(
-          address _metricNetwork
+          address _network
         , address _enforcementModule
         , address _paymentModule
         , address _delegateBadge
@@ -71,7 +71,7 @@ contract LaborMarket is
         initializer
     {
         /// @dev Connect to the higher level network to pull the active states.
-        metricNetwork = MetricNetwork(_metricNetwork);
+        network = Network(_network);
 
         /// @dev Configure the Labor Market state control.
         enforcementModule = EnforcementModule(_enforcementModule);
@@ -156,7 +156,7 @@ contract LaborMarket is
         uint256 signalAmt = _balanceReputation(
             msg.sender,
             address(this),
-            metricNetwork.baseSignal()
+            network.baseSignalStake()
         );
 
         hasSignaled[requestId][msg.sender] = true;
@@ -183,7 +183,7 @@ contract LaborMarket is
     //     uint256 signalAmt = _balanceReputation(
     //         msg.sender,
     //         address(this),
-    //         metricNetwork.baseSignal()
+    //         network.baseSignalStake()
     //     );
 
     //     hasSignaled[requestId][msg.sender] = true;
@@ -385,7 +385,7 @@ contract LaborMarket is
         if (
             (delegateBadge.balanceOf(msg.sender, delegateTokenId) < 1) ||
             (participationBadge.balanceOf(msg.sender, participationTokenId) <
-                (metricNetwork.baseParticipantReputation() *
+                (network.baseProviderThreshold() *
                     repParticipantMultiplier))
         ) revert NotQualified();
         _;
@@ -398,7 +398,7 @@ contract LaborMarket is
     modifier onlyMaintainer() {
         if (
             participationBadge.balanceOf(msg.sender, participationTokenId) <
-            (metricNetwork.baseMaintainerReputation() * repMaintainerMultiplier)
+            (network.baseMaintainerThreshold() * repMaintainerMultiplier)
         ) revert NotQualified();
         _;
     }

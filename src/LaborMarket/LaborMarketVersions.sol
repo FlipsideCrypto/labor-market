@@ -217,7 +217,6 @@ contract LaborMarketVersions is
      * @param _licenseKey The license key of the individual processing the Labor Market creation.
      * @param _versionCost The cost of deploying the version.
      * @param _deployer The address that will be the deployer of the Labor Market contract.
-     * @param _metricNetwork The address of the Metric Network contract.
      * @param _enforcementModule The address of the Enforcement Module contract.
      * @param _paymentModule The address of the Payment Module contract.
      * @param _delegateBadge The address of the Delegation badge.
@@ -233,7 +232,6 @@ contract LaborMarketVersions is
         , bytes32 _licenseKey
         , uint256 _versionCost
         , address _deployer
-        , address _metricNetwork
         , address _enforcementModule
         , address _paymentModule
         , address _delegateBadge
@@ -266,7 +264,7 @@ contract LaborMarketVersions is
 
         /// @dev Deploy the clone contract to serve as the Labor Market.
         laborMarket.initialize(
-              _metricNetwork
+              address(this)
             , _enforcementModule
             , _paymentModule
             , _delegateBadge

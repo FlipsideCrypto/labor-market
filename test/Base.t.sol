@@ -7,12 +7,12 @@ import {console} from "forge-std/console.sol";
 import {PRBTest} from "@prb/test/PRBTest.sol";
 
 // Contracts to test
-import {LaborMarket} from "src/LaborMarket.sol";
-import {MetricNetwork} from "src/MetricNetwork.sol";
-import {EnforcementModule} from "src/EnforcementModule.sol";
-import {EnforcementCriteria} from "src/EnforcementCriteria.sol";
-import {PaymentModule} from "src/PaymentModule.sol";
-import {PayCurve} from "src/PayCurve.sol";
+import {LaborMarket} from "src/LaborMarket/LaborMarket.sol";
+import {Network} from "src/Network.sol";
+import {EnforcementModule} from "src/Modules/Enforcement/EnforcementModule.sol";
+import {EnforcementCriteria} from "src/Modules/Enforcement/EnforcementCriteria.sol";
+import {PaymentModule} from "src/Modules/Payment/PaymentModule.sol";
+import {PayCurve} from "src/Modules/Payment/PayCurve.sol";
 
 import {HelperTokens} from "./Helpers/HelperTokens.sol";
 

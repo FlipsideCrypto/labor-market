@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 
 interface LaborMarketInterface {
     function initialize(
-          address _metricNetwork
+          address _network
         , address _enforcementModule
         , address _paymentModule
         , address _delegateBadge
