@@ -1,15 +1,26 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.17;
 
-contract MetricNetwork {
+import { LaborMarketFactory } from "./LaborMarket/LaborMarketFactory.sol";
+
+contract MetricNetwork is 
+    LaborMarketFactory
+{
     uint256 public baseSignal;
     uint256 public baseParticipantReputation;
     uint256 public baseMaintainerReputation;
 
-    constructor(uint256 baseSig, uint256 baseRep) {
-        baseSignal = baseSig;
-        baseParticipantReputation = baseRep;
-        baseMaintainerReputation = baseRep * 10;
+    constructor(
+          address _baseImplementation
+        , uint256 _baseSig
+        , uint256 _baseRep
+    ) LaborMarketFactory(
+        _baseImplementation
+    ) {
+        baseSignal = _baseSig;
+        baseParticipantReputation = _baseRep;
+        baseMaintainerReputation = _baseRep * 10;
     }
 
     // TODO: onlyGoverner

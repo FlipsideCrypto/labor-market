@@ -1,20 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+/// @dev Core dependencies.
+import { LaborMarketInterface } from "./interfaces/LaborMarketInterface.sol";
+import { LaborMarketEventsAndErrors } from "./LaborMarketEventsAndErrors.sol";
+
 // Interfacing
-import {ERC1155, ERC1155TokenReceiver} from "solmate/tokens/ERC1155.sol";
-import {MetricNetwork} from "./MetricNetwork.sol";
-import {EnforcementModule} from "./EnforcementModule.sol";
-import {PaymentModule} from "./PaymentModule.sol";
+import { MetricNetwork } from "../MetricNetwork.sol";
+import { EnforcementModule } from "../Modules/Enforcement/EnforcementModule.sol";
+import { PaymentModule } from "../Modules/Payment/PaymentModule.sol";
 
 // Structs
-import {ServiceRequest} from "./Structs/ServiceRequest.sol";
-import {ServiceSubmission} from "./Structs/ServiceSubmission.sol";
+import {ServiceRequest} from "../Structs/ServiceRequest.sol";
+import {ServiceSubmission} from "../Structs/ServiceSubmission.sol";
 
 // Events & Errors
-import {LaborMarketEventsAndErrors} from "./EventsAndErrors/LaborMarketEventsAndErrors.sol";
 
-contract LaborMarket is LaborMarketEventsAndErrors, ERC1155TokenReceiver {
+/// @dev Helpers.
+import { StringsUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
+
+contract LaborMarket is 
+      LaborMarketInterface
+    , LaborMarketEventsAndErrors
+{
     MetricNetwork public metricNetwork;
     EnforcementModule public enforcementModule;
     PaymentModule public paymentModule;
@@ -47,34 +55,39 @@ contract LaborMarket is LaborMarketEventsAndErrors, ERC1155TokenReceiver {
     uint256 public serviceRequestId;
     uint256 public serviceSubmissionId;
 
-    constructor(
-        address _metricNetwork,
-        address _enforcementModule,
-        address _paymentModule,
-        address _delegateBadge,
-        uint256 _delegateTokenId,
-        address _participationBadge,
-        uint256 _participationTokenId,
-        address _payCurve,
-        address _enforcementCriteria,
-        uint256 _repParticipantMultiplier,
-        uint256 _repMaintainerMultiplier,
-        string memory _marketUri,
-        uint256 _marketId
-    ) {
+    function initialize(
+          address _metricNetwork
+        , address _enforcementModule
+        , address _paymentModule
+        , address _delegateBadge
+        , uint256 _delegateTokenId
+        , address _participationBadge
+        , uint256 _participationTokenId
+        , uint256 _repParticipantMultiplier
+        , uint256 _repMaintainerMultiplier
+        , string memory _marketUri
+    )
+        external
+        initializer
+    {
+        /// @dev Connect to the higher level network to pull the active states.
         metricNetwork = MetricNetwork(_metricNetwork);
+
+        /// @dev Configure the Labor Market state control.
         enforcementModule = EnforcementModule(_enforcementModule);
         paymentModule = PaymentModule(_paymentModule);
+
+        /// @dev Configure the Labor Market access control.
         delegateBadge = ERC1155(_delegateBadge);
-        delegateTokenId = _delegateTokenId;
         participationBadge = ERC1155(_participationBadge);
+
+        delegateTokenId = _delegateTokenId;
         participationTokenId = _participationTokenId;
-        payCurve = _payCurve;
-        enforcementCriteria = _enforcementCriteria;
+
         repParticipantMultiplier = _repParticipantMultiplier;
         repMaintainerMultiplier = _repMaintainerMultiplier;
+
         marketUri = _marketUri;
-        marketId = _marketId;
     }
 
     // Submit a service request
