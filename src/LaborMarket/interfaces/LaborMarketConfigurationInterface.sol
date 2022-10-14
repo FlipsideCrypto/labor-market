@@ -2,8 +2,8 @@
 
 pragma solidity 0.8.17;
 
-interface LaborMarketConfigurationInterface { 
-    struct LaborMarketConfiguration { 
+interface LaborMarketConfigurationInterface {
+    struct LaborMarketConfiguration {
         address network;
         address enforcementModule;
         address paymentModule;

@@ -73,7 +73,7 @@ contract ContractTest is PRBTest, Cheats {
         });
 
         // Create enforcement criteria
-        enforcementCriteria = new EnforcementCriteria(address(0x0));
+        enforcementCriteria = new EnforcementCriteria();
 
         // Create a payment module
         paymentModule = new PaymentModule();

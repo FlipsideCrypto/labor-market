@@ -4,17 +4,8 @@ pragma solidity 0.8.17;
 // TODO: look into https://github.com/paulrberg/prb-math
 
 contract EnforcementCriteria {
-    address public immutable enforcementModule;
-
-    uint256 private submissionCount;
-    uint256 private cumScore;
-
-    mapping(uint256 => uint256) private submissionToScore;
-    mapping(Likert => uint256) private bucketCount;
-
-    constructor(address _enforcementAddr) {
-        enforcementModule = _enforcementAddr;
-    }
+    mapping(address => mapping(uint256 => uint256)) private submissionToScore;
+    mapping(address => mapping(Likert => uint256)) private bucketCount;
 
     enum Likert {
         BAD,
@@ -29,17 +20,17 @@ contract EnforcementCriteria {
         if (score > uint256(Likert.GOOD)) revert invalidScore();
         // Do stuff
         unchecked {
-            ++bucketCount[Likert(score)];
+            ++bucketCount[msg.sender][Likert(score)];
         }
 
-        submissionToScore[submissionId] = score;
+        submissionToScore[msg.sender][submissionId] = score;
 
         return uint256(Likert(score));
     }
 
     function verify(uint256 submissionId) external view returns (uint256) {
-        uint256 score = submissionToScore[submissionId];
-        uint256 alloc = (1e18 / getTotalBucket(Likert(score)));
+        uint256 score = submissionToScore[msg.sender][submissionId];
+        uint256 alloc = (1e18 / getTotalBucket(msg.sender, Likert(score)));
 
         uint256 x;
 
@@ -54,17 +45,14 @@ contract EnforcementCriteria {
         return x;
     }
 
-    // Thrown on wrong contract
-    error NotEnforcement();
     error invalidScore();
 
-    modifier onlyEnforcement() {
-        if (msg.sender != enforcementModule) revert NotEnforcement();
-        _;
-    }
-
-    function getTotalBucket(Likert score) public view returns (uint256) {
-        return bucketCount[score];
+    function getTotalBucket(address market, Likert score)
+        public
+        view
+        returns (uint256)
+    {
+        return bucketCount[market][score];
     }
 
     function sqrt(uint256 x) internal pure returns (uint256 result) {
