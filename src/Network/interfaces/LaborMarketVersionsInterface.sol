@@ -2,8 +2,12 @@
 
 pragma solidity ^0.8.17;
 
-interface LaborMarketVersionsInterface {
+import { LaborMarketConfigurationInterface } from "../../LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
 
+interface LaborMarketVersionsInterface is 
+    LaborMarketConfigurationInterface
+{
+    
     /*//////////////////////////////////////////////////////////////
                                 SCHEMAS
     //////////////////////////////////////////////////////////////*/

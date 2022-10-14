@@ -2,18 +2,33 @@
 
 pragma solidity 0.8.17;
 
-interface LaborMarketInterface {
+import { LaborMarketConfigurationInterface } from "./LaborMarketConfigurationInterface.sol";
+
+interface LaborMarketInterface is 
+    LaborMarketConfigurationInterface
+{
+    struct ServiceRequest {
+        address serviceRequester;
+        address pToken;
+        uint256 pTokenId;
+        uint256 pTokenQ;
+        uint256 signalExp;
+        uint256 submissionExp;
+        uint256 enforcementExp;
+        string uri;
+    }
+
+    struct ServiceSubmission {
+        address serviceProvider;
+        uint256 requestId;
+        uint256 timestamp;
+        string uri;
+        uint256 score;
+    }
+
     function initialize(
           address _network
-        , address _enforcementModule
-        , address _paymentModule
-        , address _delegateBadge
-        , uint256 _delegateTokenId
-        , address _participationBadge
-        , uint256 _participationTokenId
-        , uint256 _repParticipantMultiplier
-        , uint256 _repMaintainerMultiplier
-        , string memory _marketUri
+        , LaborMarketConfiguration calldata _configuration
     )
         external;
 }

@@ -8,10 +8,6 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {ERC1155HolderUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC1155/utils/ERC1155HolderUpgradeable.sol";
 import {ERC721HolderUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
 
-/// @dev Structs
-import {ServiceRequest} from "../Structs/ServiceRequest.sol";
-import {ServiceSubmission} from "../Structs/ServiceSubmission.sol";
-
 /// @dev Helpers.
 import {StringsUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 
@@ -39,12 +35,7 @@ contract LaborMarket is
     IERC1155 public delegateBadge;
     IERC1155 public participationBadge;
 
-    uint256 public delegateTokenId;
-    uint256 public participationTokenId;
-
-    uint256 public repParticipantMultiplier;
-    uint256 public repMaintainerMultiplier;
-    string public marketUri;
+    LaborMarketConfiguration public configuration;
 
     mapping(uint256 => uint256) public signalCount;
 
@@ -64,9 +55,9 @@ contract LaborMarket is
 
     modifier permittedParticipant() {
         if (
-            (delegateBadge.balanceOf(msg.sender, delegateTokenId) < 1) ||
-            (participationBadge.balanceOf(msg.sender, participationTokenId) <
-                (network.baseProviderThreshold() * repParticipantMultiplier))
+            (delegateBadge.balanceOf(msg.sender, configuration.delegateTokenId) < 1) ||
+            (participationBadge.balanceOf(msg.sender, configuration.participationTokenId) <
+                (network.baseProviderThreshold() * configuration.repParticipantMultiplier))
         ) revert NotQualified();
         _;
     }
@@ -77,44 +68,85 @@ contract LaborMarket is
 
     modifier onlyMaintainer() {
         if (
-            participationBadge.balanceOf(msg.sender, participationTokenId) <
-            (network.baseMaintainerThreshold() * repMaintainerMultiplier)
+            participationBadge.balanceOf(msg.sender, configuration.participationTokenId) <
+            (network.baseMaintainerThreshold() * configuration.repMaintainerMultiplier)
         ) revert NotQualified();
         _;
     }
 
+    /// @notice emitted when a new labor market is created
+    event LaborMarketCreated(
+        uint256 indexed marketId,
+        address delegateBadge,
+        address participationBadge,
+        address payCurve,
+        address enforcementCriteria,
+        uint256 repParticipantMultiplier,
+        uint256 repMaintainerMultiplier,
+        string marketUri
+    );
+
+    /// @notice emitted when labor market parameters are updated
+    event MarketParametersUpdated(
+        LaborMarketConfiguration indexed configuration
+    );
+
+    /// @notice emitted when a new service request is made
+    event RequestCreated(
+        address indexed requester,
+        uint256 indexed requestId,
+        string indexed uri,
+        address pToken,
+        uint256 pTokenId,
+        uint256 pTokenQ,
+        uint256 signalExp,
+        uint256 submissionExp,
+        uint256 enforcementExp
+    );
+
+    /// @notice emitted when a user signals a service request
+    event RequestSignal(
+        address indexed signaler,
+        uint256 indexed requestId,
+        uint256 signalAmount
+    );
+
+    /// @notice emitted when a maintainer signals a review
+    event ReviewSignal(
+        address indexed signaler,
+        uint256 indexed requestId,
+        uint256 signalAmount
+    );
+
+    /// @notice emitted when a service request is withdrawn
+    event RequestWithdrawn(uint256 indexed requestId);
+
+    /// @notice emitted when a service request is fulfilled
+    event RequestFulfilled(
+        address indexed fulfiller,
+        uint256 indexed requestId,
+        uint256 indexed submissionId
+    );
+
+    /// @notice emitted when a service submission is reviewed
+    event RequestReviewed(
+        address reviewer,
+        uint256 indexed requestId,
+        uint256 indexed submissionId,
+        uint256 indexed reviewScore
+    );
+
+    event RequestPayClaimed(
+        address indexed claimer,
+        uint256 indexed submissionId,
+        uint256 indexed payAmount
+    );
+
     function initialize(
         address _network,
-        address _enforcementCriteria,
-        address _paymentCurve,
-        address _delegateBadge,
-        uint256 _delegateTokenId,
-        address _participationBadge,
-        uint256 _participationTokenId,
-        uint256 _repParticipantMultiplier,
-        uint256 _repMaintainerMultiplier,
-        string memory _marketUri
-    ) external initializer {
-        /// @dev Connect to the higher level network to pull the active states.
-        network = LaborMarketNetwork(_network);
-
-        /// @dev Configure the Labor Market state control.
-        enforcementCriteria = EnforcementCriteriaInterface(
-            _enforcementCriteria
-        );
-        paymentCurve = PayCurveInterface(_paymentCurve);
-
-        /// @dev Configure the Labor Market access control.
-        delegateBadge = IERC1155(_delegateBadge);
-        participationBadge = IERC1155(_participationBadge);
-
-        delegateTokenId = _delegateTokenId;
-        participationTokenId = _participationTokenId;
-
-        repParticipantMultiplier = _repParticipantMultiplier;
-        repMaintainerMultiplier = _repMaintainerMultiplier;
-
-        marketUri = _marketUri;
+        LaborMarketConfiguration calldata _configuration
+    ) override external initializer {
+        _setConfiguration(_configuration);
     }
 
     // Submit a service request
@@ -321,38 +353,6 @@ contract LaborMarket is
         emit RequestWithdrawn(requestId);
     }
 
-    // Update market parameters as long as the market is not active
-    function setMarketParameters(
-        address _delegateBadge,
-        address _participationBadge,
-        address _enforcementCriteria,
-        address _paymentCurve,
-        uint256 _repParticipantMultiplier,
-        uint256 _repMaintainerMultiplier,
-        string calldata _marketUri
-    ) external onlyPermissioned {
-        if (serviceRequestId > 0) revert MarketActive();
-        delegateBadge = IERC1155(_delegateBadge);
-        enforcementCriteria = EnforcementCriteriaInterface(
-            _enforcementCriteria
-        );
-        paymentCurve = PayCurveInterface(_paymentCurve);
-        participationBadge = IERC1155(_participationBadge);
-        repParticipantMultiplier = _repParticipantMultiplier;
-        repMaintainerMultiplier = _repMaintainerMultiplier;
-        marketUri = _marketUri;
-
-        emit MarketParametersUpdated(
-            _delegateBadge,
-            _participationBadge,
-            _enforcementCriteria,
-            _paymentCurve,
-            _repParticipantMultiplier,
-            _repMaintainerMultiplier,
-            _marketUri
-        );
-    }
-
     function getRequest(uint256 requestId)
         external
         view
@@ -367,5 +367,31 @@ contract LaborMarket is
         returns (ServiceSubmission memory)
     {
         return serviceSubmissions[submissionId];
+    }
+
+    function _setConfiguration(
+        LaborMarketConfiguration calldata _configuration
+    )
+        internal
+    {
+        /// @dev Connect to the higher level network to pull the active states.
+        network = LaborMarketNetwork(_configuration.network);
+
+        /// @dev Configure the Labor Market state control.
+        enforcementCriteria = EnforcementCriteriaInterface(
+            _configuration.enforcementModule
+        );
+        paymentCurve = PayCurveInterface(_configuration.paymentModule);
+
+        /// @dev Configure the Labor Market access control.
+        delegateBadge = IERC1155(_configuration.delegateBadge);
+        participationBadge = IERC1155(_configuration.participationBadge);
+
+        /// @dev Configure the Labor Market parameters.
+        configuration = _configuration; 
+
+        emit MarketParametersUpdated(
+            _configuration
+        );
     }
 }
