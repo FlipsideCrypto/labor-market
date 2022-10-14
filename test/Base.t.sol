@@ -11,11 +11,14 @@ import {ReputationToken, CapacityToken} from "./Helpers/HelperTokens.sol";
 
 import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
 import {LaborMarket} from "src/LaborMarket/LaborMarket.sol";
+
 import {LaborMarketFactory} from "src/Network/LaborMarketFactory.sol";
 import {LaborMarketNetwork} from "src/Network/LaborMarketNetwork.sol";
+import {LaborMarketVersions} from "src/Network/LaborMarketVersions.sol";
 
 import {EnforcementModule} from "src/Modules/Enforcement/EnforcementModule.sol";
 import {EnforcementCriteria} from "src/Modules/Enforcement/EnforcementCriteria.sol";
+
 import {PaymentModule} from "src/Modules/Payment/PaymentModule.sol";
 import {PayCurve} from "src/Modules/Payment/PayCurve.sol";
 
@@ -45,6 +48,12 @@ contract ContractTest is PRBTest, Cheats {
 
     address private bob = address(0x1);
     address private alice = address(0x2);
+
+    event LaborMarketCreated(
+        address indexed organization,
+        address indexed owner,
+        address indexed implementation
+    );
 
     function setUp() public {
         vm.startPrank(deployer);
@@ -229,5 +238,77 @@ contract ContractTest is PRBTest, Cheats {
 
         //assertAlmostEq(totalPaid, 1000e18, 0.000001e18);
         // Stack2deep
+    }
+
+    function test_CreateMultipleMarkets() public {
+        vm.startPrank(deployer);
+
+        // Example configuration
+        LaborMarketConfigurationInterface.LaborMarketConfiguration
+            memory config = LaborMarketConfigurationInterface
+                .LaborMarketConfiguration({
+                    network: address(network),
+                    enforcementModule: address(enforcementCriteria),
+                    paymentModule: address(payCurve),
+                    delegateBadge: address(repToken),
+                    delegateTokenId: DELEGATE_TOKEN_ID,
+                    participationBadge: address(repToken),
+                    participationTokenId: REPUTATION_TOKEN_ID,
+                    repParticipantMultiplier: 1,
+                    repMaintainerMultiplier: 1,
+                    marketUri: "ipfs://000"
+                });
+
+        for (uint256 i; i < 10; ++i) {
+            vm.expectEmit(false, true, true, true);
+            emit LaborMarketCreated(
+                address(tempMarket),
+                deployer,
+                address(implementation)
+            );
+            tempMarket = LaborMarket(
+                network.createLaborMarket({
+                    _implementation: address(implementation),
+                    _deployer: deployer,
+                    _configuration: config
+                })
+            );
+
+            changePrank(bob);
+            uint256 requestId = tempMarket.submitRequest({
+                pToken: address(repToken),
+                pTokenId: PAYMENT_TOKEN_ID,
+                pTokenQ: 100e18,
+                signalExp: block.timestamp + 1 hours,
+                submissionExp: block.timestamp + 1 days,
+                enforcementExp: block.timestamp + 1 weeks,
+                requestUri: "ipfs://222"
+            });
+
+            changePrank(alice);
+            tempMarket.signal(requestId);
+            tempMarket.provide(requestId, "IPFS://333");
+
+            changePrank(bob);
+            tempMarket.signalReview(1);
+            tempMarket.review(requestId, 1, 2);
+
+            changePrank(alice);
+            tempMarket.claim(1);
+
+            enforcementCriteria.getTotalBucket(
+                address(tempMarket),
+                EnforcementCriteria.Likert.BAD
+            );
+            enforcementCriteria.getTotalBucket(
+                address(tempMarket),
+                EnforcementCriteria.Likert.OK
+            );
+            enforcementCriteria.getTotalBucket(
+                address(tempMarket),
+                EnforcementCriteria.Likert.GOOD
+            );
+        }
+        vm.stopPrank();
     }
 }
