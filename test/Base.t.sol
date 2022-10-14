@@ -19,6 +19,8 @@ import {EnforcementCriteria} from "src/Modules/Enforcement/EnforcementCriteria.s
 import {PaymentModule} from "src/Modules/Payment/PaymentModule.sol";
 import {PayCurve} from "src/Modules/Payment/PayCurve.sol";
 
+import {LaborMarketConfigurationInterface} from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
+
 contract ContractTest is PRBTest, Cheats {
     ReputationToken public repToken;
     CapacityToken public capToken;
@@ -80,19 +82,26 @@ contract ContractTest is PRBTest, Cheats {
         payCurve = new PayCurve();
 
         // Create a new labor market
+        LaborMarketConfigurationInterface.LaborMarketConfiguration
+            memory config = LaborMarketConfigurationInterface
+                .LaborMarketConfiguration({
+                    network: address(network),
+                    enforcementModule: address(enforcementCriteria),
+                    paymentModule: address(payCurve),
+                    delegateBadge: address(repToken),
+                    delegateTokenId: DELEGATE_TOKEN_ID,
+                    participationBadge: address(repToken),
+                    participationTokenId: REPUTATION_TOKEN_ID,
+                    repParticipantMultiplier: 1,
+                    repMaintainerMultiplier: 1,
+                    marketUri: "ipfs://000"
+                });
+
         tempMarket = LaborMarket(
             network.createLaborMarket({
                 _implementation: address(implementation),
                 _deployer: deployer,
-                _enforcementModule: address(enforcementCriteria),
-                _paymentModule: address(payCurve),
-                _delegateBadge: address(repToken),
-                _delegateTokenId: DELEGATE_TOKEN_ID,
-                _participationBadge: address(repToken),
-                _participationTokenId: REPUTATION_TOKEN_ID,
-                _repParticipantMultiplier: 1,
-                _repMaintainerMultiplier: 1,
-                _marketUri: "ipfs://777"
+                _configuration: config
             })
         );
 
