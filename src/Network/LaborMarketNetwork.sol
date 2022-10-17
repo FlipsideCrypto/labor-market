@@ -11,7 +11,6 @@ contract LaborMarketNetwork is
       LaborMarketNetworkInterface
     , LaborMarketFactory
 {
-    IERC1155 public reputationToken;
     IERC20 public capacityToken;
 
     uint256 public reputationTokenId;
@@ -22,102 +21,105 @@ contract LaborMarketNetwork is
     uint256 public baseProviderThreshold;
     uint256 public baseMaintainerThreshold;
 
-    mapping(address => BalanceInfo) private _balanceInfo;
+    mapping(address => mapping(uint256 => ReputationToken)) public reputationTokens;
 
     constructor(
           address _factoryImplementation
-        , address _reputationImplementation
         , address _capacityImplementation
-        , uint256 _baseSignalStake
-        , uint256 _baseProviderThreshold
-        , uint256 _baseMaintainerThreshold
-        , uint256 _reputationTokenId
-        , uint256 _reputationDecayRate
-        , uint256 _reputationDecayInterval
+        , address _baseReputationImplementation
+        , uint256 _baseReputationTokenId
+        , ReputationTokenConfig memory _baseReputationConfig
     ) 
         LaborMarketFactory(_factoryImplementation) 
     {
-        baseSignalStake = _baseSignalStake;
-        baseProviderThreshold = _baseProviderThreshold;
-        baseMaintainerThreshold = _baseMaintainerThreshold;
-
-        reputationToken = IERC1155(_reputationImplementation);
-        reputationTokenId = _reputationTokenId;
-        reputationDecayRate = _reputationDecayRate;
-        reputationDecayInterval = _reputationDecayInterval;
-
         capacityToken = IERC20(_capacityImplementation);
+
+        ReputationToken storage baseReputation = reputationTokens[_baseReputationImplementation][_baseReputationTokenId];
+        baseReputation.config = _baseReputationConfig;
+    }
+
+    /**
+     * @notice Limit reputation existing token management to the designated manager or network owner.
+     * @param _implementation The address of the reputation token.
+     * @param _tokenId The id of the reputation token.
+     */
+    modifier onlyReputationManagers (
+          address _implementation
+        , uint256 _tokenId
+    ) {
+        require(
+              reputationTokens[_implementation][_tokenId].config.manager == _msgSender() ||
+              reputationTokens[_implementation][_tokenId].config.manager == address(0) || 
+              _msgSender() == owner()
+            , "LaborMarketNetwork: Only the reputation manager can call this function."
+        );
+        _;
     }
 
     /*//////////////////////////////////////////////////////////////
                                 SETTERS
     //////////////////////////////////////////////////////////////*/
 
-    function setReputationImplementation(
-        address _reputationImplementation
-    )
-        override
-        external
-        virtual
-        onlyOwner
+    /**
+     * @notice Configure the reputation token configuration for a given implementation.
+     * @param _implementation The address of the reputation token.
+     * @param _tokenId The id of the reputation token.
+     * @param _config The struct containing the configuration of the reputation token.
+     * @dev Setting the manager to address(0) will allow anyone to manage the reputation token.
+     * Requirements:
+     * - Only the network owner or reputation token manager can call this function on existing configs.
+     */
+    function setReputationConfig (
+              address _implementation
+            , uint256 _tokenId
+            , ReputationTokenConfig calldata _config
+        ) 
+            external 
+            onlyReputationManagers(
+                  _implementation
+                , _tokenId
+            )
     {
-        reputationToken = IERC1155(_reputationImplementation);
+        ReputationToken storage reputationToken = reputationTokens[_implementation][_tokenId];
+
+        reputationToken.config = _config;
     }
 
+    /**
+     * @notice Allows the owner to set the capacity token implementation.
+     * @param _implementation The address of the reputation token.
+     * Requirements:
+     * - Only the owner can call this function.
+     */
     function setCapacityImplementation(
-        address _capacityImplementation
+        address _implementation
     )
         override
         external
         virtual
         onlyOwner
     {
-        capacityToken = IERC20(_capacityImplementation);
+        capacityToken = IERC20(_implementation);
     }
 
-    function setReputationTokenId(
-        uint256 _reputationTokenId
-    )
-        override
-        external
-        virtual
-        onlyOwner
-    {
-        reputationTokenId = _reputationTokenId;
-    }
+    // TODO: Does delete also remove the nested mapping in the struct?
+    //       My thinking is if we allow people to create reputation configs at will,
+    //       We need to reserve the ability to delete them in the case of a popular token config
+    //       being set up by a bad actor and balance info being manipulated by them.
+    //       I'm not 100% sure if they could cause any harm with just the rep manager role though.
+    // function newReputationConfig (
+    //           address _implementation
+    //         , uint256 _tokenId
+    //         , ReputationTokenConfig calldata _config
+    //     ) 
+    //         external 
+    //         onlyReputationManagers(_implementation, _tokenId)
+    // {
+    //     delete reputationTokens[_implementation][_tokenId];
 
-    function setBaseSignalStake(
-        uint256 _amount
-    ) 
-        override 
-        external 
-        virtual 
-        onlyOwner 
-    {
-        baseSignalStake = _amount;
-    }
-
-    function setBaseProviderThreshold(
-        uint256 _amount
-    ) 
-        override
-        external
-        virtual 
-        onlyOwner 
-    {
-        baseProviderThreshold = _amount;
-    }
-
-    function setBaseMaintainerThreshold(
-        uint256 _amount
-    ) 
-        override
-        external
-        virtual 
-        onlyOwner 
-    {
-        baseMaintainerThreshold = _amount;
-    }
+    //     ReputationToken storage reputationToken = reputationTokens[_implementation][_tokenId];
+    //     reputationToken.config = _config;
+    // }
 
     /*//////////////////////////////////////////////////////////////
                                 GETTERS
@@ -131,7 +133,9 @@ contract LaborMarketNetwork is
      * - If a user's balance is frozen, no reputation is available.
      */
     function getAvailableReputation(
-        address _account
+          address _account
+        , address _reputationImplementation
+        , uint256 _reputationTokenId
     )
         override
         public
@@ -141,7 +145,9 @@ contract LaborMarketNetwork is
             uint256
         )
     {
-        BalanceInfo memory info = _balanceInfo[_account];
+        BalanceInfo memory info = (
+            reputationTokens[_reputationImplementation][_reputationTokenId].balanceInfo[_account]
+        );
 
         if (info.frozenUntilEpoch > block.timestamp) return 0;
 
@@ -150,9 +156,11 @@ contract LaborMarketNetwork is
             info.frozenUntilEpoch
         );
 
-        return (reputationToken.balanceOf(_account, reputationTokenId) -
+        return (
+            IERC1155(_reputationImplementation).balanceOf(_account, reputationTokenId) -
             info.locked -
-            decayed);
+            decayed
+        );
     }
 
     /**
@@ -164,7 +172,9 @@ contract LaborMarketNetwork is
      * - `_frozenUntilEpoch` must be greater than the current epoch.
      */
     function freezeReputation(
-        uint256 _frozenUntilEpoch
+          address _reputationImplementation
+        , uint256 _reputationTokenId
+        , uint256 _frozenUntilEpoch
     ) 
         override
         external
@@ -174,8 +184,10 @@ contract LaborMarketNetwork is
             block.timestamp > _frozenUntilEpoch,
             "Network: Cannot freeze reputation in the past"
         );
+        BalanceInfo storage info = (
+            reputationTokens[_reputationImplementation][_reputationTokenId].balanceInfo[_msgSender()]
+        );
 
-        BalanceInfo storage info = _balanceInfo[_msgSender()];
         uint256 decayed = getPendingDecay(
             info.lastDecayEpoch,
             info.frozenUntilEpoch
@@ -214,13 +226,19 @@ contract LaborMarketNetwork is
 
     // Todo: Access controls
     function lockReputation(
-          address user
-        , uint256 amount
+          address _account
+        , address _reputationImplementation
+        , uint256 _reputationTokenId
+        , uint256 _amount
     ) 
         override
         external
         virtual
     {
-        _balanceInfo[user].locked += amount;
+        BalanceInfo storage info = (
+            reputationTokens[_reputationImplementation][_reputationTokenId].balanceInfo[_account]
+        );
+
+        info.locked += _amount;
     }
 }
