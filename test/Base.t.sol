@@ -23,6 +23,7 @@ import {PaymentModule} from "src/Modules/Payment/PaymentModule.sol";
 import {PayCurve} from "src/Modules/Payment/PayCurve.sol";
 
 import {LaborMarketConfigurationInterface} from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
+import {LaborMarketNetworkInterface} from "src/Network/interfaces/LaborMarketNetworkInterface.sol";
 
 contract ContractTest is PRBTest, Cheats {
     ReputationToken public repToken;
@@ -68,17 +69,23 @@ contract ContractTest is PRBTest, Cheats {
         // Deploy a labor market factory
         factory = new LaborMarketFactory(address(implementation));
 
+        LaborMarketNetworkInterface.ReputationTokenConfig 
+            memory repConfig = LaborMarketNetworkInterface.ReputationTokenConfig({
+                manager: deployer,
+                decayRate: 0,
+                decayInterval: 0,
+                baseSignalStake: 1e18,
+                baseMaintainerThreshold: 100e18,
+                baseProviderThreshold: 10e18
+        });
+
         // Deploy a labor market network
         network = new LaborMarketNetwork({
             _factoryImplementation: address(implementation),
-            _reputationImplementation: address(repToken),
             _capacityImplementation: address(capToken),
-            _baseSignalStake: 1e18,
-            _baseProviderThreshold: 10e18,
-            _baseMaintainerThreshold: 100e18,
-            _reputationTokenId: REPUTATION_TOKEN_ID,
-            _reputationDecayRate: 0,
-            _reputationDecayInterval: 0
+            _baseReputationImplementation: address(repToken),
+            _baseReputationTokenId: REPUTATION_TOKEN_ID,
+            _baseReputationConfig: repConfig
         });
 
         // Create enforcement criteria
@@ -99,8 +106,8 @@ contract ContractTest is PRBTest, Cheats {
                     paymentModule: address(payCurve),
                     delegateBadge: address(repToken),
                     delegateTokenId: DELEGATE_TOKEN_ID,
-                    participationBadge: address(repToken),
-                    participationTokenId: REPUTATION_TOKEN_ID,
+                    reputationToken: address(repToken),
+                    reputationTokenId: REPUTATION_TOKEN_ID,
                     repParticipantMultiplier: 1,
                     repMaintainerMultiplier: 1,
                     marketUri: "ipfs://000"
@@ -256,8 +263,8 @@ contract ContractTest is PRBTest, Cheats {
                     paymentModule: address(payCurve),
                     delegateBadge: address(repToken),
                     delegateTokenId: DELEGATE_TOKEN_ID,
-                    participationBadge: address(repToken),
-                    participationTokenId: REPUTATION_TOKEN_ID,
+                    reputationToken: address(repToken),
+                    reputationTokenId: REPUTATION_TOKEN_ID,
                     repParticipantMultiplier: 1,
                     repMaintainerMultiplier: 1,
                     marketUri: "ipfs://000"
