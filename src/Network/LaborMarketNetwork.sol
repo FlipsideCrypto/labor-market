@@ -26,7 +26,8 @@ contract LaborMarketNetwork is
     {
         capacityToken = IERC20(_capacityImplementation);
 
-        ReputationToken storage baseReputation = reputationTokens[_baseReputationImplementation][_baseReputationTokenId];
+        ReputationToken storage baseReputation = 
+            reputationTokens[_baseReputationImplementation][_baseReputationTokenId];
         baseReputation.config = _baseReputationConfig;
     }
 
@@ -116,9 +117,8 @@ contract LaborMarketNetwork is
             block.timestamp > _frozenUntilEpoch,
             "Network: Cannot freeze reputation in the past"
         );
-        BalanceInfo storage info = (
-            reputationTokens[_reputationImplementation][_reputationTokenId].balanceInfo[_msgSender()]
-        );
+        BalanceInfo storage info =
+            reputationTokens[_reputationImplementation][_reputationTokenId].balanceInfo[_msgSender()];
 
         uint256 decayed = getPendingDecay(
               _reputationImplementation
@@ -150,9 +150,8 @@ contract LaborMarketNetwork is
         external
         virtual
     {
-        BalanceInfo storage info = (
-            reputationTokens[_reputationImplementation][_reputationTokenId].balanceInfo[_account]
-        );
+        BalanceInfo storage info = 
+            reputationTokens[_reputationImplementation][_reputationTokenId].balanceInfo[_account];
 
         info.locked += _amount;
     }
@@ -180,9 +179,8 @@ contract LaborMarketNetwork is
             uint256
         )
     {
-        BalanceInfo memory info = (
-            reputationTokens[_reputationImplementation][_reputationTokenId].balanceInfo[_account]
-        );
+        BalanceInfo memory info =
+            reputationTokens[_reputationImplementation][_reputationTokenId].balanceInfo[_account];
 
         if (info.frozenUntilEpoch > block.timestamp) return 0;
 
@@ -220,9 +218,8 @@ contract LaborMarketNetwork is
             uint256
         ) 
     {
-        ReputationTokenConfig memory config = (
-            reputationTokens[_reputationImplementation][_reputationTokenId].config
-        );
+        ReputationTokenConfig memory config =
+            reputationTokens[_reputationImplementation][_reputationTokenId].config;
         
         if (
             _frozenUntilEpoch > block.timestamp || 
