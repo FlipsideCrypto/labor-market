@@ -6,7 +6,7 @@ interface LaborMarketNetworkInterface {
         ReputationTokenConfig config;
         mapping(address => BalanceInfo) balanceInfo;
     }
-    
+
     struct ReputationTokenConfig {
         address manager;
         uint256 decayRate;
@@ -46,8 +46,10 @@ interface LaborMarketNetworkInterface {
         external;
 
     function getPendingDecay(
-        uint256 _lastDecayEpoch,
-        uint256 _frozenUntilEpoch
+          address _reputationImplementation
+        , uint256 _reputationTokenId
+        , uint256 _lastDecayEpoch
+        , uint256 _frozenUntilEpoch
     )
         external 
         view 

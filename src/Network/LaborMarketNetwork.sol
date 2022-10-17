@@ -13,14 +13,6 @@ contract LaborMarketNetwork is
 {
     IERC20 public capacityToken;
 
-    uint256 public reputationTokenId;
-    uint256 public reputationDecayRate;
-    uint256 public reputationDecayInterval;
-
-    uint256 public baseSignalStake;
-    uint256 public baseProviderThreshold;
-    uint256 public baseMaintainerThreshold;
-
     mapping(address => mapping(uint256 => ReputationToken)) public reputationTokens;
 
     constructor(
@@ -152,12 +144,14 @@ contract LaborMarketNetwork is
         if (info.frozenUntilEpoch > block.timestamp) return 0;
 
         uint256 decayed = getPendingDecay(
-            info.lastDecayEpoch,
-            info.frozenUntilEpoch
+              _reputationImplementation
+            , _reputationTokenId
+            , info.lastDecayEpoch
+            , info.frozenUntilEpoch
         );
 
         return (
-            IERC1155(_reputationImplementation).balanceOf(_account, reputationTokenId) -
+            IERC1155(_reputationImplementation).balanceOf(_account, _reputationTokenId) -
             info.locked -
             decayed
         );
@@ -189,8 +183,10 @@ contract LaborMarketNetwork is
         );
 
         uint256 decayed = getPendingDecay(
-            info.lastDecayEpoch,
-            info.frozenUntilEpoch
+              _reputationImplementation
+            , _reputationTokenId
+            , info.lastDecayEpoch
+            , info.frozenUntilEpoch
         );
 
         info.locked += decayed;
@@ -206,7 +202,9 @@ contract LaborMarketNetwork is
      *      user's frozenUntilEpoch is set to 0.
      */
     function getPendingDecay(
-          uint256 _lastDecayEpoch
+          address _reputationImplementation
+        , uint256 _reputationTokenId
+        , uint256 _lastDecayEpoch
         , uint256 _frozenUntilEpoch
     ) 
         override
@@ -220,8 +218,12 @@ contract LaborMarketNetwork is
             return 0;
         }
 
+        ReputationTokenConfig memory config = (
+            reputationTokens[_reputationImplementation][_reputationTokenId].config
+        );
+
         return (((block.timestamp - _lastDecayEpoch - _frozenUntilEpoch) /
-            reputationDecayInterval) * reputationDecayRate);
+            config.decayInterval) * config.decayRate);
     }
 
     // Todo: Access controls
