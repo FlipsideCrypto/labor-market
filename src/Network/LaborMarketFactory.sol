@@ -5,13 +5,12 @@ pragma solidity 0.8.17;
 /// @dev Core dependencies.
 import { LaborMarketFactoryInterface } from "./interfaces/LaborMarketFactoryInterface.sol";
 import { LaborMarketVersions } from "./LaborMarketVersions.sol";
+import { LaborMarketNetworkInterface } from "./interfaces/LaborMarketNetworkInterface.sol";
 
 contract LaborMarketFactory is
       LaborMarketFactoryInterface
     , LaborMarketVersions
 {
-
-
     constructor(address _implementation)
         LaborMarketVersions(_implementation)
     {}
@@ -33,7 +32,7 @@ contract LaborMarketFactory is
         returns (
             address laborMarketAddress
         )
-    { 
+    {
         /// @dev Load the version.
         Version memory version = versions[_implementation];
 

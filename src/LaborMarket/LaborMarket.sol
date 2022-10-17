@@ -31,7 +31,8 @@ contract LaborMarket is
     PayCurveInterface public paymentCurve;
 
     IERC1155 public delegateBadge;
-    IERC1155 public participationBadge;
+    IERC1155 public reputationToken;
+    uint256 public reputationTokenId;
 
     LaborMarketConfiguration public configuration;
 
@@ -56,13 +57,18 @@ contract LaborMarket is
             (delegateBadge.balanceOf(
                 msg.sender,
                 configuration.delegateTokenId
-            ) >= 1) ||
-                (participationBadge.balanceOf(
-                    msg.sender,
-                    configuration.participationTokenId
-                ) >=
-                    (network.baseProviderThreshold() *
-                        configuration.repParticipantMultiplier)),
+            ) >= 1) || (
+                network.getAvailableReputation(
+                        msg.sender
+                    , configuration.reputationToken
+                    , configuration.reputationTokenId
+                ) >= (
+                    network.getBaseProviderThreshold(
+                                configuration.reputationToken
+                            , configuration.reputationTokenId
+                    ) * configuration.repParticipantMultiplier
+                )
+            ),
             "LaborMarket::permittedParticipant: Not a permitted participant"
         );
         _;
@@ -74,87 +80,22 @@ contract LaborMarket is
 
     modifier onlyMaintainer() {
         require(
-            participationBadge.balanceOf(
-                msg.sender,
-                configuration.participationTokenId
-            ) >=
-                (network.baseMaintainerThreshold() *
-                    configuration.repMaintainerMultiplier),
+            network.getAvailableReputation(
+                  msg.sender
+                , configuration.reputationToken
+                , configuration.reputationTokenId
+            ) >= (
+                network.getBaseMaintainerThreshold(
+                        configuration.reputationToken
+                    , configuration.reputationTokenId
+                ) * configuration.repMaintainerMultiplier
+            ),
             "LaborMarket::onlyMaintainer: Not a maintainer"
         );
         _;
     }
 
-    /// @notice emitted when a new labor market is created
-    event LaborMarketCreated(
-        uint256 indexed marketId,
-        address delegateBadge,
-        address participationBadge,
-        address payCurve,
-        address enforcementCriteria,
-        uint256 repParticipantMultiplier,
-        uint256 repMaintainerMultiplier,
-        string marketUri
-    );
-
-    /// @notice emitted when labor market parameters are updated
-    event MarketParametersUpdated(
-        LaborMarketConfiguration indexed configuration
-    );
-
-    /// @notice emitted when a new service request is made
-    event RequestCreated(
-        address indexed requester,
-        uint256 indexed requestId,
-        string indexed uri,
-        address pToken,
-        uint256 pTokenId,
-        uint256 pTokenQ,
-        uint256 signalExp,
-        uint256 submissionExp,
-        uint256 enforcementExp
-    );
-
-    /// @notice emitted when a user signals a service request
-    event RequestSignal(
-        address indexed signaler,
-        uint256 indexed requestId,
-        uint256 signalAmount
-    );
-
-    /// @notice emitted when a maintainer signals a review
-    event ReviewSignal(
-        address indexed signaler,
-        uint256 indexed requestId,
-        uint256 signalAmount
-    );
-
-    /// @notice emitted when a service request is withdrawn
-    event RequestWithdrawn(uint256 indexed requestId);
-
-    /// @notice emitted when a service request is fulfilled
-    event RequestFulfilled(
-        address indexed fulfiller,
-        uint256 indexed requestId,
-        uint256 indexed submissionId
-    );
-
-    /// @notice emitted when a service submission is reviewed
-    event RequestReviewed(
-        address reviewer,
-        uint256 indexed requestId,
-        uint256 indexed submissionId,
-        uint256 indexed reviewScore
-    );
-
-    event RequestPayClaimed(
-        address indexed claimer,
-        uint256 indexed submissionId,
-        uint256 indexed payAmount
-    );
-
     function initialize(
-        address _network,
         LaborMarketConfiguration calldata _configuration
     ) external override initializer {
         _setConfiguration(_configuration);
@@ -450,6 +391,15 @@ contract LaborMarket is
         /// @dev Connect to the higher level network to pull the active states.
         network = LaborMarketNetwork(_configuration.network);
 
+        /// @dev Ensure the reputation token has been configured.
+        require(
+            network.getReputationManager(
+                  _configuration.reputationToken
+                , _configuration.reputationTokenId
+            ) != address(0),
+            "LaborMarket:: _setConfiguration: Reputation token not configured."
+        );
+
         /// @dev Configure the Labor Market state control.
         enforcementCriteria = EnforcementCriteriaInterface(
             _configuration.enforcementModule
@@ -458,7 +408,7 @@ contract LaborMarket is
 
         /// @dev Configure the Labor Market access control.
         delegateBadge = IERC1155(_configuration.delegateBadge);
-        participationBadge = IERC1155(_configuration.participationBadge);
+        reputationToken = IERC1155(_configuration.reputationToken);
 
         /// @dev Configure the Labor Market parameters.
         configuration = _configuration;

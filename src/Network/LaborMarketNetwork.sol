@@ -220,13 +220,16 @@ contract LaborMarketNetwork is
             uint256
         ) 
     {
-        if (_frozenUntilEpoch > block.timestamp) {
-            return 0;
-        }
-
         ReputationTokenConfig memory config = (
             reputationTokens[_reputationImplementation][_reputationTokenId].config
         );
+        
+        if (
+            _frozenUntilEpoch > block.timestamp || 
+            config.decayRate == 0    
+        ) {
+            return 0;
+        }
 
         return (((block.timestamp - _lastDecayEpoch - _frozenUntilEpoch) /
             config.decayInterval) * config.decayRate);

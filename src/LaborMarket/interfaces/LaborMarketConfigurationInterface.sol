@@ -9,8 +9,8 @@ interface LaborMarketConfigurationInterface {
         address paymentModule;
         address delegateBadge;
         uint256 delegateTokenId;
-        address participationBadge;
-        uint256 participationTokenId;
+        address reputationToken;
+        uint256 reputationTokenId;
         uint256 repParticipantMultiplier;
         uint256 repMaintainerMultiplier;
         string marketUri;

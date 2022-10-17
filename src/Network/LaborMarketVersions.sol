@@ -246,10 +246,7 @@ contract LaborMarketVersions is
         );
 
         /// @dev Deploy the clone contract to serve as the Labor Market.
-        laborMarket.initialize(
-              address(this)
-            , _configuration
-        );
+        laborMarket.initialize(_configuration);
         
         /// @dev Announce the creation of the Labor Market.
         emit LaborMarketCreated(
