@@ -241,8 +241,7 @@ contract ContractTest is PRBTest, Cheats {
             totalPaid += tempMarket.claim(i + 1);
         }
 
-        //assertAlmostEq(totalPaid, 1000e18, 0.000001e18);
-        // Stack2deep
+        assertAlmostEq(totalPaid, 1000e18, 0.000001e18);
     }
 
     function test_CreateMultipleMarkets() public {
@@ -301,19 +300,6 @@ contract ContractTest is PRBTest, Cheats {
             changePrank(alice);
             vm.warp(block.timestamp + 5 weeks);
             tempMarket.claim(requestId);
-
-            enforcementCriteria.getTotalBucket(
-                address(tempMarket),
-                EnforcementCriteria.Likert.BAD
-            );
-            enforcementCriteria.getTotalBucket(
-                address(tempMarket),
-                EnforcementCriteria.Likert.OK
-            );
-            enforcementCriteria.getTotalBucket(
-                address(tempMarket),
-                EnforcementCriteria.Likert.GOOD
-            );
         }
         vm.stopPrank();
     }

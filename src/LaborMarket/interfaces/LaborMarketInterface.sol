@@ -29,4 +29,14 @@ interface LaborMarketInterface is LaborMarketConfigurationInterface {
         address _network,
         LaborMarketConfiguration calldata _configuration
     ) external;
+
+    function getSubmission(uint256 submissionId)
+        external
+        view
+        returns (ServiceSubmission memory);
+
+    function getRequest(uint256 requestId)
+        external
+        view
+        returns (ServiceRequest memory);
 }

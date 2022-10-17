@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 // TODO: look into https://github.com/paulrberg/prb-math
+import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
 
 contract EnforcementCriteria {
     mapping(address => mapping(uint256 => uint256)) private submissionToScore;
@@ -17,7 +18,10 @@ contract EnforcementCriteria {
         external
         returns (uint256)
     {
-        if (score > uint256(Likert.GOOD)) revert invalidScore();
+        require(
+            score <= uint256(Likert.GOOD),
+            "EnforcementCriteria::review: invalid score"
+        );
         // Do stuff
         unchecked {
             ++bucketCount[msg.sender][Likert(score)];
@@ -32,6 +36,11 @@ contract EnforcementCriteria {
         uint256 score = submissionToScore[msg.sender][submissionId];
         uint256 alloc = (1e18 / getTotalBucket(msg.sender, Likert(score)));
 
+        // LaborMarketInterface market = LaborMarketInterface(msg.sender);
+        // uint256 pTokens = market
+        //     .getRequest(market.getSubmission(submissionId).requestId)
+        //     .pTokenQ / 1e18;
+
         uint256 x;
 
         if (score == uint256(Likert.BAD)) {
@@ -45,10 +54,8 @@ contract EnforcementCriteria {
         return x;
     }
 
-    error invalidScore();
-
     function getTotalBucket(address market, Likert score)
-        public
+        internal
         view
         returns (uint256)
     {
