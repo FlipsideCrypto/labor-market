@@ -94,25 +94,68 @@ contract LaborMarketNetwork is
         capacityToken = IERC20(_implementation);
     }
 
-    // TODO: Does delete also remove the nested mapping in the struct?
-    //       My thinking is if we allow people to create reputation configs at will,
-    //       We need to reserve the ability to delete them in the case of a popular token config
-    //       being set up by a bad actor and balance info being manipulated by them.
-    //       I'm not 100% sure if they could cause any harm with just the rep manager role though.
-    // function newReputationConfig (
-    //           address _implementation
-    //         , uint256 _tokenId
-    //         , ReputationTokenConfig calldata _config
-    //     ) 
-    //         external 
-    //         onlyReputationManagers(_implementation, _tokenId)
-    // {
-    //     delete reputationTokens[_implementation][_tokenId];
+    /**
+     * @notice Freeze a user's reputation for a given number of epochs.
+     * @param _reputationImplementation The address of the reputation token.
+     * @param _reputationTokenId The id of the reputation token.
+     * @param _frozenUntilEpoch The epoch that reputation will no longer be frozen.
+     * @dev Calculates decay and applies it before freezing.
+     * Requirements:
+     * - `_frozenUntilEpoch` must be greater than the current epoch.
+     */
+    function freezeReputation(
+          address _reputationImplementation
+        , uint256 _reputationTokenId
+        , uint256 _frozenUntilEpoch
+    ) 
+        override
+        external
+        virtual 
+    {
+        require(
+            block.timestamp > _frozenUntilEpoch,
+            "Network: Cannot freeze reputation in the past"
+        );
+        BalanceInfo storage info = (
+            reputationTokens[_reputationImplementation][_reputationTokenId].balanceInfo[_msgSender()]
+        );
 
-    //     ReputationToken storage reputationToken = reputationTokens[_implementation][_tokenId];
-    //     reputationToken.config = _config;
-    // }
+        uint256 decayed = getPendingDecay(
+              _reputationImplementation
+            , _reputationTokenId
+            , info.lastDecayEpoch
+            , info.frozenUntilEpoch
+        );
 
+        info.locked += decayed;
+        info.frozenUntilEpoch = _frozenUntilEpoch;
+        info.lastDecayEpoch = block.timestamp;
+    }
+    
+    // TODO: Access controls IMPORTANT!!
+    /**
+     * @notice Lock an amount of reputation of a user upon usage.
+     * @param _account The account to lock reputation for.
+     * @param _reputationImplementation The address of the reputation token.
+     * @param _reputationTokenId The id of the reputation token.
+     * @param _amount The amount of reputation to be locked.
+     */
+    function lockReputation(
+          address _account
+        , address _reputationImplementation
+        , uint256 _reputationTokenId
+        , uint256 _amount
+    ) 
+        override
+        external
+        virtual
+    {
+        BalanceInfo storage info = (
+            reputationTokens[_reputationImplementation][_reputationTokenId].balanceInfo[_account]
+        );
+
+        info.locked += _amount;
+    }
     /*//////////////////////////////////////////////////////////////
                                 GETTERS
     //////////////////////////////////////////////////////////////*/
@@ -158,43 +201,6 @@ contract LaborMarketNetwork is
     }
 
     /**
-     * @notice Freeze a user's reputation for a given number of epochs.
-     * @param _frozenUntilEpoch The epoch that reputation will no longer be frozen.
-     * @dev Calculates decay and applies it before freezing.
-     *
-     * Requirements:
-     * - `_frozenUntilEpoch` must be greater than the current epoch.
-     */
-    function freezeReputation(
-          address _reputationImplementation
-        , uint256 _reputationTokenId
-        , uint256 _frozenUntilEpoch
-    ) 
-        override
-        external
-        virtual 
-    {
-        require(
-            block.timestamp > _frozenUntilEpoch,
-            "Network: Cannot freeze reputation in the past"
-        );
-        BalanceInfo storage info = (
-            reputationTokens[_reputationImplementation][_reputationTokenId].balanceInfo[_msgSender()]
-        );
-
-        uint256 decayed = getPendingDecay(
-              _reputationImplementation
-            , _reputationTokenId
-            , info.lastDecayEpoch
-            , info.frozenUntilEpoch
-        );
-
-        info.locked += decayed;
-        info.frozenUntilEpoch = _frozenUntilEpoch;
-        info.lastDecayEpoch = block.timestamp;
-    }
-
-    /**
      * @notice Get the amount of reputation that has decayed since the last decay epoch.
      * @param _lastDecayEpoch The epoch that reputation was last decayed.
      * @param _frozenUntilEpoch The epoch that reputation will no longer be frozen.
@@ -226,21 +232,87 @@ contract LaborMarketNetwork is
             config.decayInterval) * config.decayRate);
     }
 
-    // Todo: Access controls
-    function lockReputation(
-          address _account
-        , address _reputationImplementation
+    function getReputationManager(
+          address _reputationImplementation
         , uint256 _reputationTokenId
-        , uint256 _amount
-    ) 
+    )
         override
-        external
-        virtual
+        public
+        view
+        returns (
+            address
+        )
     {
-        BalanceInfo storage info = (
-            reputationTokens[_reputationImplementation][_reputationTokenId].balanceInfo[_account]
-        );
+        return reputationTokens[_reputationImplementation][_reputationTokenId].config.manager;
+    }
 
-        info.locked += _amount;
+    function getDecayRate(
+          address _reputationImplementation
+        , uint256 _reputationTokenId
+    )
+        override
+        public
+        view
+        returns (
+            uint256
+        )
+    {
+        return reputationTokens[_reputationImplementation][_reputationTokenId].config.decayRate;
+    }
+
+    function getDecayInterval(
+          address _reputationImplementation
+        , uint256 _reputationTokenId
+    )
+        override
+        public
+        view
+        returns (
+            uint256
+        )
+    {
+        return reputationTokens[_reputationImplementation][_reputationTokenId].config.decayInterval;
+    }
+
+    function getBaseSignalStake(
+          address _reputationImplementation
+        , uint256 _reputationTokenId
+    )
+        override
+        public
+        view
+        returns (
+            uint256
+        )
+    {
+        return reputationTokens[_reputationImplementation][_reputationTokenId].config.baseSignalStake;
+    }
+
+    function getBaseMaintainerThreshold(
+          address _reputationImplementation
+        , uint256 _reputationTokenId
+    )
+        override
+        public
+        view
+        returns (
+            uint256
+        )
+    {
+        return reputationTokens[_reputationImplementation][_reputationTokenId].config.baseMaintainerThreshold;
+    }
+
+    function getBaseProviderThreshold(
+          address _reputationImplementation
+        , uint256 _reputationTokenId
+    )
+        override
+        public
+        view
+        returns (
+            uint256
+        )
+    {
+        return reputationTokens[_reputationImplementation][_reputationTokenId].config.baseProviderThreshold;
     }
 }

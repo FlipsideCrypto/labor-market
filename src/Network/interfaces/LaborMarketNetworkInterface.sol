@@ -27,6 +27,22 @@ interface LaborMarketNetworkInterface {
     )
         external;
 
+
+    function freezeReputation(
+          address _reputationToken
+        , uint256 _reputationTokenId
+        , uint256 _frozenUntilEpoch
+    ) 
+        external;
+
+    function lockReputation(
+          address _account
+        , address _reputationImplementation
+        , uint256 _reputationTokenId
+        , uint256 _amount
+    ) 
+        external;
+
     function getAvailableReputation(
           address _account
         , address _reputationToken
@@ -38,12 +54,15 @@ interface LaborMarketNetworkInterface {
             uint256
         );
 
-    function freezeReputation(
-          address _reputationToken
+    function getReputationManager(
+          address _reputationImplementation
         , uint256 _reputationTokenId
-        , uint256 _frozenUntilEpoch
-    ) 
-        external;
+    )
+        external
+        view
+        returns (
+            address
+        );
 
     function getPendingDecay(
           address _reputationImplementation
@@ -57,11 +76,54 @@ interface LaborMarketNetworkInterface {
             uint256
         );
 
-    function lockReputation(
-          address _account
-        , address _reputationImplementation
+    function getDecayRate(
+          address _reputationImplementation
         , uint256 _reputationTokenId
-        , uint256 _amount
-    ) 
-        external;
+    )
+        external
+        view
+        returns (
+            uint256
+        );
+
+    function getDecayInterval(
+          address _reputationImplementation
+        , uint256 _reputationTokenId
+    )
+        external
+        view
+        returns (
+            uint256
+        );
+
+    function getBaseSignalStake(
+          address _reputationImplementation
+        , uint256 _reputationTokenId
+    )
+        external
+        view
+        returns (
+            uint256
+        );
+
+    function getBaseMaintainerThreshold(
+          address _reputationImplementation
+        , uint256 _reputationTokenId
+    )
+        external
+        view
+        returns (
+            uint256
+        );
+
+    function getBaseProviderThreshold(
+          address _reputationImplementation
+        , uint256 _reputationTokenId
+    )
+        external
+        view
+        returns (
+            uint256
+        );
+
 }
