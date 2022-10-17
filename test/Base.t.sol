@@ -165,6 +165,9 @@ contract ContractTest is PRBTest, Cheats {
 
         // Claim the reward
         changePrank(alice);
+
+        // Skip to enforcement deadline
+        vm.warp(5 weeks);
         tempMarket.claim(submissionId);
     }
 
@@ -227,6 +230,8 @@ contract ContractTest is PRBTest, Cheats {
         }
 
         uint256 totalPaid;
+
+        vm.warp(5 weeks);
 
         for (uint256 i; i < 113; i++) {
             address user = address(uint160(1337 + i));
@@ -294,7 +299,8 @@ contract ContractTest is PRBTest, Cheats {
             tempMarket.review(requestId, 1, 2);
 
             changePrank(alice);
-            tempMarket.claim(1);
+            vm.warp(block.timestamp + 5 weeks);
+            tempMarket.claim(requestId);
 
             enforcementCriteria.getTotalBucket(
                 address(tempMarket),

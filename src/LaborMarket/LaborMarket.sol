@@ -3,7 +3,6 @@ pragma solidity 0.8.17;
 
 /// @dev Core dependencies.
 import {LaborMarketInterface} from "./interfaces/LaborMarketInterface.sol";
-import {LaborMarketEventsAndErrors} from "./LaborMarketEventsAndErrors.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ERC1155HolderUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC1155/utils/ERC1155HolderUpgradeable.sol";
 import {ERC721HolderUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
@@ -23,7 +22,6 @@ import {IERC721ReceiverUpgradeable} from "@openzeppelin/contracts-upgradeable/to
 
 contract LaborMarket is
     LaborMarketInterface,
-    LaborMarketEventsAndErrors,
     OwnableUpgradeable,
     ERC1155HolderUpgradeable,
     ERC721HolderUpgradeable
@@ -54,11 +52,19 @@ contract LaborMarket is
     uint256 public serviceSubmissionId;
 
     modifier permittedParticipant() {
-        if (
-            (delegateBadge.balanceOf(msg.sender, configuration.delegateTokenId) < 1) ||
-            (participationBadge.balanceOf(msg.sender, configuration.participationTokenId) <
-                (network.baseProviderThreshold() * configuration.repParticipantMultiplier))
-        ) revert NotQualified();
+        require(
+            (delegateBadge.balanceOf(
+                msg.sender,
+                configuration.delegateTokenId
+            ) >= 1) ||
+                (participationBadge.balanceOf(
+                    msg.sender,
+                    configuration.participationTokenId
+                ) >=
+                    (network.baseProviderThreshold() *
+                        configuration.repParticipantMultiplier)),
+            "LaborMarket::permittedParticipant: Not a permitted participant"
+        );
         _;
     }
 
@@ -67,10 +73,15 @@ contract LaborMarket is
     }
 
     modifier onlyMaintainer() {
-        if (
-            participationBadge.balanceOf(msg.sender, configuration.participationTokenId) <
-            (network.baseMaintainerThreshold() * configuration.repMaintainerMultiplier)
-        ) revert NotQualified();
+        require(
+            participationBadge.balanceOf(
+                msg.sender,
+                configuration.participationTokenId
+            ) >=
+                (network.baseMaintainerThreshold() *
+                    configuration.repMaintainerMultiplier),
+            "LaborMarket::onlyMaintainer: Not a maintainer"
+        );
         _;
     }
 
@@ -145,7 +156,7 @@ contract LaborMarket is
     function initialize(
         address _network,
         LaborMarketConfiguration calldata _configuration
-    ) override external initializer {
+    ) external override initializer {
         _setConfiguration(_configuration);
     }
 
@@ -193,15 +204,18 @@ contract LaborMarket is
 
     // Signal a service request
     function signal(uint256 requestId) external permittedParticipant {
-        if (requestId > serviceRequestId) {
-            revert RequestDoesNotExist(requestId);
-        }
-        if (block.timestamp > serviceRequests[requestId].signalExp) {
-            revert SignalDeadlinePassed();
-        }
-        if (submissionSignals[requestId][msg.sender]) {
-            revert AlreadySignaled();
-        }
+        require(
+            requestId <= serviceRequestId,
+            "LaborMarket::signal: Request does not exist."
+        );
+        require(
+            block.timestamp <= serviceRequests[requestId].signalExp,
+            "LaborMarket::signal: Signal deadline passed."
+        );
+        require(
+            !submissionSignals[requestId][msg.sender],
+            "LaborMarket::signal: Already signaled."
+        );
 
         // Lock reputation here
         uint256 signalAmt = 1;
@@ -217,12 +231,14 @@ contract LaborMarket is
 
     // TODO: Signal review
     function signalReview(uint256 submissionId) external onlyMaintainer {
-        if (submissionId > serviceSubmissionId) {
-            revert SubmissionDoesNotExist(submissionId);
-        }
-        if (reviewSignals[submissionId][msg.sender]) {
-            revert AlreadySignaled();
-        }
+        require(
+            submissionId <= serviceSubmissionId,
+            "LaborMarket::signalReview: Submission does not exist."
+        );
+        require(
+            !reviewSignals[submissionId][msg.sender],
+            "LaborMarket::signalReview: Already signaled."
+        );
 
         // Lock reputation here
         uint256 signalAmt = 1;
@@ -237,18 +253,22 @@ contract LaborMarket is
         external
         returns (uint256 submissionId)
     {
-        if (requestId > serviceRequestId) {
-            revert RequestDoesNotExist(requestId);
-        }
-        if (block.timestamp > serviceRequests[requestId].submissionExp) {
-            revert SubmissionDeadlinePassed();
-        }
-        if (!submissionSignals[requestId][msg.sender]) {
-            revert NotSignaled();
-        }
-        if (hasSubmitted[requestId][msg.sender]) {
-            revert AlreadySubmitted();
-        }
+        require(
+            requestId <= serviceRequestId,
+            "LaborMarket::provide: Request does not exist."
+        );
+        require(
+            block.timestamp <= serviceRequests[requestId].submissionExp,
+            "LaborMarket::provide: Submission deadline passed."
+        );
+        require(
+            submissionSignals[requestId][msg.sender],
+            "LaborMarket::provide: Not signaled."
+        );
+        require(
+            !hasSubmitted[requestId][msg.sender],
+            "LaborMarket::provide: Already submitted."
+        );
 
         unchecked {
             ++serviceSubmissionId;
@@ -259,7 +279,8 @@ contract LaborMarket is
             requestId: requestId,
             timestamp: block.timestamp,
             uri: uri,
-            score: 0
+            score: 0,
+            graded: false
         });
 
         serviceSubmissions[serviceSubmissionId] = serviceSubmission;
@@ -279,29 +300,37 @@ contract LaborMarket is
         uint256 submissionId,
         uint256 score
     ) external onlyMaintainer {
-        if (requestId > serviceRequestId) {
-            revert RequestDoesNotExist(requestId);
-        }
-        if (submissionId > serviceSubmissionId) {
-            revert SubmissionDoesNotExist(submissionId);
-        }
-        if (block.timestamp > serviceRequests[requestId].enforcementExp) {
-            revert EnforcementDeadlinePassed();
-        }
-        if (!reviewSignals[submissionId][msg.sender]) {
-            revert NotSignaled();
-        }
+        require(
+            requestId <= serviceRequestId,
+            "LaborMarket::review: Request does not exist."
+        );
+        require(
+            submissionId <= serviceSubmissionId,
+            "LaborMarket::review: Submission does not exist."
+        );
+        require(
+            block.timestamp <= serviceRequests[requestId].enforcementExp,
+            "LaborMarket::review: Enforcement deadline passed."
+        );
+
+        require(
+            reviewSignals[submissionId][msg.sender],
+            "LaborMarket::review: Not signaled."
+        );
         // TODO: Fix this --> likert scores start at 0 if using enums
-        if (serviceSubmissions[submissionId].score != 0) {
-            revert AlreadyReviewed();
-        }
-        if (serviceSubmissions[submissionId].serviceProvider == msg.sender) {
-            revert CannotReviewOwnSubmission();
-        }
+        require(
+            !serviceSubmissions[submissionId].graded,
+            "LaborMarket::review: Already graded."
+        );
+        require(
+            serviceSubmissions[submissionId].serviceProvider != msg.sender,
+            "LaborMarket::review: Cannot review own submission."
+        );
 
         score = enforcementCriteria.review(submissionId, score);
 
         serviceSubmissions[submissionId].score = score;
+        serviceSubmissions[submissionId].graded = true;
 
         // Unlock maintainer reputation here
 
@@ -310,24 +339,28 @@ contract LaborMarket is
 
     // Claim reward for a service submission
     function claim(uint256 submissionId) external returns (uint256) {
-        if (submissionId > serviceSubmissionId) {
-            revert SubmissionDoesNotExist(submissionId);
-        }
-        if (serviceSubmissions[submissionId].score == 99999) {
-            revert NotReviewed();
-        }
-        if (
-            serviceRequests[serviceSubmissions[submissionId].requestId]
-                .enforcementExp < block.timestamp
-        ) {
-            revert InReview();
-        }
-        if (serviceSubmissions[submissionId].serviceProvider != msg.sender) {
-            revert NotServiceProvider();
-        }
-        if (hasClaimed[submissionId][msg.sender]) {
-            revert AlreadyClaimed();
-        }
+        require(
+            submissionId <= serviceSubmissionId,
+            "LaborMarket::claim: Submission does not exist."
+        );
+        require(
+            serviceSubmissions[submissionId].graded,
+            "LaborMarket::claim: Not graded."
+        );
+        require(
+            block.timestamp >=
+                serviceRequests[serviceSubmissions[submissionId].requestId]
+                    .enforcementExp,
+            "LaborMarket::claim: Enforcement deadline not passed."
+        );
+        require(
+            serviceSubmissions[submissionId].serviceProvider == msg.sender,
+            "LaborMarket::claim: Not service provider."
+        );
+        require(
+            !hasClaimed[submissionId][msg.sender],
+            "LaborMarket::claim: Already claimed."
+        );
 
         uint256 curveIndex = enforcementCriteria.verify(submissionId);
 
@@ -344,9 +377,14 @@ contract LaborMarket is
 
     // Withdraw a service request given that it has not been signaled
     function withdrawRequest(uint256 requestId) external onlyPermissioned {
-        if (serviceRequests[requestId].serviceRequester != msg.sender)
-            revert NotTheRequester(msg.sender);
-        if (signalCount[requestId] > 0) revert RequestActive(requestId);
+        require(
+            serviceRequests[requestId].serviceRequester == msg.sender,
+            "LaborMarket::withdrawRequest: Not service requester."
+        );
+        require(
+            signalCount[requestId] < 1,
+            "LaborMarket::withdrawRequest: Already active."
+        );
 
         delete serviceRequests[requestId];
 
@@ -369,9 +407,7 @@ contract LaborMarket is
         return serviceSubmissions[submissionId];
     }
 
-    function _setConfiguration(
-        LaborMarketConfiguration calldata _configuration
-    )
+    function _setConfiguration(LaborMarketConfiguration calldata _configuration)
         internal
     {
         /// @dev Connect to the higher level network to pull the active states.
@@ -388,10 +424,8 @@ contract LaborMarket is
         participationBadge = IERC1155(_configuration.participationBadge);
 
         /// @dev Configure the Labor Market parameters.
-        configuration = _configuration; 
+        configuration = _configuration;
 
-        emit MarketParametersUpdated(
-            _configuration
-        );
+        emit MarketParametersUpdated(_configuration);
     }
 }

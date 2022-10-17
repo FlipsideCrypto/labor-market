@@ -2,11 +2,9 @@
 
 pragma solidity 0.8.17;
 
-import { LaborMarketConfigurationInterface } from "./LaborMarketConfigurationInterface.sol";
+import {LaborMarketConfigurationInterface} from "./LaborMarketConfigurationInterface.sol";
 
-interface LaborMarketInterface is 
-    LaborMarketConfigurationInterface
-{
+interface LaborMarketInterface is LaborMarketConfigurationInterface {
     struct ServiceRequest {
         address serviceRequester;
         address pToken;
@@ -24,11 +22,11 @@ interface LaborMarketInterface is
         uint256 timestamp;
         string uri;
         uint256 score;
+        bool graded;
     }
 
     function initialize(
-          address _network
-        , LaborMarketConfiguration calldata _configuration
-    )
-        external;
+        address _network,
+        LaborMarketConfiguration calldata _configuration
+    ) external;
 }
