@@ -160,7 +160,18 @@ contract LaborMarket is
         _setConfiguration(_configuration);
     }
 
-    // Submit a service request
+    /**
+     * @notice Creates a service request.
+     * @param pToken The address of the payment token.
+     * @param pTokenId The id of the payment token.
+     * @param pTokenQ The quantity of the payment token.
+     * @param signalExp The signal deadline expiration.
+     * @param submissionExp The submission deadline expiration.
+     * @param enforcementExp The enforcement deadline expiration.
+     * @param requestUri The uri of the service request data.
+     * Requirements:
+     * - A user has to be conform to the reputational restrictions imposed by the labor market.
+     */
     function submitRequest(
         address pToken,
         uint256 pTokenId,
@@ -202,7 +213,10 @@ contract LaborMarket is
         return serviceRequestId;
     }
 
-    // Signal a service request
+    /**
+     * @notice Signals interest in fulfilling a service request.
+     * @param requestId The id of the service request.
+     */
     function signal(uint256 requestId) external permittedParticipant {
         require(
             requestId <= serviceRequestId,
@@ -229,7 +243,10 @@ contract LaborMarket is
         emit RequestSignal(msg.sender, requestId, signalAmt);
     }
 
-    // TODO: Signal review
+    /**
+     * @notice Signals interest in reviewing a submission.
+     * @param submissionId The id of the service providers submission.
+     */
     function signalReview(uint256 submissionId) external onlyMaintainer {
         require(
             submissionId <= serviceSubmissionId,
@@ -248,7 +265,11 @@ contract LaborMarket is
         emit ReviewSignal(msg.sender, submissionId, signalAmt);
     }
 
-    // Fulfill a service request
+    /**
+     * @notice Allows a service provider to fulfill a service request.
+     * @param requestId The id of the service request being fulfilled.
+     * @param uri The uri of the service submission data.
+     */
     function provide(uint256 requestId, string calldata uri)
         external
         returns (uint256 submissionId)
@@ -294,7 +315,12 @@ contract LaborMarket is
         return serviceSubmissionId;
     }
 
-    // Review a service submission
+    /**
+     * @notice Allows a maintainer to review a service submission.
+     * @param requestId The id of the service request being fulfilled.
+     * @param submissionId The id of the service providers submission.
+     * @param score The score of the service submission.
+     */
     function review(
         uint256 requestId,
         uint256 submissionId,
@@ -317,7 +343,6 @@ contract LaborMarket is
             reviewSignals[submissionId][msg.sender],
             "LaborMarket::review: Not signaled."
         );
-        // TODO: Fix this --> likert scores start at 0 if using enums
         require(
             !serviceSubmissions[submissionId].graded,
             "LaborMarket::review: Already graded."
@@ -337,7 +362,10 @@ contract LaborMarket is
         emit RequestReviewed(msg.sender, requestId, submissionId, score);
     }
 
-    // Claim reward for a service submission
+    /**
+     * @notice Allows a service provider to claim payment for a service submission.
+     * @param submissionId The id of the service providers submission.
+     */
     function claim(uint256 submissionId) external returns (uint256) {
         require(
             submissionId <= serviceSubmissionId,
@@ -375,7 +403,12 @@ contract LaborMarket is
         return amount;
     }
 
-    // Withdraw a service request given that it has not been signaled
+    /**
+     * @notice Allows a service requester to withdraw a request.
+     * @param requestId The id of the service requesters request.
+     * Requirements:
+     * - The request must not have been signaled.
+     */
     function withdrawRequest(uint256 requestId) external onlyPermissioned {
         require(
             serviceRequests[requestId].serviceRequester == msg.sender,
@@ -390,6 +423,10 @@ contract LaborMarket is
 
         emit RequestWithdrawn(requestId);
     }
+
+    /*//////////////////////////////////////////////////////////////
+                                GETTERS
+    //////////////////////////////////////////////////////////////*/
 
     function getRequest(uint256 requestId)
         external
