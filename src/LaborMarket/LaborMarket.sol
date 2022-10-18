@@ -32,7 +32,6 @@ contract LaborMarket is
 
     IERC1155 public delegateBadge;
     IERC1155 public reputationToken;
-    uint256 public reputationTokenId;
 
     LaborMarketConfiguration public configuration;
 
@@ -57,18 +56,16 @@ contract LaborMarket is
             (delegateBadge.balanceOf(
                 msg.sender,
                 configuration.delegateTokenId
-            ) >= 1) || (
-                network.getAvailableReputation(
-                        msg.sender
-                    , configuration.reputationToken
-                    , configuration.reputationTokenId
-                ) >= (
-                    network.getBaseProviderThreshold(
-                                configuration.reputationToken
-                            , configuration.reputationTokenId
-                    ) * configuration.repParticipantMultiplier
-                )
-            ),
+            ) >= 1) ||
+                (network.getAvailableReputation(
+                    msg.sender,
+                    configuration.reputationToken,
+                    configuration.reputationTokenId
+                ) >=
+                    (network.getBaseProviderThreshold(
+                        configuration.reputationToken,
+                        configuration.reputationTokenId
+                    ) * configuration.repParticipantMultiplier)),
             "LaborMarket::permittedParticipant: Not a permitted participant"
         );
         _;
@@ -81,23 +78,24 @@ contract LaborMarket is
     modifier onlyMaintainer() {
         require(
             network.getAvailableReputation(
-                  msg.sender
-                , configuration.reputationToken
-                , configuration.reputationTokenId
-            ) >= (
-                network.getBaseMaintainerThreshold(
-                        configuration.reputationToken
-                    , configuration.reputationTokenId
-                ) * configuration.repMaintainerMultiplier
-            ),
+                msg.sender,
+                configuration.reputationToken,
+                configuration.reputationTokenId
+            ) >=
+                (network.getBaseMaintainerThreshold(
+                    configuration.reputationToken,
+                    configuration.reputationTokenId
+                ) * configuration.repMaintainerMultiplier),
             "LaborMarket::onlyMaintainer: Not a maintainer"
         );
         _;
     }
 
-    function initialize(
-        LaborMarketConfiguration calldata _configuration
-    ) external override initializer {
+    function initialize(LaborMarketConfiguration calldata _configuration)
+        external
+        override
+        initializer
+    {
         _setConfiguration(_configuration);
     }
 
@@ -172,8 +170,17 @@ contract LaborMarket is
             "LaborMarket::signal: Already signaled."
         );
 
-        // Lock reputation here
-        uint256 signalAmt = 1;
+        uint256 signalStake = network.getBaseSignalStake(
+            address(reputationToken),
+            configuration.reputationTokenId
+        );
+
+        network.lockReputation(
+            msg.sender,
+            address(reputationToken),
+            configuration.reputationTokenId,
+            signalStake
+        );
 
         submissionSignals[requestId][msg.sender] = true;
 
@@ -181,29 +188,38 @@ contract LaborMarket is
             ++signalCount[requestId];
         }
 
-        emit RequestSignal(msg.sender, requestId, signalAmt);
+        emit RequestSignal(msg.sender, requestId, signalStake);
     }
 
     /**
      * @notice Signals interest in reviewing a submission.
-     * @param submissionId The id of the service providers submission.
+     * @param requestId The id of the service providers submission.
      */
-    function signalReview(uint256 submissionId) external onlyMaintainer {
+    function signalReview(uint256 requestId) external onlyMaintainer {
         require(
-            submissionId <= serviceSubmissionId,
-            "LaborMarket::signalReview: Submission does not exist."
+            requestId <= serviceRequestId,
+            "LaborMarket::signalReview: Request does not exist."
         );
         require(
-            !reviewSignals[submissionId][msg.sender],
+            !reviewSignals[requestId][msg.sender],
             "LaborMarket::signalReview: Already signaled."
         );
 
-        // Lock reputation here
-        uint256 signalAmt = 1;
+        uint256 signalStake = network.getBaseSignalStake(
+            address(reputationToken),
+            configuration.reputationTokenId
+        );
 
-        reviewSignals[submissionId][msg.sender] = true;
+        network.lockReputation(
+            msg.sender,
+            address(reputationToken),
+            configuration.reputationTokenId,
+            signalStake
+        );
 
-        emit ReviewSignal(msg.sender, submissionId, signalAmt);
+        reviewSignals[requestId][msg.sender] = true;
+
+        emit ReviewSignal(msg.sender, requestId, signalStake);
     }
 
     /**
@@ -249,7 +265,15 @@ contract LaborMarket is
 
         hasSubmitted[requestId][msg.sender] = true;
 
-        // Unlock reputation here for submission signal
+        network.unlockReputation(
+            msg.sender,
+            address(reputationToken),
+            configuration.reputationTokenId,
+            network.getBaseSignalStake(
+                address(reputationToken),
+                configuration.reputationTokenId
+            )
+        );
 
         emit RequestFulfilled(msg.sender, requestId, serviceSubmissionId);
 
@@ -281,7 +305,7 @@ contract LaborMarket is
         );
 
         require(
-            reviewSignals[submissionId][msg.sender],
+            reviewSignals[requestId][msg.sender],
             "LaborMarket::review: Not signaled."
         );
         require(
@@ -298,7 +322,15 @@ contract LaborMarket is
         serviceSubmissions[submissionId].score = score;
         serviceSubmissions[submissionId].graded = true;
 
-        // Unlock maintainer reputation here
+        // network.unlockReputation(
+        //     msg.sender,
+        //     address(reputationToken),
+        //     configuration.reputationTokenId,
+        //     network.getBaseSignalStake(
+        //         address(reputationToken),
+        //         configuration.reputationTokenId
+        //     )
+        // );
 
         emit RequestReviewed(msg.sender, requestId, submissionId, score);
     }
@@ -334,6 +366,7 @@ contract LaborMarket is
         uint256 curveIndex = enforcementCriteria.verify(submissionId);
 
         // Increase/(decrease) reputation here for submitter
+        // Mint/burn(lock) rep
 
         uint256 amount = paymentCurve.curvePoint(curveIndex);
 
@@ -394,8 +427,8 @@ contract LaborMarket is
         /// @dev Ensure the reputation token has been configured.
         require(
             network.getReputationManager(
-                  _configuration.reputationToken
-                , _configuration.reputationTokenId
+                _configuration.reputationToken,
+                _configuration.reputationTokenId
             ) != address(0),
             "LaborMarket:: _setConfiguration: Reputation token not configured."
         );
