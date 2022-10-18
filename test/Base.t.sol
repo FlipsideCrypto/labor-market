@@ -69,15 +69,16 @@ contract ContractTest is PRBTest, Cheats {
         // Deploy a labor market factory
         factory = new LaborMarketFactory(address(implementation));
 
-        LaborMarketNetworkInterface.ReputationTokenConfig 
-            memory repConfig = LaborMarketNetworkInterface.ReputationTokenConfig({
-                manager: deployer,
-                decayRate: 0,
-                decayInterval: 0,
-                baseSignalStake: 1e18,
-                baseMaintainerThreshold: 100e18,
-                baseProviderThreshold: 10e18
-        });
+        LaborMarketNetworkInterface.ReputationTokenConfig
+            memory repConfig = LaborMarketNetworkInterface
+                .ReputationTokenConfig({
+                    manager: deployer,
+                    decayRate: 0,
+                    decayInterval: 0,
+                    baseSignalStake: 1e18,
+                    baseMaintainerThreshold: 100e18,
+                    baseProviderThreshold: 10e18
+                });
 
         // Deploy a labor market network
         network = new LaborMarketNetwork({
@@ -128,7 +129,7 @@ contract ContractTest is PRBTest, Cheats {
         repToken.setApprovalForAll(address(tempMarket), true);
 
         changePrank(bob);
-        repToken.freeMint(bob, REPUTATION_TOKEN_ID, 100e18);
+        repToken.freeMint(bob, REPUTATION_TOKEN_ID, 1000e18);
         repToken.freeMint(bob, DELEGATE_TOKEN_ID, 1);
         repToken.setApprovalForAll(address(tempMarket), true);
 
@@ -167,7 +168,7 @@ contract ContractTest is PRBTest, Cheats {
 
         changePrank(bob);
         // Review the request
-        tempMarket.signalReview(submissionId);
+        tempMarket.signalReview(requestId);
         tempMarket.review(requestId, submissionId, 2);
 
         // Claim the reward
@@ -220,18 +221,17 @@ contract ContractTest is PRBTest, Cheats {
         // Have bob review the submissions
         changePrank(bob);
 
+        tempMarket.signalReview(requestId);
+
         for (uint256 i; i < 113; i++) {
             if (i < 67) {
                 // BAD
-                tempMarket.signalReview(i + 1);
                 tempMarket.review(requestId, i + 1, 0);
             } else if (i < 103) {
                 // OK
-                tempMarket.signalReview(i + 1);
                 tempMarket.review(requestId, i + 1, 1);
             } else {
                 // GOOD
-                tempMarket.signalReview(i + 1);
                 tempMarket.review(requestId, i + 1, 2);
             }
         }
@@ -301,7 +301,7 @@ contract ContractTest is PRBTest, Cheats {
             tempMarket.provide(requestId, "IPFS://333");
 
             changePrank(bob);
-            tempMarket.signalReview(1);
+            tempMarket.signalReview(requestId);
             tempMarket.review(requestId, 1, 2);
 
             changePrank(alice);
@@ -309,5 +309,80 @@ contract ContractTest is PRBTest, Cheats {
             tempMarket.claim(requestId);
         }
         vm.stopPrank();
+    }
+
+    function test_ReputationalChangesBasedOnActions() public {
+        vm.startPrank(bob);
+
+        // Create a request
+        uint256 requestId = tempMarket.submitRequest({
+            pToken: address(repToken),
+            pTokenId: PAYMENT_TOKEN_ID,
+            pTokenQ: 100e18,
+            signalExp: block.timestamp + 1 hours,
+            submissionExp: block.timestamp + 1 days,
+            enforcementExp: block.timestamp + 1 weeks,
+            requestUri: "ipfs://222"
+        });
+
+        // Signal the request
+        changePrank(alice);
+        tempMarket.signal(requestId);
+
+        // Verify that Alice's reputation is locked
+        assertEq(
+            network.getAvailableReputation(
+                alice,
+                address(repToken),
+                REPUTATION_TOKEN_ID
+            ),
+            (100e18 -
+                network.getBaseSignalStake(
+                    address(repToken),
+                    REPUTATION_TOKEN_ID
+                ))
+        );
+
+        // Fulfill the request
+        uint256 submissionId = tempMarket.provide(requestId, "IPFS://333");
+
+        assertEq(
+            network.getAvailableReputation(
+                alice,
+                address(repToken),
+                REPUTATION_TOKEN_ID
+            ),
+            100e18
+        );
+
+        // Verify that Alice's reputation is unlocked
+
+        changePrank(bob);
+
+        // Review the request
+        tempMarket.signalReview(requestId);
+
+        // Verify that Maintainers's reputation is locked
+        assertEq(
+            network.getAvailableReputation(
+                bob,
+                address(repToken),
+                REPUTATION_TOKEN_ID
+            ),
+            (1000e18 -
+                network.getBaseSignalStake(
+                    address(repToken),
+                    REPUTATION_TOKEN_ID
+                ))
+        );
+
+        tempMarket.review(requestId, submissionId, 2);
+
+        // Claim the reward
+        changePrank(alice);
+
+        // Skip to enforcement deadline
+        vm.warp(5 weeks);
+        tempMarket.claim(submissionId);
     }
 }

@@ -1,33 +1,30 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import { LaborMarketNetworkInterface } from "./interfaces/LaborMarketNetworkInterface.sol";
-import { LaborMarketFactory } from "./LaborMarketFactory.sol";
+import {LaborMarketNetworkInterface} from "./interfaces/LaborMarketNetworkInterface.sol";
+import {LaborMarketFactory} from "./LaborMarketFactory.sol";
 
-import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract LaborMarketNetwork is 
-      LaborMarketNetworkInterface
-    , LaborMarketFactory
-{
+contract LaborMarketNetwork is LaborMarketNetworkInterface, LaborMarketFactory {
     IERC20 public capacityToken;
 
-    mapping(address => mapping(uint256 => ReputationToken)) public reputationTokens;
+    mapping(address => mapping(uint256 => ReputationToken))
+        public reputationTokens;
 
     constructor(
-          address _factoryImplementation
-        , address _capacityImplementation
-        , address _baseReputationImplementation
-        , uint256 _baseReputationTokenId
-        , ReputationTokenConfig memory _baseReputationConfig
-    ) 
-        LaborMarketFactory(_factoryImplementation) 
-    {
+        address _factoryImplementation,
+        address _capacityImplementation,
+        address _baseReputationImplementation,
+        uint256 _baseReputationTokenId,
+        ReputationTokenConfig memory _baseReputationConfig
+    ) LaborMarketFactory(_factoryImplementation) {
         capacityToken = IERC20(_capacityImplementation);
 
-        ReputationToken storage baseReputation = 
-            reputationTokens[_baseReputationImplementation][_baseReputationTokenId];
+        ReputationToken storage baseReputation = reputationTokens[
+            _baseReputationImplementation
+        ][_baseReputationTokenId];
         baseReputation.config = _baseReputationConfig;
     }
 
@@ -36,15 +33,14 @@ contract LaborMarketNetwork is
      * @param _implementation The address of the reputation token.
      * @param _tokenId The id of the reputation token.
      */
-    modifier onlyReputationManagers (
-          address _implementation
-        , uint256 _tokenId
-    ) {
+    modifier onlyReputationManagers(address _implementation, uint256 _tokenId) {
         require(
-              reputationTokens[_implementation][_tokenId].config.manager == _msgSender() ||
-              reputationTokens[_implementation][_tokenId].config.manager == address(0) || 
-              _msgSender() == owner()
-            , "LaborMarketNetwork: Only the reputation manager can call this function."
+            reputationTokens[_implementation][_tokenId].config.manager ==
+                _msgSender() ||
+                reputationTokens[_implementation][_tokenId].config.manager ==
+                address(0) ||
+                _msgSender() == owner(),
+            "LaborMarketNetwork: Only the reputation manager can call this function."
         );
         _;
     }
@@ -62,18 +58,14 @@ contract LaborMarketNetwork is
      * Requirements:
      * - Only the network owner or reputation token manager can call this function on existing configs.
      */
-    function setReputationConfig (
-              address _implementation
-            , uint256 _tokenId
-            , ReputationTokenConfig calldata _config
-        ) 
-            external 
-            onlyReputationManagers(
-                  _implementation
-                , _tokenId
-            )
-    {
-        ReputationToken storage reputationToken = reputationTokens[_implementation][_tokenId];
+    function setReputationConfig(
+        address _implementation,
+        uint256 _tokenId,
+        ReputationTokenConfig calldata _config
+    ) external onlyReputationManagers(_implementation, _tokenId) {
+        ReputationToken storage reputationToken = reputationTokens[
+            _implementation
+        ][_tokenId];
 
         reputationToken.config = _config;
     }
@@ -84,12 +76,10 @@ contract LaborMarketNetwork is
      * Requirements:
      * - Only the owner can call this function.
      */
-    function setCapacityImplementation(
-        address _implementation
-    )
-        override
+    function setCapacityImplementation(address _implementation)
         external
         virtual
+        override
         onlyOwner
     {
         capacityToken = IERC20(_implementation);
@@ -105,33 +95,30 @@ contract LaborMarketNetwork is
      * - `_frozenUntilEpoch` must be greater than the current epoch.
      */
     function freezeReputation(
-          address _reputationImplementation
-        , uint256 _reputationTokenId
-        , uint256 _frozenUntilEpoch
-    ) 
-        override
-        external
-        virtual 
-    {
+        address _reputationImplementation,
+        uint256 _reputationTokenId,
+        uint256 _frozenUntilEpoch
+    ) external virtual override {
         require(
             block.timestamp > _frozenUntilEpoch,
             "Network: Cannot freeze reputation in the past"
         );
-        BalanceInfo storage info =
-            reputationTokens[_reputationImplementation][_reputationTokenId].balanceInfo[_msgSender()];
+        BalanceInfo storage info = reputationTokens[_reputationImplementation][
+            _reputationTokenId
+        ].balanceInfo[_msgSender()];
 
         uint256 decayed = getPendingDecay(
-              _reputationImplementation
-            , _reputationTokenId
-            , info.lastDecayEpoch
-            , info.frozenUntilEpoch
+            _reputationImplementation,
+            _reputationTokenId,
+            info.lastDecayEpoch,
+            info.frozenUntilEpoch
         );
 
         info.locked += decayed;
         info.frozenUntilEpoch = _frozenUntilEpoch;
         info.lastDecayEpoch = block.timestamp;
     }
-    
+
     // TODO: Access controls IMPORTANT!!
     /**
      * @notice Lock an amount of reputation of a user upon usage.
@@ -141,20 +128,31 @@ contract LaborMarketNetwork is
      * @param _amount The amount of reputation to be locked.
      */
     function lockReputation(
-          address _account
-        , address _reputationImplementation
-        , uint256 _reputationTokenId
-        , uint256 _amount
-    ) 
-        override
-        external
-        virtual
-    {
-        BalanceInfo storage info = 
-            reputationTokens[_reputationImplementation][_reputationTokenId].balanceInfo[_account];
+        address _account,
+        address _reputationImplementation,
+        uint256 _reputationTokenId,
+        uint256 _amount
+    ) external virtual override {
+        BalanceInfo storage info = reputationTokens[_reputationImplementation][
+            _reputationTokenId
+        ].balanceInfo[_account];
 
         info.locked += _amount;
     }
+
+    function unlockReputation(
+        address _account,
+        address _reputationImplementation,
+        uint256 _reputationTokenId,
+        uint256 _amount
+    ) external virtual {
+        BalanceInfo storage info = reputationTokens[_reputationImplementation][
+            _reputationTokenId
+        ].balanceInfo[_account];
+
+        info.locked -= _amount;
+    }
+
     /*//////////////////////////////////////////////////////////////
                                 GETTERS
     //////////////////////////////////////////////////////////////*/
@@ -167,35 +165,29 @@ contract LaborMarketNetwork is
      * - If a user's balance is frozen, no reputation is available.
      */
     function getAvailableReputation(
-          address _account
-        , address _reputationImplementation
-        , uint256 _reputationTokenId
-    )
-        override
-        public
-        view
-        virtual
-        returns (
-            uint256
-        )
-    {
-        BalanceInfo memory info =
-            reputationTokens[_reputationImplementation][_reputationTokenId].balanceInfo[_account];
+        address _account,
+        address _reputationImplementation,
+        uint256 _reputationTokenId
+    ) public view virtual override returns (uint256) {
+        BalanceInfo memory info = reputationTokens[_reputationImplementation][
+            _reputationTokenId
+        ].balanceInfo[_account];
 
         if (info.frozenUntilEpoch > block.timestamp) return 0;
 
         uint256 decayed = getPendingDecay(
-              _reputationImplementation
-            , _reputationTokenId
-            , info.lastDecayEpoch
-            , info.frozenUntilEpoch
+            _reputationImplementation,
+            _reputationTokenId,
+            info.lastDecayEpoch,
+            info.frozenUntilEpoch
         );
 
-        return (
-            IERC1155(_reputationImplementation).balanceOf(_account, _reputationTokenId) -
+        return (IERC1155(_reputationImplementation).balanceOf(
+            _account,
+            _reputationTokenId
+        ) -
             info.locked -
-            decayed
-        );
+            decayed);
     }
 
     /**
@@ -206,25 +198,16 @@ contract LaborMarketNetwork is
      *      user's frozenUntilEpoch is set to 0.
      */
     function getPendingDecay(
-          address _reputationImplementation
-        , uint256 _reputationTokenId
-        , uint256 _lastDecayEpoch
-        , uint256 _frozenUntilEpoch
-    ) 
-        override
-        public 
-        view 
-        returns (
-            uint256
-        ) 
-    {
-        ReputationTokenConfig memory config =
-            reputationTokens[_reputationImplementation][_reputationTokenId].config;
-        
-        if (
-            _frozenUntilEpoch > block.timestamp || 
-            config.decayRate == 0    
-        ) {
+        address _reputationImplementation,
+        uint256 _reputationTokenId,
+        uint256 _lastDecayEpoch,
+        uint256 _frozenUntilEpoch
+    ) public view override returns (uint256) {
+        ReputationTokenConfig memory config = reputationTokens[
+            _reputationImplementation
+        ][_reputationTokenId].config;
+
+        if (_frozenUntilEpoch > block.timestamp || config.decayRate == 0) {
             return 0;
         }
 
@@ -233,86 +216,62 @@ contract LaborMarketNetwork is
     }
 
     function getReputationManager(
-          address _reputationImplementation
-        , uint256 _reputationTokenId
-    )
-        override
-        public
-        view
-        returns (
-            address
-        )
-    {
-        return reputationTokens[_reputationImplementation][_reputationTokenId].config.manager;
+        address _reputationImplementation,
+        uint256 _reputationTokenId
+    ) public view override returns (address) {
+        return
+            reputationTokens[_reputationImplementation][_reputationTokenId]
+                .config
+                .manager;
     }
 
     function getDecayRate(
-          address _reputationImplementation
-        , uint256 _reputationTokenId
-    )
-        override
-        public
-        view
-        returns (
-            uint256
-        )
-    {
-        return reputationTokens[_reputationImplementation][_reputationTokenId].config.decayRate;
+        address _reputationImplementation,
+        uint256 _reputationTokenId
+    ) public view override returns (uint256) {
+        return
+            reputationTokens[_reputationImplementation][_reputationTokenId]
+                .config
+                .decayRate;
     }
 
     function getDecayInterval(
-          address _reputationImplementation
-        , uint256 _reputationTokenId
-    )
-        override
-        public
-        view
-        returns (
-            uint256
-        )
-    {
-        return reputationTokens[_reputationImplementation][_reputationTokenId].config.decayInterval;
+        address _reputationImplementation,
+        uint256 _reputationTokenId
+    ) public view override returns (uint256) {
+        return
+            reputationTokens[_reputationImplementation][_reputationTokenId]
+                .config
+                .decayInterval;
     }
 
     function getBaseSignalStake(
-          address _reputationImplementation
-        , uint256 _reputationTokenId
-    )
-        override
-        public
-        view
-        returns (
-            uint256
-        )
-    {
-        return reputationTokens[_reputationImplementation][_reputationTokenId].config.baseSignalStake;
+        address _reputationImplementation,
+        uint256 _reputationTokenId
+    ) public view override returns (uint256) {
+        return
+            reputationTokens[_reputationImplementation][_reputationTokenId]
+                .config
+                .baseSignalStake;
     }
 
     function getBaseMaintainerThreshold(
-          address _reputationImplementation
-        , uint256 _reputationTokenId
-    )
-        override
-        public
-        view
-        returns (
-            uint256
-        )
-    {
-        return reputationTokens[_reputationImplementation][_reputationTokenId].config.baseMaintainerThreshold;
+        address _reputationImplementation,
+        uint256 _reputationTokenId
+    ) public view override returns (uint256) {
+        return
+            reputationTokens[_reputationImplementation][_reputationTokenId]
+                .config
+                .baseMaintainerThreshold;
     }
 
     function getBaseProviderThreshold(
-          address _reputationImplementation
-        , uint256 _reputationTokenId
-    )
-        override
-        public
-        view
-        returns (
-            uint256
-        )
-    {
-        return reputationTokens[_reputationImplementation][_reputationTokenId].config.baseProviderThreshold;
+        address _reputationImplementation,
+        uint256 _reputationTokenId
+    ) public view override returns (uint256) {
+        return
+            reputationTokens[_reputationImplementation][_reputationTokenId]
+                .config
+                .baseProviderThreshold;
     }
 }
