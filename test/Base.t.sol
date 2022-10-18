@@ -346,9 +346,36 @@ contract ContractTest is PRBTest, Cheats {
         // Fulfill the request
         uint256 submissionId = tempMarket.provide(requestId, "IPFS://333");
 
+        assertEq(
+            network.getAvailableReputation(
+                alice,
+                address(repToken),
+                REPUTATION_TOKEN_ID
+            ),
+            100e18
+        );
+
+        // Verify that Alice's reputation is unlocked
+
         changePrank(bob);
+
         // Review the request
         tempMarket.signalReview(requestId);
+
+        // Verify that Maintainers's reputation is locked
+        assertEq(
+            network.getAvailableReputation(
+                bob,
+                address(repToken),
+                REPUTATION_TOKEN_ID
+            ),
+            (1000e18 -
+                network.getBaseSignalStake(
+                    address(repToken),
+                    REPUTATION_TOKEN_ID
+                ))
+        );
+
         tempMarket.review(requestId, submissionId, 2);
 
         // Claim the reward

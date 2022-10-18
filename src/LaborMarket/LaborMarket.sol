@@ -290,7 +290,7 @@ contract LaborMarket is
         uint256 requestId,
         uint256 submissionId,
         uint256 score
-    ) external onlyMaintainer {
+    ) external {
         require(
             requestId <= serviceRequestId,
             "LaborMarket::review: Request does not exist."
