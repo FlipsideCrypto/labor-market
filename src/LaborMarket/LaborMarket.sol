@@ -224,7 +224,7 @@ contract LaborMarket is
         reviewSignals[msg.sender][requestId].total = quantity;
         reviewSignals[msg.sender][requestId].remainder = quantity;
 
-        emit ReviewSignal(msg.sender, requestId, signalStake);
+        emit ReviewSignal(msg.sender, requestId, quantity, signalStake);
     }
 
     /**

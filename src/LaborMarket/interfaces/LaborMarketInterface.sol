@@ -72,7 +72,8 @@ interface LaborMarketInterface is LaborMarketConfigurationInterface {
     event ReviewSignal(
         address indexed signaler,
         uint256 indexed requestId,
-        uint256 signalAmount
+        uint256 indexed quantity,
+        uint256 signalAmount,
     );
 
     /// @notice emitted when a service request is withdrawn
