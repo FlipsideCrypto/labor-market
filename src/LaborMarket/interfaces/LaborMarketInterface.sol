@@ -25,7 +25,12 @@ interface LaborMarketInterface is LaborMarketConfigurationInterface {
         bool graded;
     }
 
-        /// @notice emitted when a new labor market is created
+    struct ReviewPromise {
+        uint256 total;
+        uint256 remainder;
+    }
+
+    /// @notice emitted when a new labor market is created
     event LaborMarketCreated(
         uint256 indexed marketId,
         address delegateBadge,
@@ -94,9 +99,8 @@ interface LaborMarketInterface is LaborMarketConfigurationInterface {
         uint256 indexed payAmount
     );
 
-    function initialize(
-        LaborMarketConfiguration calldata _configuration
-    ) external;
+    function initialize(LaborMarketConfiguration calldata _configuration)
+        external;
 
     function getSubmission(uint256 submissionId)
         external

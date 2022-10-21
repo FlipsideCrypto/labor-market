@@ -41,7 +41,7 @@ contract LaborMarket is
     mapping(uint256 => ServiceSubmission) public serviceSubmissions;
 
     mapping(uint256 => mapping(address => bool)) public submissionSignals;
-    mapping(uint256 => mapping(address => bool)) public reviewSignals;
+    mapping(address => mapping(uint256 => ReviewPromise)) public reviewSignals;
 
     mapping(uint256 => mapping(address => bool)) public hasSubmitted;
     mapping(uint256 => mapping(address => bool)) public hasClaimed;
@@ -194,14 +194,18 @@ contract LaborMarket is
     /**
      * @notice Signals interest in reviewing a submission.
      * @param requestId The id of the service providers submission.
+     * @param quantity The amount of submissions a maintainer is willing to review.
      */
-    function signalReview(uint256 requestId) external onlyMaintainer {
+    function signalReview(uint256 requestId, uint256 quantity)
+        external
+        onlyMaintainer
+    {
         require(
             requestId <= serviceRequestId,
             "LaborMarket::signalReview: Request does not exist."
         );
         require(
-            !reviewSignals[requestId][msg.sender],
+            reviewSignals[msg.sender][requestId].remainder == 0,
             "LaborMarket::signalReview: Already signaled."
         );
 
@@ -217,7 +221,8 @@ contract LaborMarket is
             signalStake
         );
 
-        reviewSignals[requestId][msg.sender] = true;
+        reviewSignals[msg.sender][requestId].total = quantity;
+        reviewSignals[msg.sender][requestId].remainder = quantity;
 
         emit ReviewSignal(msg.sender, requestId, signalStake);
     }
@@ -305,7 +310,7 @@ contract LaborMarket is
         );
 
         require(
-            reviewSignals[requestId][msg.sender],
+            reviewSignals[msg.sender][requestId].remainder > 0,
             "LaborMarket::review: Not signaled."
         );
         require(
@@ -322,15 +327,19 @@ contract LaborMarket is
         serviceSubmissions[submissionId].score = score;
         serviceSubmissions[submissionId].graded = true;
 
-        // network.unlockReputation(
-        //     msg.sender,
-        //     address(reputationToken),
-        //     configuration.reputationTokenId,
-        //     network.getBaseSignalStake(
-        //         address(reputationToken),
-        //         configuration.reputationTokenId
-        //     )
-        // );
+        unchecked {
+            --reviewSignals[msg.sender][requestId].remainder;
+        }
+
+        network.unlockReputation(
+            msg.sender,
+            address(reputationToken),
+            configuration.reputationTokenId,
+            (network.getBaseSignalStake(
+                address(reputationToken),
+                configuration.reputationTokenId
+            ) / reviewSignals[msg.sender][requestId].total)
+        );
 
         emit RequestReviewed(msg.sender, requestId, submissionId, score);
     }

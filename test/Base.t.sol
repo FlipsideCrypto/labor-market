@@ -168,7 +168,7 @@ contract ContractTest is PRBTest, Cheats {
 
         changePrank(bob);
         // Review the request
-        tempMarket.signalReview(requestId);
+        tempMarket.signalReview(requestId, 2);
         tempMarket.review(requestId, submissionId, 2);
 
         // Claim the reward
@@ -221,7 +221,7 @@ contract ContractTest is PRBTest, Cheats {
         // Have bob review the submissions
         changePrank(bob);
 
-        tempMarket.signalReview(requestId);
+        tempMarket.signalReview(requestId, 115);
 
         for (uint256 i; i < 113; i++) {
             if (i < 67) {
@@ -301,7 +301,7 @@ contract ContractTest is PRBTest, Cheats {
             tempMarket.provide(requestId, "IPFS://333");
 
             changePrank(bob);
-            tempMarket.signalReview(requestId);
+            tempMarket.signalReview(requestId, 8);
             tempMarket.review(requestId, 1, 2);
 
             changePrank(alice);
@@ -360,7 +360,7 @@ contract ContractTest is PRBTest, Cheats {
         changePrank(bob);
 
         // Review the request
-        tempMarket.signalReview(requestId);
+        tempMarket.signalReview(requestId, 3);
 
         // Verify that Maintainers's reputation is locked
         assertEq(
@@ -377,6 +377,16 @@ contract ContractTest is PRBTest, Cheats {
         );
 
         tempMarket.review(requestId, submissionId, 2);
+
+        // Verify that the maintainer gets returned some reputation
+        assertEq(
+            network.getAvailableReputation(
+                bob,
+                address(repToken),
+                REPUTATION_TOKEN_ID
+            ),
+            999333333333333333333 // (1000e18 - (2/3 * baseSignalStake))
+        );
 
         // Claim the reward
         changePrank(alice);
