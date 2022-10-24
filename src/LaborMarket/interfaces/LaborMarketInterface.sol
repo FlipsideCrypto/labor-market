@@ -73,7 +73,7 @@ interface LaborMarketInterface is LaborMarketConfigurationInterface {
         address indexed signaler,
         uint256 indexed requestId,
         uint256 indexed quantity,
-        uint256 signalAmount,
+        uint256 signalAmount
     );
 
     /// @notice emitted when a service request is withdrawn
