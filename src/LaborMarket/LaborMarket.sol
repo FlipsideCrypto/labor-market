@@ -315,7 +315,7 @@ contract LaborMarket is
         );
         require(
             !serviceSubmissions[submissionId].graded,
-            "LaborMarket::review: Already graded."
+            "LaborMarket::review: Already reviewed."
         );
         require(
             serviceSubmissions[submissionId].serviceProvider != msg.sender,
@@ -354,22 +354,22 @@ contract LaborMarket is
             "LaborMarket::claim: Submission does not exist."
         );
         require(
-            serviceSubmissions[submissionId].graded,
-            "LaborMarket::claim: Not graded."
+            !hasClaimed[submissionId][msg.sender],
+            "LaborMarket::claim: Already claimed."
         );
         require(
-            block.timestamp >=
-                serviceRequests[serviceSubmissions[submissionId].requestId]
-                    .enforcementExp,
-            "LaborMarket::claim: Enforcement deadline not passed."
+            serviceSubmissions[submissionId].graded,
+            "LaborMarket::claim: Not graded."
         );
         require(
             serviceSubmissions[submissionId].serviceProvider == msg.sender,
             "LaborMarket::claim: Not service provider."
         );
         require(
-            !hasClaimed[submissionId][msg.sender],
-            "LaborMarket::claim: Already claimed."
+            block.timestamp >=
+                serviceRequests[serviceSubmissions[submissionId].requestId]
+                    .enforcementExp,
+            "LaborMarket::claim: Enforcement deadline not passed."
         );
 
         uint256 curveIndex = enforcementCriteria.verify(submissionId);

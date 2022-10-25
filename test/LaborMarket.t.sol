@@ -41,14 +41,23 @@ contract ContractTest is PRBTest, Cheats {
     PaymentModule public paymentModule;
     PayCurve public payCurve;
 
+    // Define the tokenIds for ERC1155
     uint256 private constant DELEGATE_TOKEN_ID = 0;
     uint256 private constant REPUTATION_TOKEN_ID = 1;
     uint256 private constant PAYMENT_TOKEN_ID = 2;
 
+    // Deployer
     address private deployer = address(0xDe);
 
+    // Maintainer
     address private bob = address(0x1);
+
+    // User
     address private alice = address(0x2);
+
+    // Evil user
+    address private evilUser =
+        address(uint160(uint256(keccak256("EVIL_USER"))));
 
     event LaborMarketCreated(
         address indexed organization,
@@ -448,25 +457,235 @@ contract ContractTest is PRBTest, Cheats {
                         ACCESS CONTROLS
     //////////////////////////////////////////////////////////////*/
 
-    function test_PermittedParticipant() public {}
+    function test_PermittedParticipant() public {
+        vm.startPrank(bob);
 
-    function test_OnlyMaintainer() public {}
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
 
-    function test_CanOnlyInitializeOnce() public {}
+        changePrank(evilUser);
 
-    function test_CanOnlySignalOnce() public {}
+        // Try to signal the request and expect it to revert
+        vm.expectRevert(
+            "LaborMarket::permittedParticipant: Not a permitted participant"
+        );
+        market.signal(requestId);
+        vm.stopPrank();
+    }
 
-    function test_CanOnlySignalReviewOnce() public {}
+    function test_OnlyMaintainer() public {
+        vm.startPrank(bob);
 
-    function test_CanOnlyReviewOnce() public {}
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
 
-    function test_CanOnlyClaimOnce() public {}
+        // A valid user signals
+        changePrank(alice);
+        market.signal(requestId);
 
-    function test_CanOnlyProvideOnce() public {}
+        // A user tries to signal for review and we expect it to revert
+        vm.expectRevert("LaborMarket::onlyMaintainer: Not a maintainer");
+        market.signalReview(requestId, 3);
+
+        // We also expect a revert if a random address tries to review
+        changePrank(evilUser);
+
+        vm.expectRevert("LaborMarket::onlyMaintainer: Not a maintainer");
+        market.signalReview(requestId, 3);
+
+        vm.stopPrank();
+    }
+
+    function test_CanOnlyInitializeOnce() public {
+        vm.startPrank(deployer);
+
+        LaborMarketConfigurationInterface.LaborMarketConfiguration
+            memory config = LaborMarketConfigurationInterface
+                .LaborMarketConfiguration({
+                    network: address(network),
+                    enforcementModule: address(enforcementCriteria),
+                    paymentModule: address(payCurve),
+                    delegateBadge: address(repToken),
+                    delegateTokenId: DELEGATE_TOKEN_ID,
+                    reputationToken: address(repToken),
+                    reputationTokenId: REPUTATION_TOKEN_ID,
+                    repParticipantMultiplier: 1,
+                    repMaintainerMultiplier: 1,
+                    marketUri: "ipfs://000"
+                });
+
+        // Attempt to initialize the market again and expect it to revert
+        vm.expectRevert("Initializable: contract is already initialized");
+        market.initialize(config);
+        vm.stopPrank();
+    }
+
+    function test_CanOnlySignalOnce() public {
+        vm.startPrank(bob);
+
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
+
+        // A valid user signals
+        changePrank(alice);
+        market.signal(requestId);
+
+        // Valid user tries to signal same request again and we expect it to revert
+        vm.expectRevert("LaborMarket::signal: Already signaled.");
+        market.signal(requestId);
+
+        vm.stopPrank();
+    }
+
+    function test_CanOnlySignalReviewOnce() public {
+        vm.startPrank(bob);
+
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
+
+        // A maintainer signals for review
+        changePrank(bob);
+        market.signalReview(requestId, 3);
+
+        // Maintainer tries to signal same request again and we expect it to revert
+        vm.expectRevert("LaborMarket::signalReview: Already signaled.");
+        market.signalReview(requestId, 3);
+
+        vm.stopPrank();
+    }
+
+    function test_CanOnlyReviewOnce() public {
+        vm.startPrank(bob);
+
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
+
+        changePrank(alice);
+        market.signal(requestId);
+        market.provide(requestId, "ipfs://000");
+
+        // A maintainer signals for review
+        changePrank(bob);
+        market.signalReview(requestId, 3);
+
+        // Maintainer tries to review twice
+        market.review(requestId, 1, 2);
+
+        vm.expectRevert("LaborMarket::review: Already reviewed.");
+        market.review(requestId, 1, 2);
+        vm.stopPrank();
+    }
+
+    function test_CanOnlyClaimOnce() public {
+        vm.startPrank(bob);
+
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
+
+        // A valid user signals
+        changePrank(alice);
+        market.signal(requestId);
+
+        // User fulfills the request
+        uint256 submissionId = market.provide(requestId, "IPFS://333");
+
+        // A valid maintainer signals for review
+        changePrank(bob);
+        market.signalReview(requestId, 3);
+
+        // A valid maintainer reviews the request
+        market.review(requestId, submissionId, 2);
+
+        // Skip time
+        vm.warp(5 weeks);
+
+        // User claims reward
+        changePrank(alice);
+        market.claim(submissionId);
+
+        // User tries to claim same reward again
+        vm.expectRevert("LaborMarket::claim: Already claimed.");
+        market.claim(submissionId);
+
+        vm.stopPrank();
+    }
+
+    function test_CanOnlyProvideOnce() public {
+        vm.startPrank(bob);
+
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
+
+        // A valid user signals
+        changePrank(alice);
+        market.signal(requestId);
+
+        // User fulfills the request
+        market.provide(requestId, "IPFS://333");
+
+        // Try to fulfill the request again and expect it to revert
+        vm.expectRevert("LaborMarket::provide: Already submitted.");
+        market.provide(requestId, "IPFS://333");
+
+        vm.stopPrank();
+    }
 
     function test_CannotSelfReview() public {}
 
-    function test_CannotClaimOthersSubmission() public {}
+    function test_CannotClaimForUngradedSubmission() public {
+        vm.startPrank(bob);
+
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
+
+        // A valid user signals
+        changePrank(alice);
+        market.signal(requestId);
+
+        // User fulfills the request
+        uint256 submissionId = market.provide(requestId, "IPFS://333");
+
+        // A valid maintainer signals for review
+        changePrank(bob);
+        market.signalReview(requestId, 3);
+
+        // No reviewing happens
+
+        // User attempts to claim the reward, we expect a revert
+        changePrank(alice);
+        vm.expectRevert("LaborMarket::claim: Not graded.");
+        market.claim(submissionId);
+
+        vm.stopPrank();
+    }
+
+    function test_CannotClaimOthersSubmission() public {
+        vm.startPrank(bob);
+
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
+
+        // A valid user signals
+        changePrank(alice);
+        market.signal(requestId);
+
+        // User fulfills the request
+        uint256 submissionId = market.provide(requestId, "IPFS://333");
+
+        // A valid maintainer signals for review
+        changePrank(bob);
+        market.signalReview(requestId, 3);
+
+        // A valid maintainer reviews the request
+        market.review(requestId, submissionId, 2);
+
+        // User claims reward
+        changePrank(evilUser);
+        vm.expectRevert("LaborMarket::claim: Not service provider.");
+        market.claim(submissionId);
+
+        vm.stopPrank();
+    }
 
     function test_VerifyReputationAccounting() public {}
 
@@ -475,4 +694,8 @@ contract ContractTest is PRBTest, Cheats {
     function test_CannotWithdrawActiveRequest() public {}
 
     function test_DeadlinesAreFunctional() public {}
+
+    function test_CannotProvideWithoutSignal() public {}
+
+    function test_CannotReviewWithoutSignal() public {}
 }
