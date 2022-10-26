@@ -59,10 +59,42 @@ contract ContractTest is PRBTest, Cheats {
     address private evilUser =
         address(uint160(uint256(keccak256("EVIL_USER"))));
 
+    // Events
     event LaborMarketCreated(
         address indexed organization,
         address indexed owner,
         address indexed implementation
+    );
+
+    event RequestCreated(
+        address indexed requester,
+        uint256 indexed requestId,
+        string indexed uri,
+        address pToken,
+        uint256 pTokenId,
+        uint256 pTokenQ,
+        uint256 signalExp,
+        uint256 submissionExp,
+        uint256 enforcementExp
+    );
+
+    event RequestSignal(
+        address indexed signaler,
+        uint256 indexed requestId,
+        uint256 signalAmount
+    );
+
+    event ReviewSignal(
+        address indexed signaler,
+        uint256 indexed requestId,
+        uint256 indexed quantity,
+        uint256 signalAmount
+    );
+
+    event RequestFulfilled(
+        address indexed fulfiller,
+        uint256 indexed requestId,
+        uint256 indexed submissionId
     );
 
     /*//////////////////////////////////////////////////////////////
@@ -451,7 +483,86 @@ contract ContractTest is PRBTest, Cheats {
         market.claim(submissionId);
     }
 
-    function test_VerifyAllEmittedEvents() public {}
+    function test_VerifyAllEmittedEvents() public {
+        vm.startPrank(bob);
+
+        LaborMarketConfigurationInterface.LaborMarketConfiguration
+            memory config = LaborMarketConfigurationInterface
+                .LaborMarketConfiguration({
+                    network: address(network),
+                    enforcementModule: address(enforcementCriteria),
+                    paymentModule: address(payCurve),
+                    delegateBadge: address(repToken),
+                    delegateTokenId: DELEGATE_TOKEN_ID,
+                    reputationToken: address(repToken),
+                    reputationTokenId: REPUTATION_TOKEN_ID,
+                    repParticipantMultiplier: 1,
+                    repMaintainerMultiplier: 1,
+                    marketUri: "ipfs://000"
+                });
+
+        // Verify market creation event
+        vm.expectEmit(false, true, true, true);
+        emit LaborMarketCreated(
+            address(market),
+            deployer,
+            address(implementation)
+        );
+
+        // Create a market
+        market = LaborMarket(
+            network.createLaborMarket({
+                _implementation: address(implementation),
+                _deployer: deployer,
+                _configuration: config
+            })
+        );
+
+        // Verify service request creation event
+        address pToken = address(repToken);
+        uint256 pTokenId = PAYMENT_TOKEN_ID;
+        uint256 pTokenQ = 100e18;
+        uint256 signalExp = block.timestamp + 1 hours;
+        uint256 submissionExp = block.timestamp + 1 days;
+        uint256 enforcementExp = block.timestamp + 1 weeks;
+        string memory requestUri = "ipfs://222";
+        uint256 serviceRequestId;
+
+        vm.expectEmit(true, false, true, true);
+        emit RequestCreated(
+            address(bob),
+            serviceRequestId,
+            requestUri,
+            pToken,
+            pTokenId,
+            pTokenQ,
+            signalExp,
+            submissionExp,
+            enforcementExp
+        );
+
+        uint256 requestId = createSimpleRequest(market);
+
+        // Verify signaling events
+        vm.expectEmit(true, true, true, true);
+        emit RequestSignal(address(alice), requestId, 1e18);
+
+        changePrank(alice);
+        market.signal(requestId);
+
+        vm.expectEmit(true, true, true, true);
+        emit ReviewSignal(address(bob), requestId, 3, 1e18);
+
+        changePrank(bob);
+        market.signalReview(requestId, 3);
+
+        // Verify submission events
+        vm.expectEmit(true, true, true, true);
+        emit RequestFulfilled(address(alice), requestId, 1);
+
+        changePrank(alice);
+        uint256 submissionId = market.provide(requestId, "IPFS://333");
+    }
 
     /*//////////////////////////////////////////////////////////////
                         ACCESS CONTROLS
@@ -687,15 +798,114 @@ contract ContractTest is PRBTest, Cheats {
         vm.stopPrank();
     }
 
-    function test_VerifyReputationAccounting() public {}
+    function test_CannotWithdrawActiveRequest() public {
+        vm.startPrank(bob);
 
-    function test_VerifyClaimAccounting() public {}
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
 
-    function test_CannotWithdrawActiveRequest() public {}
+        // A valid user signals
+        changePrank(alice);
+        market.signal(requestId);
 
-    function test_DeadlinesAreFunctional() public {}
+        changePrank(bob);
+        // User tries to withdraw the request
+        vm.expectRevert("LaborMarket::withdrawRequest: Already active.");
+        market.withdrawRequest(requestId);
 
-    function test_CannotProvideWithoutSignal() public {}
+        vm.stopPrank();
+    }
 
-    function test_CannotReviewWithoutSignal() public {}
+    function test_OnlyCreatorCanWithdrawRequest() public {
+        vm.startPrank(bob);
+
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
+
+        // An evil user attempts to withdraw the request
+        changePrank(evilUser);
+        vm.expectRevert("LaborMarket::withdrawRequest: Not service requester.");
+        market.withdrawRequest(requestId);
+
+        vm.stopPrank();
+    }
+
+    function test_DeadlinesAreFunctional() public {
+        vm.startPrank(bob);
+
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
+
+        // Skip past signal deadline
+        vm.warp(block.timestamp + 100 weeks);
+
+        // Attempt to signal
+        changePrank(alice);
+        vm.expectRevert("LaborMarket::signal: Signal deadline passed.");
+        market.signal(requestId);
+
+        // Go back in time
+        vm.warp(block.timestamp - 100 weeks);
+
+        // A valid user signals
+        market.signal(requestId);
+
+        // Skip past submission deadline
+        vm.warp(block.timestamp + 100 weeks);
+
+        // Attempt to fulfill
+        vm.expectRevert("LaborMarket::provide: Submission deadline passed.");
+        uint256 submissionId = market.provide(requestId, "IPFS://333");
+
+        // Go back in time
+        vm.warp(block.timestamp - 100 weeks);
+
+        submissionId = market.provide(requestId, "IPFS://333");
+
+        // A valid maintainer signals for review
+        changePrank(bob);
+        market.signalReview(requestId, 3);
+
+        // Skip past enforcement deadline
+        vm.warp(block.timestamp + 100 weeks);
+
+        // Should revert
+        vm.expectRevert("LaborMarket::review: Enforcement deadline passed.");
+        market.review(requestId, submissionId, 2);
+
+        vm.stopPrank();
+    }
+
+    function test_CannotProvideWithoutSignal() public {
+        vm.startPrank(bob);
+
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
+
+        // Attempt to fulfill
+        vm.expectRevert("LaborMarket::provide: Not signaled.");
+        market.provide(requestId, "IPFS://333");
+
+        vm.stopPrank();
+    }
+
+    function test_CannotReviewWithoutSignal() public {
+        vm.startPrank(bob);
+
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
+
+        // A valid user signals
+        changePrank(alice);
+        market.signal(requestId);
+
+        // User fulfills the request
+        uint256 submissionId = market.provide(requestId, "IPFS://333");
+
+        // Attempt to review
+        vm.expectRevert("LaborMarket::review: Not signaled.");
+        market.review(requestId, submissionId, 2);
+
+        vm.stopPrank();
+    }
 }
