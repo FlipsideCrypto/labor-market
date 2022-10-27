@@ -16,7 +16,6 @@ import {LaborMarketFactory} from "src/Network/LaborMarketFactory.sol";
 import {LaborMarketNetwork} from "src/Network/LaborMarketNetwork.sol";
 import {LaborMarketVersions} from "src/Network/LaborMarketVersions.sol";
 
-import {EnforcementModule} from "src/Modules/Enforcement/EnforcementModule.sol";
 import {EnforcementCriteria} from "src/Modules/Enforcement/EnforcementCriteria.sol";
 
 import {PaymentModule} from "src/Modules/Payment/PaymentModule.sol";
@@ -36,7 +35,6 @@ contract ContractTest is PRBTest, Cheats {
 
     LaborMarketNetwork public network;
 
-    EnforcementModule public enforcementModule;
     EnforcementCriteria public enforcementCriteria;
     PaymentModule public paymentModule;
     PayCurve public payCurve;
