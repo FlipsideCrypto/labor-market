@@ -7,8 +7,9 @@ import {console} from "forge-std/console.sol";
 import {PRBTest} from "@prb/test/PRBTest.sol";
 
 // Contracts
-import {ReputationToken, CapacityToken} from "./Helpers/HelperTokens.sol";
+import {MockERC1155, MockERC20} from "./Helpers/HelperTokens.sol";
 
+import {LaborMarketConfigurationInterface} from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
 import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
 import {LaborMarket} from "src/LaborMarket/LaborMarket.sol";
 
@@ -22,12 +23,14 @@ import {EnforcementCriteria} from "src/Modules/Enforcement/EnforcementCriteria.s
 import {PaymentModule} from "src/Modules/Payment/PaymentModule.sol";
 import {PayCurve} from "src/Modules/Payment/PayCurve.sol";
 
-import {LaborMarketConfigurationInterface} from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
-import {LaborMarketNetworkInterface} from "src/Network/interfaces/LaborMarketNetworkInterface.sol";
+import {ReputationToken} from "src/Modules/Reputation/ReputationToken.sol";
+
+import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/ReputationModuleInterface.sol";
+import {ReputationModule} from "src/Modules/Reputation/ReputationModule.sol";
 
 contract ContractTest is PRBTest, Cheats {
-    ReputationToken public repToken;
-    CapacityToken public capToken;
+    MockERC1155 public baseRepToken;
+    MockERC20 public capToken;
 
     LaborMarket public implementation;
     LaborMarket public tempMarket;
@@ -41,9 +44,15 @@ contract ContractTest is PRBTest, Cheats {
     PaymentModule public paymentModule;
     PayCurve public payCurve;
 
+    ReputationToken public reputationTokenMaster;
+    ReputationToken public reputationToken;
+    ReputationModule public reputationModule;
+
     uint256 private constant DELEGATE_TOKEN_ID = 0;
     uint256 private constant REPUTATION_TOKEN_ID = 1;
     uint256 private constant PAYMENT_TOKEN_ID = 2;
+    uint256 private constant REPUTATION_DECAY_RATE = 0;
+    uint256 private constant REPUTATION_DECAY_INTERVAL = 0;
 
     address private deployer = address(0xDe);
 
@@ -60,8 +69,8 @@ contract ContractTest is PRBTest, Cheats {
         vm.startPrank(deployer);
 
         // Create a capacity & reputation token
-        repToken = new ReputationToken("ipfs://000");
-        capToken = new CapacityToken();
+        baseRepToken = new MockERC1155("ipfs://000");
+        capToken = new MockERC20();
 
         // Deploy an empty labor market for implementation
         implementation = new LaborMarket();
@@ -69,24 +78,10 @@ contract ContractTest is PRBTest, Cheats {
         // Deploy a labor market factory
         factory = new LaborMarketFactory(address(implementation));
 
-        LaborMarketNetworkInterface.ReputationTokenConfig
-            memory repConfig = LaborMarketNetworkInterface
-                .ReputationTokenConfig({
-                    manager: deployer,
-                    decayRate: 0,
-                    decayInterval: 0,
-                    baseSignalStake: 1e18,
-                    baseMaintainerThreshold: 100e18,
-                    baseProviderThreshold: 10e18
-                });
-
         // Deploy a labor market network
         network = new LaborMarketNetwork({
             _factoryImplementation: address(implementation),
-            _capacityImplementation: address(capToken),
-            _baseReputationImplementation: address(repToken),
-            _baseReputationTokenId: REPUTATION_TOKEN_ID,
-            _baseReputationConfig: repConfig
+            _capacityImplementation: address(capToken)
         });
 
         // Create enforcement criteria
@@ -98,6 +93,33 @@ contract ContractTest is PRBTest, Cheats {
         // Create a new pay curve
         payCurve = new PayCurve();
 
+        // Create a reputation module
+        reputationModule = new ReputationModule(address(network));
+
+        // Deploy an empty reputation token for cloning.
+        reputationTokenMaster = new ReputationToken();
+
+        // Create a reputation token with the Mock1155
+        reputationToken = ReputationToken(
+            reputationModule.createReputationToken(
+                address(reputationTokenMaster),
+                address(baseRepToken),
+                REPUTATION_TOKEN_ID,
+                REPUTATION_DECAY_RATE,
+                REPUTATION_DECAY_INTERVAL
+            )
+        );
+
+        // Create the ReputationConfig for the Labor Market
+        ReputationModuleInterface.ReputationMarketConfig 
+            memory repConfig = ReputationModuleInterface
+                .ReputationMarketConfig({
+                    reputationToken: address(reputationToken),
+                    signalStake: 0,
+                    providerThreshold: 0,
+                    maintainerThreshold: 0 
+                });
+
         // Create a new labor market
         LaborMarketConfigurationInterface.LaborMarketConfiguration
             memory config = LaborMarketConfigurationInterface
@@ -105,13 +127,11 @@ contract ContractTest is PRBTest, Cheats {
                     network: address(network),
                     enforcementModule: address(enforcementCriteria),
                     paymentModule: address(payCurve),
-                    delegateBadge: address(repToken),
+                    marketUri: "ipfs://000",
+                    delegateBadge: address(baseRepToken),
                     delegateTokenId: DELEGATE_TOKEN_ID,
-                    reputationToken: address(repToken),
-                    reputationTokenId: REPUTATION_TOKEN_ID,
-                    repParticipantMultiplier: 1,
-                    repMaintainerMultiplier: 1,
-                    marketUri: "ipfs://000"
+                    reputationModule: address(reputationModule),
+                    reputationConfig: repConfig
                 });
 
         tempMarket = LaborMarket(
@@ -124,14 +144,14 @@ contract ContractTest is PRBTest, Cheats {
 
         // Approve and mint tokens
         changePrank(alice);
-        repToken.freeMint(alice, REPUTATION_TOKEN_ID, 100e18);
-        repToken.freeMint(alice, DELEGATE_TOKEN_ID, 1);
-        repToken.setApprovalForAll(address(tempMarket), true);
+        baseRepToken.freeMint(alice, REPUTATION_TOKEN_ID, 100e18);
+        baseRepToken.freeMint(alice, DELEGATE_TOKEN_ID, 1);
+        baseRepToken.setApprovalForAll(address(tempMarket), true);
 
         changePrank(bob);
-        repToken.freeMint(bob, REPUTATION_TOKEN_ID, 1000e18);
-        repToken.freeMint(bob, DELEGATE_TOKEN_ID, 1);
-        repToken.setApprovalForAll(address(tempMarket), true);
+        baseRepToken.freeMint(bob, REPUTATION_TOKEN_ID, 1000e18);
+        baseRepToken.freeMint(bob, DELEGATE_TOKEN_ID, 1);
+        baseRepToken.setApprovalForAll(address(tempMarket), true);
 
         vm.stopPrank();
     }
@@ -142,7 +162,7 @@ contract ContractTest is PRBTest, Cheats {
 
         // Create a request
         uint256 requestId = tempMarket.submitRequest({
-            pToken: address(repToken),
+            pToken: address(baseRepToken),
             pTokenId: PAYMENT_TOKEN_ID,
             pTokenQ: 100e18,
             signalExp: block.timestamp + 1 hours,
@@ -154,7 +174,7 @@ contract ContractTest is PRBTest, Cheats {
         // Verify the request was created
         assertEq(tempMarket.serviceRequestId(), 1);
         assertEq(tempMarket.getRequest(requestId).serviceRequester, bob);
-        assertEq(tempMarket.getRequest(requestId).pToken, address(repToken));
+        assertEq(tempMarket.getRequest(requestId).pToken, address(baseRepToken));
 
         // Signal the request
         changePrank(alice);
@@ -193,7 +213,7 @@ contract ContractTest is PRBTest, Cheats {
 
         // Create a request
         uint256 requestId = tempMarket.submitRequest({
-            pToken: address(repToken),
+            pToken: address(baseRepToken),
             pTokenId: PAYMENT_TOKEN_ID,
             pTokenQ: 100e18,
             signalExp: block.timestamp + 1 hours,
@@ -208,11 +228,11 @@ contract ContractTest is PRBTest, Cheats {
             changePrank(user);
 
             // Mint required tokens
-            repToken.freeMint(user, DELEGATE_TOKEN_ID, 1);
-            repToken.freeMint(user, REPUTATION_TOKEN_ID, 100e18);
+            baseRepToken.freeMint(user, DELEGATE_TOKEN_ID, 1);
+            baseRepToken.freeMint(user, REPUTATION_TOKEN_ID, 100e18);
 
             // Aprove the market
-            repToken.setApprovalForAll(address(tempMarket), true);
+            baseRepToken.setApprovalForAll(address(tempMarket), true);
 
             tempMarket.signal(requestId);
             tempMarket.provide(requestId, "NaN");
@@ -254,20 +274,26 @@ contract ContractTest is PRBTest, Cheats {
     function test_CreateMultipleMarkets() public {
         vm.startPrank(deployer);
 
-        // Example configuration
+        ReputationModuleInterface.ReputationMarketConfig 
+            memory repConfig = ReputationModuleInterface
+                .ReputationMarketConfig({
+                    reputationToken: address(reputationToken),
+                    signalStake: 0,
+                    providerThreshold: 0,
+                    maintainerThreshold: 0 
+                });
+
         LaborMarketConfigurationInterface.LaborMarketConfiguration
             memory config = LaborMarketConfigurationInterface
                 .LaborMarketConfiguration({
                     network: address(network),
                     enforcementModule: address(enforcementCriteria),
                     paymentModule: address(payCurve),
-                    delegateBadge: address(repToken),
+                    marketUri: "ipfs://000",
+                    delegateBadge: address(baseRepToken),
                     delegateTokenId: DELEGATE_TOKEN_ID,
-                    reputationToken: address(repToken),
-                    reputationTokenId: REPUTATION_TOKEN_ID,
-                    repParticipantMultiplier: 1,
-                    repMaintainerMultiplier: 1,
-                    marketUri: "ipfs://000"
+                    reputationModule: address(reputationModule),
+                    reputationConfig: repConfig
                 });
 
         for (uint256 i; i < 10; ++i) {
@@ -287,7 +313,7 @@ contract ContractTest is PRBTest, Cheats {
 
             changePrank(bob);
             uint256 requestId = tempMarket.submitRequest({
-                pToken: address(repToken),
+                pToken: address(baseRepToken),
                 pTokenId: PAYMENT_TOKEN_ID,
                 pTokenQ: 100e18,
                 signalExp: block.timestamp + 1 hours,
@@ -316,7 +342,7 @@ contract ContractTest is PRBTest, Cheats {
 
         // Create a request
         uint256 requestId = tempMarket.submitRequest({
-            pToken: address(repToken),
+            pToken: address(baseRepToken),
             pTokenId: PAYMENT_TOKEN_ID,
             pTokenQ: 100e18,
             signalExp: block.timestamp + 1 hours,
@@ -331,26 +357,18 @@ contract ContractTest is PRBTest, Cheats {
 
         // Verify that Alice's reputation is locked
         assertEq(
-            network.getAvailableReputation(
-                alice,
-                address(repToken),
-                REPUTATION_TOKEN_ID
+            reputationModule.getAvailableReputation(
+                alice
             ),
-            (100e18 -
-                network.getBaseSignalStake(
-                    address(repToken),
-                    REPUTATION_TOKEN_ID
-                ))
+            (100e18 - reputationModule.signalStake())
         );
 
         // Fulfill the request
         uint256 submissionId = tempMarket.provide(requestId, "IPFS://333");
 
         assertEq(
-            network.getAvailableReputation(
-                alice,
-                address(repToken),
-                REPUTATION_TOKEN_ID
+            reputationModule.getAvailableReputation(
+                alice
             ),
             100e18
         );
@@ -364,16 +382,10 @@ contract ContractTest is PRBTest, Cheats {
 
         // Verify that Maintainers's reputation is locked
         assertEq(
-            network.getAvailableReputation(
-                bob,
-                address(repToken),
-                REPUTATION_TOKEN_ID
+            reputationModule.getAvailableReputation(
+                bob
             ),
-            (1000e18 -
-                network.getBaseSignalStake(
-                    address(repToken),
-                    REPUTATION_TOKEN_ID
-                ))
+            (1000e18 - reputationModule.signalStake())
         );
 
         tempMarket.review(requestId, submissionId, 2);

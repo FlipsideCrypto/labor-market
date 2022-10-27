@@ -14,6 +14,7 @@ import {StringsUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/Stri
 import {LaborMarketNetwork} from "../Network/LaborMarketNetwork.sol";
 import {EnforcementCriteriaInterface} from "../Modules/Enforcement/interfaces/EnforcementCriteriaInterface.sol";
 import {PayCurveInterface} from "../Modules/Payment/interfaces/PayCurveInterface.sol";
+import {ReputationModuleInterface} from "../Modules/Reputation/interfaces/ReputationModuleInterface.sol";
 import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 
 /// @dev Supported interfaces.
@@ -29,9 +30,9 @@ contract LaborMarket is
     LaborMarketNetwork public network;
     EnforcementCriteriaInterface public enforcementCriteria;
     PayCurveInterface public paymentCurve;
+    ReputationModuleInterface public reputationModule;
 
     IERC1155 public delegateBadge;
-    IERC1155 public reputationToken;
 
     LaborMarketConfiguration public configuration;
 
@@ -57,15 +58,9 @@ contract LaborMarket is
                 msg.sender,
                 configuration.delegateTokenId
             ) >= 1) ||
-                (network.getAvailableReputation(
-                    msg.sender,
-                    configuration.reputationToken,
-                    configuration.reputationTokenId
-                ) >=
-                    (network.getBaseProviderThreshold(
-                        configuration.reputationToken,
-                        configuration.reputationTokenId
-                    ) * configuration.repParticipantMultiplier)),
+                (reputationModule.getAvailableReputation(
+                    msg.sender
+                ) >= reputationModule.providerThreshold()),
             "LaborMarket::permittedParticipant: Not a permitted participant"
         );
         _;
@@ -77,15 +72,9 @@ contract LaborMarket is
 
     modifier onlyMaintainer() {
         require(
-            network.getAvailableReputation(
-                msg.sender,
-                configuration.reputationToken,
-                configuration.reputationTokenId
-            ) >=
-                (network.getBaseMaintainerThreshold(
-                    configuration.reputationToken,
-                    configuration.reputationTokenId
-                ) * configuration.repMaintainerMultiplier),
+            reputationModule.getAvailableReputation(
+                msg.sender
+            ) >= reputationModule.maintainerThreshold(),
             "LaborMarket::onlyMaintainer: Not a maintainer"
         );
         _;
@@ -170,15 +159,10 @@ contract LaborMarket is
             "LaborMarket::signal: Already signaled."
         );
 
-        uint256 signalStake = network.getBaseSignalStake(
-            address(reputationToken),
-            configuration.reputationTokenId
-        );
+        uint256 signalStake = reputationModule.signalStake();
 
-        network.lockReputation(
+        reputationModule.lockReputation(
             msg.sender,
-            address(reputationToken),
-            configuration.reputationTokenId,
             signalStake
         );
 
@@ -205,15 +189,10 @@ contract LaborMarket is
             "LaborMarket::signalReview: Already signaled."
         );
 
-        uint256 signalStake = network.getBaseSignalStake(
-            address(reputationToken),
-            configuration.reputationTokenId
-        );
+        uint256 signalStake = reputationModule.signalStake();
 
-        network.lockReputation(
+        reputationModule.lockReputation(
             msg.sender,
-            address(reputationToken),
-            configuration.reputationTokenId,
             signalStake
         );
 
@@ -265,14 +244,9 @@ contract LaborMarket is
 
         hasSubmitted[requestId][msg.sender] = true;
 
-        network.unlockReputation(
+        reputationModule.unlockReputation(
             msg.sender,
-            address(reputationToken),
-            configuration.reputationTokenId,
-            network.getBaseSignalStake(
-                address(reputationToken),
-                configuration.reputationTokenId
-            )
+            reputationModule.signalStake()
         );
 
         emit RequestFulfilled(msg.sender, requestId, serviceSubmissionId);
@@ -322,14 +296,9 @@ contract LaborMarket is
         serviceSubmissions[submissionId].score = score;
         serviceSubmissions[submissionId].graded = true;
 
-        // network.unlockReputation(
+        // reputationModule.unlockReputation(
         //     msg.sender,
-        //     address(reputationToken),
-        //     configuration.reputationTokenId,
-        //     network.getBaseSignalStake(
-        //         address(reputationToken),
-        //         configuration.reputationTokenId
-        //     )
+        //     reputationModule.signalStake()
         // );
 
         emit RequestReviewed(msg.sender, requestId, submissionId, score);
@@ -424,15 +393,6 @@ contract LaborMarket is
         /// @dev Connect to the higher level network to pull the active states.
         network = LaborMarketNetwork(_configuration.network);
 
-        /// @dev Ensure the reputation token has been configured.
-        require(
-            network.getReputationManager(
-                _configuration.reputationToken,
-                _configuration.reputationTokenId
-            ) != address(0),
-            "LaborMarket:: _setConfiguration: Reputation token not configured."
-        );
-
         /// @dev Configure the Labor Market state control.
         enforcementCriteria = EnforcementCriteriaInterface(
             _configuration.enforcementModule
@@ -441,7 +401,6 @@ contract LaborMarket is
 
         /// @dev Configure the Labor Market access control.
         delegateBadge = IERC1155(_configuration.delegateBadge);
-        reputationToken = IERC1155(_configuration.reputationToken);
 
         /// @dev Configure the Labor Market parameters.
         configuration = _configuration;
