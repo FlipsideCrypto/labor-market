@@ -358,9 +358,10 @@ contract ContractTest is PRBTest, Cheats {
         // Verify that Alice's reputation is locked
         assertEq(
             reputationModule.getAvailableReputation(
+                address(tempMarket),
                 alice
             ),
-            (100e18 - reputationModule.signalStake())
+            (100e18 - reputationModule.getSignalStake(address(tempMarket)))
         );
 
         // Fulfill the request
@@ -368,6 +369,7 @@ contract ContractTest is PRBTest, Cheats {
 
         assertEq(
             reputationModule.getAvailableReputation(
+                address(tempMarket),
                 alice
             ),
             100e18
@@ -383,9 +385,10 @@ contract ContractTest is PRBTest, Cheats {
         // Verify that Maintainers's reputation is locked
         assertEq(
             reputationModule.getAvailableReputation(
+                address(tempMarket),
                 bob
             ),
-            (1000e18 - reputationModule.signalStake())
+            (1000e18 - reputationModule.getSignalStake(address(tempMarket)))
         );
 
         tempMarket.review(requestId, submissionId, 2);

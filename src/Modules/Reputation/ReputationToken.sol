@@ -10,7 +10,6 @@ import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/O
 // TODO: Should we apply decay on freeze and on unlock? Just on freeze? The getAvailableReputation
 //       function accounts for the decay for external checks.
 // TODO: Should decayed reputation emit its own event?
-// TODO: This probably needs a factory.
 
 contract ReputationToken is 
       ReputationTokenInterface

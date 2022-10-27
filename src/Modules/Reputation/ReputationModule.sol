@@ -102,7 +102,7 @@ contract ReputationModule is ReputationModuleInterface {
         override
         public 
     {
-        require(repToken() != address(0), "ReputationModule: This Labor Market does not exist.");
+        require(_callerReputationToken() != address(0), "ReputationModule: This Labor Market does not exist.");
 
         laborMarketRepConfig[msg.sender] = _repConfig;
 
@@ -119,7 +119,17 @@ contract ReputationModule is ReputationModuleInterface {
         override
         public
     {
-        return ReputationModuleInterface(repToken()).freezeReputation(
+        _freezeReputation(_callerReputationToken(), _account, _frozenUntilEpoch);
+    }
+
+    function _freezeReputation(
+          address _reputationToken
+        , address _account
+        , uint256 _frozenUntilEpoch
+    )
+        internal
+    {
+        ReputationTokenInterface(_reputationToken).freezeReputation(
               _account
             , _frozenUntilEpoch
         );
@@ -135,7 +145,17 @@ contract ReputationModule is ReputationModuleInterface {
         override
         public
     {
-        ReputationModuleInterface(repToken()).lockReputation(
+        _lockReputation(_callerReputationToken(), _account, _amount);
+    }
+
+    function _lockReputation(
+          address _reputationToken
+        , address _account
+        , uint256 _amount
+    ) 
+        internal
+    {
+        ReputationTokenInterface(_reputationToken).lockReputation(
               _account
             , _amount
         );
@@ -151,32 +171,29 @@ contract ReputationModule is ReputationModuleInterface {
         override
         public
     {
-        ReputationModuleInterface(repToken()).unlockReputation(
+        _unlockReputation(_callerReputationToken(), _account, _amount);
+    }
+    
+    function _unlockReputation(
+          address _reputationToken
+        , address _account
+        , uint256 _amount
+    ) 
+        internal
+    {
+        ReputationTokenInterface(_reputationToken).unlockReputation(
               _account
             , _amount
         );
     }
 
     /**
-     * @dev See {ReputationToken-setDecayConfig}.
-     */
-    function setDecayConfig(
-          uint256 _decayRate
-        , uint256 _decayInterval
-    ) 
-        override
-        public
-    {
-        ReputationModuleInterface(repToken()).setDecayConfig(
-              _decayRate
-            , _decayInterval
-        );
-    }
-
-    /**
      * @dev See {ReputationToken-getAvailableReputation}.
      */
-    function getAvailableReputation(address _account)
+    function getAvailableReputation(
+          address _laborMarket
+        , address _account
+    )
         override
         public
         view
@@ -184,10 +201,15 @@ contract ReputationModule is ReputationModuleInterface {
             uint256
         )
     {
-        return ReputationModuleInterface(repToken()).getAvailableReputation(_account);
+        return ReputationTokenInterface(
+            getReputationToken(_laborMarket)
+        ).getAvailableReputation(_account);
     }
 
-    function getPendingDecay(address _account)
+    function getPendingDecay(
+          address _laborMarket
+        , address _account
+    )
         override
         public
         view
@@ -195,13 +217,18 @@ contract ReputationModule is ReputationModuleInterface {
             uint256
         )
     {
-        return ReputationModuleInterface(repToken()).getPendingDecay(_account);
+        return ReputationTokenInterface(
+            getReputationToken(_laborMarket)
+        ).getPendingDecay(_account);
     }
 
     /**
      * @dev See {ReputationToken-getReputationAccountInfo}.
      */
-    function getReputationAccountInfo(address _account)
+    function getReputationAccountInfo(
+          address _laborMarket
+        , address _account
+    )
         override
         public
         view
@@ -209,13 +236,15 @@ contract ReputationModule is ReputationModuleInterface {
             ReputationTokenInterface.ReputationAccountInfo memory
         )
     {
-        return ReputationModuleInterface(repToken()).getReputationAccountInfo(_account);
+        return ReputationTokenInterface(
+            getReputationToken(_laborMarket)
+        ).getReputationAccountInfo(_account);
     }
 
     /**
-     * @dev Returns the base provider threshold of the Reputation Token for the current Labor Market.
+     * @dev Returns the base provider threshold of the Reputation Token for the Labor Market.
      */
-    function signalStake()
+    function getSignalStake(address _laborMarket)
         override
         public
         view
@@ -223,13 +252,13 @@ contract ReputationModule is ReputationModuleInterface {
             uint256
         )
     {
-        return laborMarketRepConfig[msg.sender].providerThreshold;
+        return laborMarketRepConfig[_laborMarket].signalStake;
     }
 
     /**
-     * @dev Returns the base provider threshold of the Reputation Token for the current Labor Market.
+     * @dev Returns the base provider threshold of the Reputation Token for the Labor Market.
      */
-    function providerThreshold()
+    function getProviderThreshold(address _laborMarket)
         override
         public
         view
@@ -237,13 +266,13 @@ contract ReputationModule is ReputationModuleInterface {
             uint256
         )
     {
-        return laborMarketRepConfig[msg.sender].providerThreshold;
+        return laborMarketRepConfig[_laborMarket].providerThreshold;
     }
 
     /**
-     * @dev Returns the base maintainer threshold of the Reputation Token for the current Labor Market.
+     * @dev Returns the base maintainer threshold of the Reputation Token for the Labor Market.
      */
-    function maintainerThreshold()
+    function getMaintainerThreshold(address _laborMarket)
         override
         public
         view
@@ -251,15 +280,25 @@ contract ReputationModule is ReputationModuleInterface {
             uint256
         )
     {
-        return laborMarketRepConfig[msg.sender].maintainerThreshold;
+        return laborMarketRepConfig[_laborMarket].maintainerThreshold;
     }
 
     /**
-     * @dev Returns the address of the Reputation Token for the current Labor Market.
+     * @dev Returns the address of the Reputation Token for the Labor Market.
      */
-    function repToken() 
+    function getReputationToken(address _laborMarket)
         override
         public
+        view
+        returns (
+            address
+        )
+    {
+        return laborMarketRepConfig[_laborMarket].reputationToken;
+    }
+
+    function _callerReputationToken()
+        internal
         view
         returns (
             address

@@ -59,8 +59,10 @@ contract LaborMarket is
                 configuration.delegateTokenId
             ) >= 1) ||
                 (reputationModule.getAvailableReputation(
+                    address(this),
                     msg.sender
-                ) >= reputationModule.providerThreshold()),
+                ) >= reputationModule.getProviderThreshold(address(this))
+            ),
             "LaborMarket::permittedParticipant: Not a permitted participant"
         );
         _;
@@ -73,8 +75,9 @@ contract LaborMarket is
     modifier onlyMaintainer() {
         require(
             reputationModule.getAvailableReputation(
+                address(this),
                 msg.sender
-            ) >= reputationModule.maintainerThreshold(),
+            ) >= reputationModule.getMaintainerThreshold(address(this)),
             "LaborMarket::onlyMaintainer: Not a maintainer"
         );
         _;
@@ -159,9 +162,9 @@ contract LaborMarket is
             "LaborMarket::signal: Already signaled."
         );
 
-        uint256 signalStake = reputationModule.signalStake();
+        uint256 signalStake = reputationModule.getSignalStake(address(this));
 
-        reputationModule.lockReputation(
+        _lockReputation(
             msg.sender,
             signalStake
         );
@@ -189,9 +192,9 @@ contract LaborMarket is
             "LaborMarket::signalReview: Already signaled."
         );
 
-        uint256 signalStake = reputationModule.signalStake();
+        uint256 signalStake = reputationModule.getSignalStake(address(this));
 
-        reputationModule.lockReputation(
+        _lockReputation(
             msg.sender,
             signalStake
         );
@@ -244,9 +247,9 @@ contract LaborMarket is
 
         hasSubmitted[requestId][msg.sender] = true;
 
-        reputationModule.unlockReputation(
+        _unlockReputation(
             msg.sender,
-            reputationModule.signalStake()
+            reputationModule.getSignalStake(address(this))
         );
 
         emit RequestFulfilled(msg.sender, requestId, serviceSubmissionId);
@@ -296,9 +299,9 @@ contract LaborMarket is
         serviceSubmissions[submissionId].score = score;
         serviceSubmissions[submissionId].graded = true;
 
-        // reputationModule.unlockReputation(
+        // _unlockReputation(
         //     msg.sender,
-        //     reputationModule.signalStake()
+        //     reputationModule.getSignalStake(address(this))
         // );
 
         emit RequestReviewed(msg.sender, requestId, submissionId, score);
@@ -387,6 +390,33 @@ contract LaborMarket is
         return serviceSubmissions[submissionId];
     }
 
+    function _lockReputation(
+          address account
+        , uint256 amount
+    ) 
+        internal 
+    {
+        reputationModule.lockReputation(account, amount);
+    }
+
+    function _unlockReputation(
+          address account
+        , uint256 amount
+    ) 
+        internal 
+    {
+        reputationModule.unlockReputation(account, amount);
+    }
+
+    function _freezeReputation(
+          address account
+        , uint256 amount
+    ) 
+        internal 
+    {
+        reputationModule.freezeReputation(account, amount);
+    }
+
     function _setConfiguration(LaborMarketConfiguration calldata _configuration)
         internal
     {
@@ -397,7 +427,14 @@ contract LaborMarket is
         enforcementCriteria = EnforcementCriteriaInterface(
             _configuration.enforcementModule
         );
+
+        /// @dev Configure the Labor Market pay curve.
         paymentCurve = PayCurveInterface(_configuration.paymentModule);
+
+        /// @dev Configure the Labor Market reputation module.
+        reputationModule = ReputationModuleInterface(
+            _configuration.reputationModule
+        );
 
         /// @dev Configure the Labor Market access control.
         delegateBadge = IERC1155(_configuration.delegateBadge);

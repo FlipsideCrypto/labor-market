@@ -12,17 +12,17 @@ interface ReputationModuleInterface {
     }
 
     event ReputationTokenCreated (
-        address indexed reputationToken,
-        address indexed baseToken,
-        uint256 indexed baseTokenId,
-        address owner,
-        uint256 decayRate,
-        uint256 decayInterval
+          address indexed reputationToken
+        , address indexed baseToken
+        , uint256 indexed baseTokenId
+        , address owner
+        , uint256 decayRate
+        , uint256 decayInterval
     );
 
     event MarketReputationConfigured (
-        address indexed market,
-        ReputationMarketConfig indexed config
+          address indexed market
+        , ReputationMarketConfig indexed config
     );
 
     function createReputationToken(
@@ -56,66 +56,69 @@ interface ReputationModuleInterface {
 
 
     function lockReputation(
-        address _account,
-        uint256 _amount
+          address _account
+        , uint256 _amount
     ) 
         external;
 
     function unlockReputation(
-        address _account,
-        uint256 _amount
+          address _account
+        , uint256 _amount
     ) 
         external;
 
-    function setDecayConfig(
-        uint256 _decayRate,
-        uint256 _decayInterval
-    ) 
-        external;
-
-    function getAvailableReputation(address _account)
+    function getAvailableReputation(
+          address _laborMarket
+        , address _account
+    )
         external
         view
         returns (
             uint256
         );
 
-    function getPendingDecay(address _account)
+    function getPendingDecay(
+          address _laborMarket
+        , address _account
+    )
         external
         view
         returns (
             uint256
         );
 
-    function getReputationAccountInfo(address _account)
+    function getReputationAccountInfo(
+          address _laborMarket
+        , address _account
+    )
         external
         view
         returns (
             ReputationTokenInterface.ReputationAccountInfo memory
         );
 
-    function signalStake()
+    function getSignalStake(address _laborMarket)
         external
         view
         returns (
             uint256
         );
 
-    function providerThreshold()
+    function getProviderThreshold(address _laborMarket)
         external
         view
         returns (
             uint256
         );
 
-    function maintainerThreshold()
+    function getMaintainerThreshold(address _laborMarket)
         external
         view
         returns (
             uint256
         );
 
-    function repToken() 
+    function getReputationToken(address _laborMarket) 
         external
         view
         returns (
