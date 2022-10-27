@@ -60,6 +60,12 @@ contract ContractTest is PRBTest, Cheats {
         address(uint160(uint256(keccak256("EVIL_USER"))));
 
     // Events
+    event MarketParametersUpdated(
+        LaborMarketConfigurationInterface.LaborMarketConfiguration indexed configuration
+    );
+
+    event RequestWithdrawn(uint256 indexed requestId);
+
     event LaborMarketCreated(
         address indexed organization,
         address indexed owner,
@@ -95,6 +101,19 @@ contract ContractTest is PRBTest, Cheats {
         address indexed fulfiller,
         uint256 indexed requestId,
         uint256 indexed submissionId
+    );
+
+    event RequestReviewed(
+        address reviewer,
+        uint256 indexed requestId,
+        uint256 indexed submissionId,
+        uint256 indexed reviewScore
+    );
+
+    event RequestPayClaimed(
+        address indexed claimer,
+        uint256 indexed submissionId,
+        uint256 indexed payAmount
     );
 
     /*//////////////////////////////////////////////////////////////
@@ -562,6 +581,34 @@ contract ContractTest is PRBTest, Cheats {
 
         changePrank(alice);
         uint256 submissionId = market.provide(requestId, "IPFS://333");
+
+        // Verify reviewing events
+        vm.expectEmit(true, true, true, true);
+        emit RequestReviewed(address(bob), requestId, submissionId, 2);
+
+        changePrank(bob);
+        market.review(requestId, submissionId, 2);
+
+        // Verify claiming events
+        vm.expectEmit(true, true, true, true);
+        emit RequestPayClaimed(
+            address(alice),
+            requestId,
+            799999999973870935009 // (100e18 * 0.8)
+        );
+
+        changePrank(alice);
+        vm.warp(block.timestamp + 5 weeks);
+        market.claim(requestId);
+
+        // Verify withdrawing request event
+        changePrank(bob);
+        uint256 requestId2 = createSimpleRequest(market);
+
+        vm.expectEmit(true, false, false, true);
+        emit RequestWithdrawn(requestId2);
+
+        market.withdrawRequest(requestId2);
     }
 
     /*//////////////////////////////////////////////////////////////
