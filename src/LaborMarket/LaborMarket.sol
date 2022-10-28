@@ -85,18 +85,6 @@ contract LaborMarket is
         _;
     }
 
-    /// @notice emitted when a new labor market is created
-    event LaborMarketCreated(
-        uint256 indexed marketId,
-        address delegateBadge,
-        address participationBadge,
-        address payCurve,
-        address enforcementCriteria,
-        uint256 repParticipantMultiplier,
-        uint256 repMaintainerMultiplier,
-        string marketUri
-    );
-
     /// @notice emitted when labor market parameters are updated
     event MarketParametersUpdated(
         LaborMarketConfiguration indexed configuration
