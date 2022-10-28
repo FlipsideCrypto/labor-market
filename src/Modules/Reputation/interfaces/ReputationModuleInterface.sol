@@ -11,20 +11,6 @@ interface ReputationModuleInterface {
         uint256 maintainerThreshold;
     }
 
-    event ReputationTokenCreated (
-          address indexed reputationToken
-        , address indexed baseToken
-        , uint256 indexed baseTokenId
-        , address owner
-        , uint256 decayRate
-        , uint256 decayInterval
-    );
-
-    event MarketReputationConfigured (
-          address indexed market
-        , ReputationMarketConfig indexed config
-    );
-
     function createReputationToken(
           address _implementation
         , address _baseToken

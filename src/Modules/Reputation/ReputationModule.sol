@@ -12,6 +12,20 @@ contract ReputationModule is ReputationModuleInterface {
 
     mapping(address => ReputationMarketConfig) public laborMarketRepConfig;
 
+    event ReputationTokenCreated (
+          address indexed reputationToken
+        , address indexed baseToken
+        , uint256 indexed baseTokenId
+        , address owner
+        , uint256 decayRate
+        , uint256 decayInterval
+    );
+
+    event MarketReputationConfigured (
+          address indexed market
+        , ReputationMarketConfig indexed config
+    );
+
     constructor(
         address _network
     ) {

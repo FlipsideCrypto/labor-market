@@ -25,6 +25,31 @@ contract ReputationToken is
 
     mapping(address => ReputationAccountInfo) public accountInfo;
 
+    event ReputationFrozen (
+        address indexed account,
+        uint256 frozenUntilEpoch
+    );
+
+    event ReputationLocked (
+        address indexed account,
+        uint256 amount
+    );
+
+    event ReputationUnlocked (
+        address indexed account,
+        uint256 amount
+    );
+
+    event ReputationDecayed (
+        address indexed account,
+        uint256 amount
+    );
+
+    event ReputationDecayChanged (
+        uint256 decayRate,
+        uint256 decayInterval
+    );
+
     modifier onlyModule() {
         require(msg.sender == module, "ReputationToken: Only the module can call this function.");
         _;

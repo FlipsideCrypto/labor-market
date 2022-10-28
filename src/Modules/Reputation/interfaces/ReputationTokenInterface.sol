@@ -8,31 +8,6 @@ interface ReputationTokenInterface {
         uint256 frozenUntilEpoch;
     }
 
-    event ReputationFrozen (
-        address indexed account,
-        uint256 frozenUntilEpoch
-    );
-
-    event ReputationLocked (
-        address indexed account,
-        uint256 amount
-    );
-
-    event ReputationUnlocked (
-        address indexed account,
-        uint256 amount
-    );
-
-    event ReputationDecayed (
-        address indexed account,
-        uint256 amount
-    );
-
-    event ReputationDecayChanged (
-        uint256 decayRate,
-        uint256 decayInterval
-    );
-
     function initialize(
           address _module
         , address _baseToken
