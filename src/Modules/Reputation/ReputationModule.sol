@@ -12,7 +12,7 @@ contract ReputationModule is ReputationModuleInterface {
 
     mapping(address => ReputationMarketConfig) public laborMarketRepConfig;
 
-    event ReputationEngine (
+    event ReputationEngineCreated (
           address indexed reputationEngine
         , address indexed baseToken
         , uint256 indexed baseTokenId
@@ -72,7 +72,7 @@ contract ReputationModule is ReputationModuleInterface {
             , _decayInterval
         );
 
-        emit ReputationEngine(
+        emit ReputationEngineCreated(
               reputationEngineAddress
             , _baseToken
             , _baseTokenId
