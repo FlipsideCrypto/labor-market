@@ -26,7 +26,6 @@ interface LaborMarketInterface is LaborMarketConfigurationInterface {
     }
 
     function initialize(
-        address _network,
         LaborMarketConfiguration calldata _configuration
     ) external;
 

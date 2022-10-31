@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 import {ERC1155} from "solmate/tokens/ERC1155.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 
-contract ReputationToken is ERC1155 {
+contract MockERC1155 is ERC1155 {
     uint256 public constant DELEGATE_TOKEN_ID = 0;
     uint256 public constant PARTICIPATION_TOKEN_ID = 1;
     string private metadata;
@@ -26,7 +26,7 @@ contract ReputationToken is ERC1155 {
     }
 }
 
-contract CapacityToken is ERC20("Capacity Token", "CAP", 18) {
+contract MockERC20 is ERC20("Capacity Token", "CAP", 18) {
     function freeMint(address receiver, uint256 amount) external {
         _mint(receiver, amount);
     }

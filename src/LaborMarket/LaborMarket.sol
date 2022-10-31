@@ -14,6 +14,7 @@ import {StringsUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/Stri
 import {LaborMarketNetwork} from "../Network/LaborMarketNetwork.sol";
 import {EnforcementCriteriaInterface} from "../Modules/Enforcement/interfaces/EnforcementCriteriaInterface.sol";
 import {PayCurveInterface} from "../Modules/Payment/interfaces/PayCurveInterface.sol";
+import {ReputationModuleInterface} from "../Modules/Reputation/interfaces/ReputationModuleInterface.sol";
 import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 
 /// @dev Supported interfaces.
@@ -29,9 +30,9 @@ contract LaborMarket is
     LaborMarketNetwork public network;
     EnforcementCriteriaInterface public enforcementCriteria;
     PayCurveInterface public paymentCurve;
+    ReputationModuleInterface public reputationModule;
 
     IERC1155 public delegateBadge;
-    IERC1155 public participationBadge;
 
     LaborMarketConfiguration public configuration;
 
@@ -51,45 +52,12 @@ contract LaborMarket is
     uint256 public serviceRequestId;
     uint256 public serviceSubmissionId;
 
-    modifier permittedParticipant() {
-        require(
-            (delegateBadge.balanceOf(
-                msg.sender,
-                configuration.delegateTokenId
-            ) >= 1) ||
-                (participationBadge.balanceOf(
-                    msg.sender,
-                    configuration.participationTokenId
-                ) >=
-                    (network.baseProviderThreshold() *
-                        configuration.repParticipantMultiplier)),
-            "LaborMarket::permittedParticipant: Not a permitted participant"
-        );
-        _;
-    }
-
-    modifier onlyPermissioned() {
-        _;
-    }
-
-    modifier onlyMaintainer() {
-        require(
-            participationBadge.balanceOf(
-                msg.sender,
-                configuration.participationTokenId
-            ) >=
-                (network.baseMaintainerThreshold() *
-                    configuration.repMaintainerMultiplier),
-            "LaborMarket::onlyMaintainer: Not a maintainer"
-        );
-        _;
-    }
-
     /// @notice emitted when a new labor market is created
     event LaborMarketCreated(
         uint256 indexed marketId,
         address delegateBadge,
-        address participationBadge,
+        address reputationToken,
+        uint256 reputationTokenId,
         address payCurve,
         address enforcementCriteria,
         uint256 repParticipantMultiplier,
@@ -153,10 +121,42 @@ contract LaborMarket is
         uint256 indexed payAmount
     );
 
-    function initialize(
-        address _network,
-        LaborMarketConfiguration calldata _configuration
-    ) external override initializer {
+    modifier permittedParticipant() {
+        require(
+            (delegateBadge.balanceOf(
+                msg.sender,
+                configuration.delegateTokenId
+            ) >= 1) ||
+                (reputationModule.getAvailableReputation(
+                    address(this),
+                    msg.sender
+                ) >= reputationModule.getMarketReputationConfig(address(this)).providerThreshold
+            ),
+            "LaborMarket::permittedParticipant: Not a permitted participant"
+        );
+        _;
+    }
+
+    modifier onlyPermissioned() {
+        _;
+    }
+
+    modifier onlyMaintainer() {
+        require(
+            reputationModule.getAvailableReputation(
+                address(this),
+                msg.sender
+            ) >= reputationModule.getMarketReputationConfig(address(this)).maintainerThreshold,
+            "LaborMarket::onlyMaintainer: Not a maintainer"
+        );
+        _;
+    }
+
+    function initialize(LaborMarketConfiguration calldata _configuration)
+        external
+        override
+        initializer
+    {
         _setConfiguration(_configuration);
     }
 
@@ -231,8 +231,14 @@ contract LaborMarket is
             "LaborMarket::signal: Already signaled."
         );
 
-        // Lock reputation here
-        uint256 signalAmt = 1;
+        uint256 signalStake = reputationModule.getMarketReputationConfig(
+            address(this)
+        ).signalStake;
+
+        _lockReputation(
+            msg.sender,
+            signalStake
+        );
 
         submissionSignals[requestId][msg.sender] = true;
 
@@ -240,29 +246,33 @@ contract LaborMarket is
             ++signalCount[requestId];
         }
 
-        emit RequestSignal(msg.sender, requestId, signalAmt);
+        emit RequestSignal(msg.sender, requestId, signalStake);
     }
 
     /**
      * @notice Signals interest in reviewing a submission.
-     * @param submissionId The id of the service providers submission.
+     * @param requestId The id of the service providers submission.
      */
-    function signalReview(uint256 submissionId) external onlyMaintainer {
+    function signalReview(uint256 requestId) external onlyMaintainer {
         require(
-            submissionId <= serviceSubmissionId,
-            "LaborMarket::signalReview: Submission does not exist."
+            requestId <= serviceRequestId,
+            "LaborMarket::signalReview: Request does not exist."
         );
         require(
-            !reviewSignals[submissionId][msg.sender],
+            !reviewSignals[requestId][msg.sender],
             "LaborMarket::signalReview: Already signaled."
         );
 
-        // Lock reputation here
-        uint256 signalAmt = 1;
+        uint256 signalStake = reputationModule.getMarketReputationConfig(address(this)).signalStake;
 
-        reviewSignals[submissionId][msg.sender] = true;
+        _lockReputation(
+            msg.sender,
+            signalStake
+        );
 
-        emit ReviewSignal(msg.sender, submissionId, signalAmt);
+        reviewSignals[requestId][msg.sender] = true;
+
+        emit ReviewSignal(msg.sender, requestId, signalStake);
     }
 
     /**
@@ -308,7 +318,10 @@ contract LaborMarket is
 
         hasSubmitted[requestId][msg.sender] = true;
 
-        // Unlock reputation here for submission signal
+        _unlockReputation(
+            msg.sender,
+            reputationModule.getMarketReputationConfig(address(this)).signalStake
+        );
 
         emit RequestFulfilled(msg.sender, requestId, serviceSubmissionId);
 
@@ -325,7 +338,7 @@ contract LaborMarket is
         uint256 requestId,
         uint256 submissionId,
         uint256 score
-    ) external onlyMaintainer {
+    ) external {
         require(
             requestId <= serviceRequestId,
             "LaborMarket::review: Request does not exist."
@@ -340,7 +353,7 @@ contract LaborMarket is
         );
 
         require(
-            reviewSignals[submissionId][msg.sender],
+            reviewSignals[requestId][msg.sender],
             "LaborMarket::review: Not signaled."
         );
         require(
@@ -357,7 +370,10 @@ contract LaborMarket is
         serviceSubmissions[submissionId].score = score;
         serviceSubmissions[submissionId].graded = true;
 
-        // Unlock maintainer reputation here
+        // _unlockReputation(
+        //     msg.sender,
+        //     reputationModule.getMarketReputationConfig(address(this)).signalStake
+        // );
 
         emit RequestReviewed(msg.sender, requestId, submissionId, score);
     }
@@ -393,6 +409,7 @@ contract LaborMarket is
         uint256 curveIndex = enforcementCriteria.verify(submissionId);
 
         // Increase/(decrease) reputation here for submitter
+        // Mint/burn(lock) rep
 
         uint256 amount = paymentCurve.curvePoint(curveIndex);
 
@@ -428,22 +445,69 @@ contract LaborMarket is
                                 GETTERS
     //////////////////////////////////////////////////////////////*/
 
-    function getRequest(uint256 requestId)
+    /**
+     * @notice Returns the service request data.
+     * @param _requestId The id of the service requesters request.
+     */
+    function getRequest(uint256 _requestId)
         external
         view
         returns (ServiceRequest memory)
     {
-        return serviceRequests[requestId];
+        return serviceRequests[_requestId];
     }
 
-    function getSubmission(uint256 submissionId)
+    /**
+     * @notice Returns the service submission data.
+     * @param _submissionId The id of the service providers submission.
+     */
+    function getSubmission(uint256 _submissionId)
         external
         view
         returns (ServiceSubmission memory)
     {
-        return serviceSubmissions[submissionId];
+        return serviceSubmissions[_submissionId];
     }
 
+    /**
+     * @dev See {ReputationModule-lockReputation}.
+     */
+    function _lockReputation(
+          address account
+        , uint256 amount
+    ) 
+        internal 
+    {
+        reputationModule.lockReputation(account, amount);
+    }
+
+    /**
+     * @dev See {ReputationModule-unlockReputation}.
+     */
+    function _unlockReputation(
+          address account
+        , uint256 amount
+    ) 
+        internal 
+    {
+        reputationModule.unlockReputation(account, amount);
+    }
+
+    /**
+     * @dev See {ReputationModule-freezeReputation}.
+     */
+    function _freezeReputation(
+          address account
+        , uint256 amount
+    ) 
+        internal 
+    {
+        reputationModule.freezeReputation(account, amount);
+    }
+
+    /**
+     * @dev Handle all the logic for configuration on deployment of a new LaborMarket.
+     */
     function _setConfiguration(LaborMarketConfiguration calldata _configuration)
         internal
     {
@@ -454,11 +518,17 @@ contract LaborMarket is
         enforcementCriteria = EnforcementCriteriaInterface(
             _configuration.enforcementModule
         );
+
+        /// @dev Configure the Labor Market pay curve.
         paymentCurve = PayCurveInterface(_configuration.paymentModule);
+
+        /// @dev Configure the Labor Market reputation module.
+        reputationModule = ReputationModuleInterface(
+            _configuration.reputationModule
+        );
 
         /// @dev Configure the Labor Market access control.
         delegateBadge = IERC1155(_configuration.delegateBadge);
-        participationBadge = IERC1155(_configuration.participationBadge);
 
         /// @dev Configure the Labor Market parameters.
         configuration = _configuration;

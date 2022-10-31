@@ -10,6 +10,7 @@ import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC11
 /// @dev Helpers.
 import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
 import { LaborMarketInterface } from "../LaborMarket/interfaces/LaborMarketInterface.sol";
+import { ReputationModuleInterface } from "../Modules/Reputation/interfaces/ReputationModuleInterface.sol";
 
 /// @dev Supported interfaces.
 import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
@@ -245,11 +246,16 @@ contract LaborMarketVersions is
             marketAddress
         );
 
-        /// @dev Deploy the clone contract to serve as the Labor Market.
-        laborMarket.initialize(
-              address(this)
-            , _configuration
+        /// @dev Initialize the Reputation for the Labor Market.
+        ReputationModuleInterface(
+            _configuration.reputationModule
+        ).useReputationModule(
+              marketAddress
+            , _configuration.reputationConfig
         );
+
+        /// @dev Deploy the clone contract to serve as the Labor Market.
+        laborMarket.initialize(_configuration);
         
         /// @dev Announce the creation of the Labor Market.
         emit LaborMarketCreated(
