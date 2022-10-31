@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-interface ReputationTokenInterface {
+interface ReputationEngineInterface {
     struct ReputationAccountInfo {
         uint256 locked;
         uint256 lastDecayEpoch;
@@ -60,6 +60,6 @@ interface ReputationTokenInterface {
         external
         view
         returns (
-            ReputationTokenInterface.ReputationAccountInfo memory
+            ReputationAccountInfo memory
         );
 }

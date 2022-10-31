@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import { ReputationTokenInterface } from "./interfaces/ReputationTokenInterface.sol";
+import { ReputationEngineInterface } from "./interfaces/ReputationEngineInterface.sol";
 
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -11,8 +11,8 @@ import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/O
 //       function accounts for the decay for external checks.
 // TODO: Should decayed reputation emit its own event?
 
-contract ReputationToken is 
-      ReputationTokenInterface
+contract ReputationEngine is 
+      ReputationEngineInterface
     , OwnableUpgradeable
 {
     address public module;
@@ -45,7 +45,7 @@ contract ReputationToken is
         uint256 amount
     );
 
-    event ReputationDecayChanged (
+    event ReputationDecayConfigured (
         uint256 decayRate,
         uint256 decayInterval
     );
@@ -91,7 +91,7 @@ contract ReputationToken is
         decayRate = _decayRate;
         decayInterval = _decayInterval;
 
-        emit ReputationDecayChanged(_decayRate, _decayInterval);
+        emit ReputationDecayConfigured(_decayRate, _decayInterval);
     }
 
     /**

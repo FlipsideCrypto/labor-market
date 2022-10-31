@@ -23,7 +23,7 @@ import {EnforcementCriteria} from "src/Modules/Enforcement/EnforcementCriteria.s
 import {PaymentModule} from "src/Modules/Payment/PaymentModule.sol";
 import {PayCurve} from "src/Modules/Payment/PayCurve.sol";
 
-import {ReputationToken} from "src/Modules/Reputation/ReputationToken.sol";
+import {ReputationEngine} from "src/Modules/Reputation/ReputationEngine.sol";
 
 import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/ReputationModuleInterface.sol";
 import {ReputationModule} from "src/Modules/Reputation/ReputationModule.sol";
@@ -44,8 +44,8 @@ contract ContractTest is PRBTest, Cheats {
     PaymentModule public paymentModule;
     PayCurve public payCurve;
 
-    ReputationToken public reputationTokenMaster;
-    ReputationToken public reputationToken;
+    ReputationEngine public reputationEngineMaster;
+    ReputationEngine public reputationEngine;
     ReputationModule public reputationModule;
 
     uint256 private constant DELEGATE_TOKEN_ID = 0;
@@ -97,12 +97,12 @@ contract ContractTest is PRBTest, Cheats {
         reputationModule = new ReputationModule(address(network));
 
         // Deploy an empty reputation token for cloning.
-        reputationTokenMaster = new ReputationToken();
+        reputationEngineMaster = new ReputationEngine();
 
         // Create a reputation token with the Mock1155
-        reputationToken = ReputationToken(
-            reputationModule.createReputationToken(
-                address(reputationTokenMaster),
+        reputationEngine = ReputationEngine(
+            reputationModule.createReputationEngine(
+                address(reputationEngineMaster),
                 address(baseRepToken),
                 REPUTATION_TOKEN_ID,
                 REPUTATION_DECAY_RATE,
@@ -114,7 +114,7 @@ contract ContractTest is PRBTest, Cheats {
         ReputationModuleInterface.ReputationMarketConfig 
             memory repConfig = ReputationModuleInterface
                 .ReputationMarketConfig({
-                    reputationToken: address(reputationToken),
+                    reputationEngine: address(reputationEngine),
                     signalStake: 0,
                     providerThreshold: 0,
                     maintainerThreshold: 0 
@@ -277,7 +277,7 @@ contract ContractTest is PRBTest, Cheats {
         ReputationModuleInterface.ReputationMarketConfig 
             memory repConfig = ReputationModuleInterface
                 .ReputationMarketConfig({
-                    reputationToken: address(reputationToken),
+                    reputationEngine: address(reputationEngine),
                     signalStake: 0,
                     providerThreshold: 0,
                     maintainerThreshold: 0 
@@ -361,7 +361,7 @@ contract ContractTest is PRBTest, Cheats {
                 address(tempMarket),
                 alice
             ),
-            (100e18 - reputationModule.getSignalStake(address(tempMarket)))
+            (100e18 - reputationModule.getMarketReputationConfig(address(tempMarket)).signalStake)
         );
 
         // Fulfill the request
@@ -388,7 +388,7 @@ contract ContractTest is PRBTest, Cheats {
                 address(tempMarket),
                 bob
             ),
-            (1000e18 - reputationModule.getSignalStake(address(tempMarket)))
+            (1000e18 - reputationModule.getMarketReputationConfig(address(tempMarket)).signalStake)
         );
 
         tempMarket.review(requestId, submissionId, 2);

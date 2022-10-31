@@ -130,7 +130,7 @@ contract LaborMarket is
                 (reputationModule.getAvailableReputation(
                     address(this),
                     msg.sender
-                ) >= reputationModule.getProviderThreshold(address(this))
+                ) >= reputationModule.getMarketReputationConfig(address(this)).providerThreshold
             ),
             "LaborMarket::permittedParticipant: Not a permitted participant"
         );
@@ -146,7 +146,7 @@ contract LaborMarket is
             reputationModule.getAvailableReputation(
                 address(this),
                 msg.sender
-            ) >= reputationModule.getMaintainerThreshold(address(this)),
+            ) >= reputationModule.getMarketReputationConfig(address(this)).maintainerThreshold,
             "LaborMarket::onlyMaintainer: Not a maintainer"
         );
         _;
@@ -231,7 +231,9 @@ contract LaborMarket is
             "LaborMarket::signal: Already signaled."
         );
 
-        uint256 signalStake = reputationModule.getSignalStake(address(this));
+        uint256 signalStake = reputationModule.getMarketReputationConfig(
+            address(this)
+        ).signalStake;
 
         _lockReputation(
             msg.sender,
@@ -261,7 +263,7 @@ contract LaborMarket is
             "LaborMarket::signalReview: Already signaled."
         );
 
-        uint256 signalStake = reputationModule.getSignalStake(address(this));
+        uint256 signalStake = reputationModule.getMarketReputationConfig(address(this)).signalStake;
 
         _lockReputation(
             msg.sender,
@@ -318,7 +320,7 @@ contract LaborMarket is
 
         _unlockReputation(
             msg.sender,
-            reputationModule.getSignalStake(address(this))
+            reputationModule.getMarketReputationConfig(address(this)).signalStake
         );
 
         emit RequestFulfilled(msg.sender, requestId, serviceSubmissionId);
@@ -370,7 +372,7 @@ contract LaborMarket is
 
         // _unlockReputation(
         //     msg.sender,
-        //     reputationModule.getSignalStake(address(this))
+        //     reputationModule.getMarketReputationConfig(address(this)).signalStake
         // );
 
         emit RequestReviewed(msg.sender, requestId, submissionId, score);
@@ -443,22 +445,33 @@ contract LaborMarket is
                                 GETTERS
     //////////////////////////////////////////////////////////////*/
 
-    function getRequest(uint256 requestId)
+    /**
+     * @notice Returns the service request data.
+     * @param _requestId The id of the service requesters request.
+     */
+    function getRequest(uint256 _requestId)
         external
         view
         returns (ServiceRequest memory)
     {
-        return serviceRequests[requestId];
+        return serviceRequests[_requestId];
     }
 
-    function getSubmission(uint256 submissionId)
+    /**
+     * @notice Returns the service submission data.
+     * @param _submissionId The id of the service providers submission.
+     */
+    function getSubmission(uint256 _submissionId)
         external
         view
         returns (ServiceSubmission memory)
     {
-        return serviceSubmissions[submissionId];
+        return serviceSubmissions[_submissionId];
     }
 
+    /**
+     * @dev See {ReputationModule-lockReputation}.
+     */
     function _lockReputation(
           address account
         , uint256 amount
@@ -468,6 +481,9 @@ contract LaborMarket is
         reputationModule.lockReputation(account, amount);
     }
 
+    /**
+     * @dev See {ReputationModule-unlockReputation}.
+     */
     function _unlockReputation(
           address account
         , uint256 amount
@@ -477,6 +493,9 @@ contract LaborMarket is
         reputationModule.unlockReputation(account, amount);
     }
 
+    /**
+     * @dev See {ReputationModule-freezeReputation}.
+     */
     function _freezeReputation(
           address account
         , uint256 amount
@@ -486,6 +505,9 @@ contract LaborMarket is
         reputationModule.freezeReputation(account, amount);
     }
 
+    /**
+     * @dev Handle all the logic for configuration on deployment of a new LaborMarket.
+     */
     function _setConfiguration(LaborMarketConfiguration calldata _configuration)
         internal
     {

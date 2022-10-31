@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import { ReputationTokenInterface } from "./ReputationTokenInterface.sol";
+import { ReputationEngineInterface } from "./ReputationEngineInterface.sol";
 
 interface ReputationModuleInterface {
     struct ReputationMarketConfig {
-        address reputationToken;
+        address reputationEngine;
         uint256 signalStake;
         uint256 providerThreshold;
         uint256 maintainerThreshold;
     }
 
-    function createReputationToken(
+    function createReputationEngine(
           address _implementation
         , address _baseToken
         , uint256 _baseTokenId
@@ -80,31 +80,17 @@ interface ReputationModuleInterface {
         external
         view
         returns (
-            ReputationTokenInterface.ReputationAccountInfo memory
+            ReputationEngineInterface.ReputationAccountInfo memory
         );
 
-    function getSignalStake(address _laborMarket)
+    function getMarketReputationConfig(address _laborMarket)
         external
         view
         returns (
-            uint256
+            ReputationMarketConfig memory
         );
 
-    function getProviderThreshold(address _laborMarket)
-        external
-        view
-        returns (
-            uint256
-        );
-
-    function getMaintainerThreshold(address _laborMarket)
-        external
-        view
-        returns (
-            uint256
-        );
-
-    function getReputationToken(address _laborMarket) 
+    function getReputationEngine(address _laborMarket) 
         external
         view
         returns (
