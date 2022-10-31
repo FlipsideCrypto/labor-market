@@ -7,7 +7,9 @@ import {console} from "forge-std/console.sol";
 import {PRBTest} from "@prb/test/PRBTest.sol";
 
 // Contracts
-import {ReputationToken, CapacityToken} from "./Helpers/HelperTokens.sol";
+import {AnyReputationToken, CapacityToken} from "./Helpers/HelperTokens.sol";
+import {ReputationTokenInterface} from "src/MOdules/Reputation/interfaces/ReputationTokenInterface.sol";
+import {ReputationToken} from "src/Modules/Reputation/ReputationToken.sol";
 
 import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
 import {LaborMarket} from "src/LaborMarket/LaborMarket.sol";
@@ -15,6 +17,9 @@ import {LaborMarket} from "src/LaborMarket/LaborMarket.sol";
 import {LaborMarketFactory} from "src/Network/LaborMarketFactory.sol";
 import {LaborMarketNetwork} from "src/Network/LaborMarketNetwork.sol";
 import {LaborMarketVersions} from "src/Network/LaborMarketVersions.sol";
+
+import {ReputationModule} from "src/Modules/Reputation/ReputationModule.sol";
+import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/ReputationModuleInterface.sol";
 
 import {EnforcementCriteria} from "src/Modules/Enforcement/EnforcementCriteria.sol";
 
@@ -25,11 +30,15 @@ import {LaborMarketConfigurationInterface} from "src/LaborMarket/interfaces/Labo
 import {LaborMarketNetworkInterface} from "src/Network/interfaces/LaborMarketNetworkInterface.sol";
 
 contract ContractTest is PRBTest, Cheats {
-    ReputationToken public repToken;
+    AnyReputationToken public repToken;
     CapacityToken public capToken;
 
-    LaborMarket public implementation;
+    LaborMarket public marketImplementation;
     LaborMarket public market;
+
+    ReputationTokenInterface public reputationToken;
+
+    ReputationModule public reputationModule;
 
     LaborMarketFactory public factory;
 
@@ -121,34 +130,28 @@ contract ContractTest is PRBTest, Cheats {
         vm.startPrank(deployer);
 
         // Create a capacity & reputation token
-        repToken = new ReputationToken("ipfs://000");
         capToken = new CapacityToken();
 
+        // Generic reputation token
+        repToken = new AnyReputationToken("reputation nation");
+
         // Deploy an empty labor market for implementation
-        implementation = new LaborMarket();
+        marketImplementation = new LaborMarket();
+
+        // Deploy reputation token implementation
+        ReputationToken repTokImpl = new ReputationToken();
 
         // Deploy a labor market factory
-        factory = new LaborMarketFactory(address(implementation));
-
-        LaborMarketNetworkInterface.ReputationTokenConfig
-            memory repConfig = LaborMarketNetworkInterface
-                .ReputationTokenConfig({
-                    manager: deployer,
-                    decayRate: 0,
-                    decayInterval: 0,
-                    baseSignalStake: 1e18,
-                    baseMaintainerThreshold: 100e18,
-                    baseProviderThreshold: 10e18
-                });
+        factory = new LaborMarketFactory(address(marketImplementation));
 
         // Deploy a labor market network
         network = new LaborMarketNetwork({
-            _factoryImplementation: address(implementation),
-            _capacityImplementation: address(capToken),
-            _baseReputationImplementation: address(repToken),
-            _baseReputationTokenId: REPUTATION_TOKEN_ID,
-            _baseReputationConfig: repConfig
+            _factoryImplementation: address(marketImplementation),
+            _capacityImplementation: address(capToken)
         });
+
+        // Deploy a new reputation module
+        reputationModule = new ReputationModule(address(network));
 
         // Create enforcement criteria
         enforcementCriteria = new EnforcementCriteria();
@@ -159,25 +162,45 @@ contract ContractTest is PRBTest, Cheats {
         // Create a new pay curve
         payCurve = new PayCurve();
 
-        // Create a new labor market
+        // Create a reputation token
+        reputationToken = ReputationTokenInterface(
+            reputationModule.createReputationToken(
+                address(repTokImpl),
+                address(repToken),
+                REPUTATION_TOKEN_ID,
+                0,
+                0
+            )
+        );
+
+        // Reputation config
+        ReputationModuleInterface.ReputationMarketConfig
+            memory repConfig = ReputationModuleInterface
+                .ReputationMarketConfig({
+                    reputationToken: address(reputationToken),
+                    signalStake: 1e18,
+                    providerThreshold: 1e18,
+                    maintainerThreshold: 100e18
+                });
+
+        // Create a new labor market configuration
         LaborMarketConfigurationInterface.LaborMarketConfiguration
             memory config = LaborMarketConfigurationInterface
                 .LaborMarketConfiguration({
                     network: address(network),
                     enforcementModule: address(enforcementCriteria),
                     paymentModule: address(payCurve),
+                    marketUri: "ipfs://000",
                     delegateBadge: address(repToken),
                     delegateTokenId: DELEGATE_TOKEN_ID,
-                    reputationToken: address(repToken),
-                    reputationTokenId: REPUTATION_TOKEN_ID,
-                    repParticipantMultiplier: 1,
-                    repMaintainerMultiplier: 1,
-                    marketUri: "ipfs://000"
+                    reputationModule: address(reputationModule),
+                    reputationConfig: repConfig
                 });
 
+        // Create a new labor market
         market = LaborMarket(
             network.createLaborMarket({
-                _implementation: address(implementation),
+                _implementation: address(marketImplementation),
                 _deployer: deployer,
                 _configuration: config
             })
@@ -366,6 +389,15 @@ contract ContractTest is PRBTest, Cheats {
         */
         vm.startPrank(deployer);
 
+        ReputationModuleInterface.ReputationMarketConfig
+            memory repConfig = ReputationModuleInterface
+                .ReputationMarketConfig({
+                    reputationToken: address(reputationToken),
+                    signalStake: 1e18,
+                    providerThreshold: 1e18,
+                    maintainerThreshold: 100e18
+                });
+
         // Example configuration
         LaborMarketConfigurationInterface.LaborMarketConfiguration
             memory config = LaborMarketConfigurationInterface
@@ -373,13 +405,11 @@ contract ContractTest is PRBTest, Cheats {
                     network: address(network),
                     enforcementModule: address(enforcementCriteria),
                     paymentModule: address(payCurve),
+                    marketUri: "ipfs://000",
                     delegateBadge: address(repToken),
                     delegateTokenId: DELEGATE_TOKEN_ID,
-                    reputationToken: address(repToken),
-                    reputationTokenId: REPUTATION_TOKEN_ID,
-                    repParticipantMultiplier: 1,
-                    repMaintainerMultiplier: 1,
-                    marketUri: "ipfs://000"
+                    reputationModule: address(reputationModule),
+                    reputationConfig: repConfig
                 });
 
         // Create 10 markets
@@ -388,11 +418,11 @@ contract ContractTest is PRBTest, Cheats {
             emit LaborMarketCreated(
                 address(market),
                 deployer,
-                address(implementation)
+                address(marketImplementation)
             );
             market = LaborMarket(
                 network.createLaborMarket({
-                    _implementation: address(implementation),
+                    _implementation: address(marketImplementation),
                     _deployer: deployer,
                     _configuration: config
                 })
@@ -436,16 +466,8 @@ contract ContractTest is PRBTest, Cheats {
 
         // Verify that Alice's reputation is locked
         assertEq(
-            network.getAvailableReputation(
-                alice,
-                address(repToken),
-                REPUTATION_TOKEN_ID
-            ),
-            (100e18 -
-                network.getBaseSignalStake(
-                    address(repToken),
-                    REPUTATION_TOKEN_ID
-                ))
+            reputationModule.getAvailableReputation(address(market), alice),
+            (100e18 - reputationModule.getSignalStake(address(market)))
         );
 
         // Fulfill the request
@@ -453,11 +475,7 @@ contract ContractTest is PRBTest, Cheats {
 
         // Verify that Alice's reputation is unlocked
         assertEq(
-            network.getAvailableReputation(
-                alice,
-                address(repToken),
-                REPUTATION_TOKEN_ID
-            ),
+            reputationModule.getAvailableReputation(address(market), alice),
             100e18
         );
 
@@ -468,28 +486,16 @@ contract ContractTest is PRBTest, Cheats {
 
         // Verify that Maintainers's reputation is locked
         assertEq(
-            network.getAvailableReputation(
-                bob,
-                address(repToken),
-                REPUTATION_TOKEN_ID
-            ),
-            (1000e18 -
-                network.getBaseSignalStake(
-                    address(repToken),
-                    REPUTATION_TOKEN_ID
-                ))
+            reputationModule.getAvailableReputation(address(market), bob),
+            (1000e18 - reputationModule.getSignalStake(address(market)))
         );
 
         market.review(requestId, submissionId, 2);
 
         // Verify that the maintainer gets returned some reputation
         assertEq(
-            network.getAvailableReputation(
-                bob,
-                address(repToken),
-                REPUTATION_TOKEN_ID
-            ),
-            999333333333333333333 // (1000e18 - (2/3 * baseSignalStake))
+            reputationModule.getAvailableReputation(address(market), bob),
+            999333333333333333333 // (1000e18 - (2/3 * signalStake))
         );
 
         // Claim the reward
@@ -503,19 +509,26 @@ contract ContractTest is PRBTest, Cheats {
     function test_VerifyAllEmittedEvents() public {
         vm.startPrank(bob);
 
+        ReputationModuleInterface.ReputationMarketConfig
+            memory repConfig = ReputationModuleInterface
+                .ReputationMarketConfig({
+                    reputationToken: address(reputationToken),
+                    signalStake: 1e18,
+                    providerThreshold: 1e18,
+                    maintainerThreshold: 100e18
+                });
+
         LaborMarketConfigurationInterface.LaborMarketConfiguration
             memory config = LaborMarketConfigurationInterface
                 .LaborMarketConfiguration({
                     network: address(network),
                     enforcementModule: address(enforcementCriteria),
                     paymentModule: address(payCurve),
+                    marketUri: "ipfs://000",
                     delegateBadge: address(repToken),
                     delegateTokenId: DELEGATE_TOKEN_ID,
-                    reputationToken: address(repToken),
-                    reputationTokenId: REPUTATION_TOKEN_ID,
-                    repParticipantMultiplier: 1,
-                    repMaintainerMultiplier: 1,
-                    marketUri: "ipfs://000"
+                    reputationModule: address(reputationModule),
+                    reputationConfig: repConfig
                 });
 
         // Verify market creation event
@@ -523,13 +536,13 @@ contract ContractTest is PRBTest, Cheats {
         emit LaborMarketCreated(
             address(market),
             deployer,
-            address(implementation)
+            address(marketImplementation)
         );
 
         // Create a market
         market = LaborMarket(
             network.createLaborMarket({
-                _implementation: address(implementation),
+                _implementation: address(marketImplementation),
                 _deployer: deployer,
                 _configuration: config
             })
@@ -655,19 +668,26 @@ contract ContractTest is PRBTest, Cheats {
     function test_CanOnlyInitializeOnce() public {
         vm.startPrank(deployer);
 
+        ReputationModuleInterface.ReputationMarketConfig
+            memory repConfig = ReputationModuleInterface
+                .ReputationMarketConfig({
+                    reputationToken: address(reputationToken),
+                    signalStake: 1e18,
+                    providerThreshold: 1e18,
+                    maintainerThreshold: 100e18
+                });
+
         LaborMarketConfigurationInterface.LaborMarketConfiguration
             memory config = LaborMarketConfigurationInterface
                 .LaborMarketConfiguration({
                     network: address(network),
                     enforcementModule: address(enforcementCriteria),
                     paymentModule: address(payCurve),
+                    marketUri: "ipfs://000",
                     delegateBadge: address(repToken),
                     delegateTokenId: DELEGATE_TOKEN_ID,
-                    reputationToken: address(repToken),
-                    reputationTokenId: REPUTATION_TOKEN_ID,
-                    repParticipantMultiplier: 1,
-                    repMaintainerMultiplier: 1,
-                    marketUri: "ipfs://000"
+                    reputationModule: address(reputationModule),
+                    reputationConfig: repConfig
                 });
 
         // Attempt to initialize the market again and expect it to revert
