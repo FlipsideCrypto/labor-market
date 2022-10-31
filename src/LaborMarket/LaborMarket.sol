@@ -56,8 +56,6 @@ contract LaborMarket is
     event LaborMarketCreated(
         uint256 indexed marketId,
         address delegateBadge,
-        address reputationToken,
-        uint256 reputationTokenId,
         address payCurve,
         address enforcementCriteria,
         uint256 repParticipantMultiplier,
@@ -219,10 +217,6 @@ contract LaborMarket is
      */
     function signal(uint256 requestId) external permittedParticipant {
         require(
-            requestId <= serviceRequestId,
-            "LaborMarket::signal: Request does not exist."
-        );
-        require(
             block.timestamp <= serviceRequests[requestId].signalExp,
             "LaborMarket::signal: Signal deadline passed."
         );
@@ -254,10 +248,6 @@ contract LaborMarket is
         onlyMaintainer
     {
         require(
-            requestId <= serviceRequestId,
-            "LaborMarket::signalReview: Request does not exist."
-        );
-        require(
             reviewSignals[msg.sender][requestId].remainder == 0,
             "LaborMarket::signalReview: Already signaled."
         );
@@ -281,10 +271,6 @@ contract LaborMarket is
         external
         returns (uint256 submissionId)
     {
-        require(
-            requestId <= serviceRequestId,
-            "LaborMarket::provide: Request does not exist."
-        );
         require(
             block.timestamp <= serviceRequests[requestId].submissionExp,
             "LaborMarket::provide: Submission deadline passed."
@@ -337,10 +323,6 @@ contract LaborMarket is
         uint256 score
     ) external {
         require(
-            requestId <= serviceRequestId,
-            "LaborMarket::review: Request does not exist."
-        );
-        require(
             submissionId <= serviceSubmissionId,
             "LaborMarket::review: Submission does not exist."
         );
@@ -371,14 +353,10 @@ contract LaborMarket is
             --reviewSignals[msg.sender][requestId].remainder;
         }
 
-        network.unlockReputation(
+        _unlockReputation(
             msg.sender,
-            address(reputationToken),
-            configuration.reputationTokenId,
-            (network.getBaseSignalStake(
-                address(reputationToken),
-                configuration.reputationTokenId
-            ) / reviewSignals[msg.sender][requestId].total)
+            (reputationModule.getSignalStake(address(this))) /
+                reviewSignals[msg.sender][requestId].total
         );
 
         emit RequestReviewed(msg.sender, requestId, submissionId, score);
