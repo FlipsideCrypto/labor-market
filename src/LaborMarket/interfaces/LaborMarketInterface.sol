@@ -25,9 +25,13 @@ interface LaborMarketInterface is LaborMarketConfigurationInterface {
         bool graded;
     }
 
-    function initialize(
-        LaborMarketConfiguration calldata _configuration
-    ) external;
+    struct ReviewPromise {
+        uint256 total;
+        uint256 remainder;
+    }
+
+    function initialize(LaborMarketConfiguration calldata _configuration)
+        external;
 
     function getSubmission(uint256 submissionId)
         external
