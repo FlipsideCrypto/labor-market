@@ -474,7 +474,7 @@ contract LaborMarket is
      * @dev See {ReputationModule-getAvailableReputation}
      */
 
-    function _getAvailableReputation() internal returns (uint256) {
+    function _getAvailableReputation() internal view returns (uint256) {
         return
             reputationModule.getAvailableReputation(address(this), msg.sender);
     }
@@ -483,7 +483,7 @@ contract LaborMarket is
      * @dev See {ReputationModule-getMarketReputationConfig}
      */
 
-    function _baseStake() internal returns (uint256) {
+    function _baseStake() internal view returns (uint256) {
         return
             reputationModule
                 .getMarketReputationConfig(address(this))
