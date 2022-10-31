@@ -126,10 +126,10 @@ contract LaborMarket is
                 msg.sender,
                 configuration.delegateTokenId
             ) >= 1) ||
-                (reputationModule.getAvailableReputation(
-                    address(this),
-                    msg.sender
-                ) >= reputationModule.getProviderThreshold(address(this))),
+                (_getAvailableReputation() >=
+                    reputationModule
+                        .getMarketReputationConfig(address(this))
+                        .providerThreshold),
             "LaborMarket::permittedParticipant: Not a permitted participant"
         );
         _;
@@ -141,10 +141,10 @@ contract LaborMarket is
 
     modifier onlyMaintainer() {
         require(
-            reputationModule.getAvailableReputation(
-                address(this),
-                msg.sender
-            ) >= reputationModule.getMaintainerThreshold(address(this)),
+            _getAvailableReputation() >=
+                reputationModule
+                    .getMarketReputationConfig(address(this))
+                    .maintainerThreshold,
             "LaborMarket::onlyMaintainer: Not a maintainer"
         );
         _;
@@ -225,7 +225,7 @@ contract LaborMarket is
             "LaborMarket::signal: Already signaled."
         );
 
-        uint256 signalStake = reputationModule.getSignalStake(address(this));
+        uint256 signalStake = _baseStake();
 
         _lockReputation(msg.sender, signalStake);
 
@@ -252,7 +252,7 @@ contract LaborMarket is
             "LaborMarket::signalReview: Already signaled."
         );
 
-        uint256 signalStake = reputationModule.getSignalStake(address(this));
+        uint256 signalStake = _baseStake();
 
         _lockReputation(msg.sender, signalStake);
 
@@ -301,10 +301,7 @@ contract LaborMarket is
 
         hasSubmitted[requestId][msg.sender] = true;
 
-        _unlockReputation(
-            msg.sender,
-            reputationModule.getSignalStake(address(this))
-        );
+        _unlockReputation(msg.sender, _baseStake());
 
         emit RequestFulfilled(msg.sender, requestId, serviceSubmissionId);
 
@@ -355,8 +352,7 @@ contract LaborMarket is
 
         _unlockReputation(
             msg.sender,
-            (reputationModule.getSignalStake(address(this))) /
-                reviewSignals[msg.sender][requestId].total
+            (_baseStake()) / reviewSignals[msg.sender][requestId].total
         );
 
         emit RequestReviewed(msg.sender, requestId, submissionId, score);
@@ -429,34 +425,74 @@ contract LaborMarket is
                                 GETTERS
     //////////////////////////////////////////////////////////////*/
 
-    function getRequest(uint256 requestId)
+    /**
+     * @notice Returns the service request data.
+     * @param _requestId The id of the service requesters request.
+     */
+    function getRequest(uint256 _requestId)
         external
         view
         returns (ServiceRequest memory)
     {
-        return serviceRequests[requestId];
+        return serviceRequests[_requestId];
     }
 
-    function getSubmission(uint256 submissionId)
+    /**
+     * @notice Returns the service submission data.
+     * @param _submissionId The id of the service providers submission.
+     */
+    function getSubmission(uint256 _submissionId)
         external
         view
         returns (ServiceSubmission memory)
     {
-        return serviceSubmissions[submissionId];
+        return serviceSubmissions[_submissionId];
     }
 
+    /**
+     * @dev See {ReputationModule-lockReputation}.
+     */
     function _lockReputation(address account, uint256 amount) internal {
         reputationModule.lockReputation(account, amount);
     }
 
+    /**
+     * @dev See {ReputationModule-unlockReputation}.
+     */
     function _unlockReputation(address account, uint256 amount) internal {
         reputationModule.unlockReputation(account, amount);
     }
 
+    /**
+     * @dev See {ReputationModule-freezeReputation}.
+     */
     function _freezeReputation(address account, uint256 amount) internal {
         reputationModule.freezeReputation(account, amount);
     }
 
+    /**
+     * @dev See {ReputationModule-getAvailableReputation}
+     */
+
+    function _getAvailableReputation() internal returns (uint256) {
+        return
+            reputationModule.getAvailableReputation(address(this), msg.sender);
+    }
+
+    /**
+     * @dev See {ReputationModule-getMarketReputationConfig}
+     */
+
+    function _baseStake() internal returns (uint256) {
+        return
+            reputationModule
+                .getMarketReputationConfig(address(this))
+                .signalStake;
+    }
+
+    /**
+     * @dev Handle all the logic for configuration on deployment of a new LaborMarket.
+     */
     function _setConfiguration(LaborMarketConfiguration calldata _configuration)
         internal
     {

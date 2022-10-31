@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import { ReputationTokenInterface } from "./interfaces/ReputationTokenInterface.sol";
+import { ReputationEngineInterface } from "./interfaces/ReputationEngineInterface.sol";
 import { ReputationModuleInterface } from "./interfaces/ReputationModuleInterface.sol";
 import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
 
@@ -12,8 +12,8 @@ contract ReputationModule is ReputationModuleInterface {
 
     mapping(address => ReputationMarketConfig) public laborMarketRepConfig;
 
-    event ReputationTokenCreated (
-          address indexed reputationToken
+    event ReputationEngineCreated (
+          address indexed reputationEngine
         , address indexed baseToken
         , uint256 indexed baseTokenId
         , address owner
@@ -23,7 +23,10 @@ contract ReputationModule is ReputationModuleInterface {
 
     event MarketReputationConfigured (
           address indexed market
-        , ReputationMarketConfig indexed config
+        , address indexed reputationEngine
+        , uint256 signalStake
+        , uint256 providerThreshold
+        , uint256 maintainerThreshold
     );
 
     constructor(
@@ -34,7 +37,7 @@ contract ReputationModule is ReputationModuleInterface {
 
     /**
      * @notice Create a new Reputation Token.
-     * @param _implementation The address of ReputationToken implementation.
+     * @param _implementation The address of ReputationEngine implementation.
      * @param _baseToken The address of the base ERC1155.
      * @param _baseTokenId The tokenId of the base ERC1155.
      * @param _decayRate The amount of reputation decay per epoch.
@@ -42,7 +45,7 @@ contract ReputationModule is ReputationModuleInterface {
      * Requirements:
      * - Only the network can call this function in the factory.
      */
-    function createReputationToken(
+    function createReputationEngine(
           address _implementation
         , address _baseToken
         , uint256 _baseTokenId
@@ -55,13 +58,13 @@ contract ReputationModule is ReputationModuleInterface {
             address
         )
     {
-        address reputationTokenAddress = _implementation.clone();
+        address reputationEngineAddress = _implementation.clone();
 
-        ReputationTokenInterface reputationToken = ReputationTokenInterface(
-            reputationTokenAddress
+        ReputationEngineInterface reputationEngine = ReputationEngineInterface(
+            reputationEngineAddress
         );
 
-        reputationToken.initialize(
+        reputationEngine.initialize(
               address(this)
             , _baseToken
             , _baseTokenId
@@ -69,8 +72,8 @@ contract ReputationModule is ReputationModuleInterface {
             , _decayInterval
         );
 
-        emit ReputationTokenCreated(
-              reputationTokenAddress
+        emit ReputationEngineCreated(
+              reputationEngineAddress
             , _baseToken
             , _baseTokenId
             , msg.sender
@@ -78,7 +81,7 @@ contract ReputationModule is ReputationModuleInterface {
             , _decayInterval
         );
 
-        return reputationTokenAddress;
+        return reputationEngineAddress;
     }
 
     /**
@@ -99,7 +102,13 @@ contract ReputationModule is ReputationModuleInterface {
 
         laborMarketRepConfig[_laborMarket] = _repConfig;
 
-        emit MarketReputationConfigured(_laborMarket, _repConfig);
+        emit MarketReputationConfigured(
+              _laborMarket
+            , _repConfig.reputationEngine
+            , _repConfig.signalStake
+            , _repConfig.providerThreshold
+            , _repConfig.maintainerThreshold
+        );
     }
 
     /**
@@ -116,15 +125,21 @@ contract ReputationModule is ReputationModuleInterface {
         override
         public 
     {
-        require(_callerReputationToken() != address(0), "ReputationModule: This Labor Market does not exist.");
+        require(_callerReputationEngine() != address(0), "ReputationModule: This Labor Market does not exist.");
 
         laborMarketRepConfig[msg.sender] = _repConfig;
 
-        emit MarketReputationConfigured(msg.sender, _repConfig);
+        emit MarketReputationConfigured(
+              msg.sender
+            , _repConfig.reputationEngine
+            , _repConfig.signalStake
+            , _repConfig.providerThreshold
+            , _repConfig.maintainerThreshold
+        );
     }
 
     /**
-     * @dev See {ReputationToken-freezeReputation}.
+     * @dev See {reputationEngine-freezeReputation}.
      */
     function freezeReputation(
           address _account
@@ -133,24 +148,29 @@ contract ReputationModule is ReputationModuleInterface {
         override
         public
     {
-        _freezeReputation(_callerReputationToken(), _account, _frozenUntilEpoch);
+        _freezeReputation(_callerReputationEngine(), _account, _frozenUntilEpoch);
     }
 
+    /**
+     * @dev See {ReputationEngine-lockReputation}.
+     * @dev The internal call makes the module the msg.sender which is permissioned
+     *      to make balance changes within the ReputationEngine.
+     */
     function _freezeReputation(
-          address _reputationToken
+          address _reputationEngine
         , address _account
         , uint256 _frozenUntilEpoch
     )
         internal
     {
-        ReputationTokenInterface(_reputationToken).freezeReputation(
+        ReputationEngineInterface(_reputationEngine).freezeReputation(
               _account
             , _frozenUntilEpoch
         );
     }
 
     /**
-     * @dev See {ReputationToken-lockReputation}.
+     * @dev See {ReputationEngine-lockReputation}.
      */
     function lockReputation(
           address _account
@@ -159,24 +179,29 @@ contract ReputationModule is ReputationModuleInterface {
         override
         public
     {
-        _lockReputation(_callerReputationToken(), _account, _amount);
+        _lockReputation(_callerReputationEngine(), _account, _amount);
     }
 
+    /**
+     * @dev See {ReputationEngine-lockReputation}.
+     * @dev The internal call makes the module the msg.sender which is permissioned
+     *      to make balance changes within the ReputationEngine.
+     */
     function _lockReputation(
-          address _reputationToken
+          address _reputationEngine
         , address _account
         , uint256 _amount
     ) 
         internal
     {
-        ReputationTokenInterface(_reputationToken).lockReputation(
+        ReputationEngineInterface(_reputationEngine).lockReputation(
               _account
             , _amount
         );
     }
 
     /**
-     * @dev See {ReputationToken-unlockReputation}.
+     * @dev See {ReputationEngine-unlockReputation}.
      */
     function unlockReputation(
           address _account
@@ -185,24 +210,28 @@ contract ReputationModule is ReputationModuleInterface {
         override
         public
     {
-        _unlockReputation(_callerReputationToken(), _account, _amount);
+        _unlockReputation(_callerReputationEngine(), _account, _amount);
     }
     
+    /**
+     * @dev The internal call makes the module the msg.sender which is permissioned
+     *      to make balance changes within the ReputationEngine.
+     */
     function _unlockReputation(
-          address _reputationToken
+          address _reputationEngine
         , address _account
         , uint256 _amount
     ) 
         internal
     {
-        ReputationTokenInterface(_reputationToken).unlockReputation(
+        ReputationEngineInterface(_reputationEngine).unlockReputation(
               _account
             , _amount
         );
     }
 
     /**
-     * @dev See {ReputationToken-getAvailableReputation}.
+     * @dev See {ReputationEngine-getAvailableReputation}.
      */
     function getAvailableReputation(
           address _laborMarket
@@ -215,11 +244,14 @@ contract ReputationModule is ReputationModuleInterface {
             uint256
         )
     {
-        return ReputationTokenInterface(
-            getReputationToken(_laborMarket)
+        return ReputationEngineInterface(
+            getReputationEngine(_laborMarket)
         ).getAvailableReputation(_account);
     }
 
+    /**
+     * @dev See {ReputationEngine-getPendingDecay}.
+     */
     function getPendingDecay(
           address _laborMarket
         , address _account
@@ -231,13 +263,13 @@ contract ReputationModule is ReputationModuleInterface {
             uint256
         )
     {
-        return ReputationTokenInterface(
-            getReputationToken(_laborMarket)
+        return ReputationEngineInterface(
+            getReputationEngine(_laborMarket)
         ).getPendingDecay(_account);
     }
 
     /**
-     * @dev See {ReputationToken-getReputationAccountInfo}.
+     * @dev See {ReputationEngine-getReputationAccountInfo}.
      */
     function getReputationAccountInfo(
           address _laborMarket
@@ -247,60 +279,34 @@ contract ReputationModule is ReputationModuleInterface {
         public
         view
         returns (
-            ReputationTokenInterface.ReputationAccountInfo memory
+            ReputationEngineInterface.ReputationAccountInfo memory
         )
     {
-        return ReputationTokenInterface(
-            getReputationToken(_laborMarket)
+        return ReputationEngineInterface(
+            getReputationEngine(_laborMarket)
         ).getReputationAccountInfo(_account);
     }
 
     /**
-     * @dev Returns the base provider threshold of the Reputation Token for the Labor Market.
+     * @notice Retreive the reputation configuration parameters for the Labor Market.
+     * @param _laborMarket The address of the Labor Market.
      */
-    function getSignalStake(address _laborMarket)
+    function getMarketReputationConfig(address _laborMarket)
         override
         public
         view
         returns (
-            uint256
+            ReputationMarketConfig memory
         )
     {
-        return laborMarketRepConfig[_laborMarket].signalStake;
+        return laborMarketRepConfig[_laborMarket];
     }
 
     /**
-     * @dev Returns the base provider threshold of the Reputation Token for the Labor Market.
+     * @notice Retreive the ReputationEngine implementation for the Labor Market.
+     * @param _laborMarket The address of the Labor Market.
      */
-    function getProviderThreshold(address _laborMarket)
-        override
-        public
-        view
-        returns (
-            uint256
-        )
-    {
-        return laborMarketRepConfig[_laborMarket].providerThreshold;
-    }
-
-    /**
-     * @dev Returns the base maintainer threshold of the Reputation Token for the Labor Market.
-     */
-    function getMaintainerThreshold(address _laborMarket)
-        override
-        public
-        view
-        returns (
-            uint256
-        )
-    {
-        return laborMarketRepConfig[_laborMarket].maintainerThreshold;
-    }
-
-    /**
-     * @dev Returns the address of the Reputation Token for the Labor Market.
-     */
-    function getReputationToken(address _laborMarket)
+    function getReputationEngine(address _laborMarket)
         override
         public
         view
@@ -308,16 +314,22 @@ contract ReputationModule is ReputationModuleInterface {
             address
         )
     {
-        return laborMarketRepConfig[_laborMarket].reputationToken;
+        return laborMarketRepConfig[_laborMarket].reputationEngine;
     }
 
-    function _callerReputationToken()
+    /**
+     * @dev Helper function to get the ReputationEngine address for the caller.
+     * @dev By limiting the caller to a Labor Market, we can ensure that the
+     *      caller is a valid Labor Market and can only interact with its own
+     *      ReputationEngine.
+     */
+    function _callerReputationEngine()
         internal
         view
         returns (
             address
         )
     {
-        return laborMarketRepConfig[msg.sender].reputationToken;
+        return laborMarketRepConfig[msg.sender].reputationEngine;
     }
 }
