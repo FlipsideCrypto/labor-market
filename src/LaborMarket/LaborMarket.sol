@@ -42,7 +42,7 @@ contract LaborMarket is
     mapping(uint256 => ServiceSubmission) public serviceSubmissions;
 
     mapping(uint256 => mapping(address => bool)) public submissionSignals;
-    mapping(uint256 => mapping(address => bool)) public reviewSignals;
+    mapping(address => mapping(uint256 => ReviewPromise)) public reviewSignals;
 
     mapping(uint256 => mapping(address => bool)) public hasSubmitted;
     mapping(uint256 => mapping(address => bool)) public hasClaimed;
@@ -94,6 +94,7 @@ contract LaborMarket is
     event ReviewSignal(
         address indexed signaler,
         uint256 indexed requestId,
+        uint256 indexed quantity,
         uint256 signalAmount
     );
 
@@ -130,8 +131,7 @@ contract LaborMarket is
                 (reputationModule.getAvailableReputation(
                     address(this),
                     msg.sender
-                ) >= reputationModule.getProviderThreshold(address(this))
-            ),
+                ) >= reputationModule.getProviderThreshold(address(this))),
             "LaborMarket::permittedParticipant: Not a permitted participant"
         );
         _;
@@ -233,10 +233,7 @@ contract LaborMarket is
 
         uint256 signalStake = reputationModule.getSignalStake(address(this));
 
-        _lockReputation(
-            msg.sender,
-            signalStake
-        );
+        _lockReputation(msg.sender, signalStake);
 
         submissionSignals[requestId][msg.sender] = true;
 
@@ -250,27 +247,29 @@ contract LaborMarket is
     /**
      * @notice Signals interest in reviewing a submission.
      * @param requestId The id of the service providers submission.
+     * @param quantity The amount of submissions a maintainer is willing to review.
      */
-    function signalReview(uint256 requestId) external onlyMaintainer {
+    function signalReview(uint256 requestId, uint256 quantity)
+        external
+        onlyMaintainer
+    {
         require(
             requestId <= serviceRequestId,
             "LaborMarket::signalReview: Request does not exist."
         );
         require(
-            !reviewSignals[requestId][msg.sender],
+            reviewSignals[msg.sender][requestId].remainder == 0,
             "LaborMarket::signalReview: Already signaled."
         );
 
         uint256 signalStake = reputationModule.getSignalStake(address(this));
 
-        _lockReputation(
-            msg.sender,
-            signalStake
-        );
+        _lockReputation(msg.sender, signalStake);
 
-        reviewSignals[requestId][msg.sender] = true;
+        reviewSignals[msg.sender][requestId].total = quantity;
+        reviewSignals[msg.sender][requestId].remainder = quantity;
 
-        emit ReviewSignal(msg.sender, requestId, signalStake);
+        emit ReviewSignal(msg.sender, requestId, quantity, signalStake);
     }
 
     /**
@@ -351,12 +350,12 @@ contract LaborMarket is
         );
 
         require(
-            reviewSignals[requestId][msg.sender],
+            reviewSignals[msg.sender][requestId].remainder > 0,
             "LaborMarket::review: Not signaled."
         );
         require(
             !serviceSubmissions[submissionId].graded,
-            "LaborMarket::review: Already graded."
+            "LaborMarket::review: Already reviewed."
         );
         require(
             serviceSubmissions[submissionId].serviceProvider != msg.sender,
@@ -368,10 +367,19 @@ contract LaborMarket is
         serviceSubmissions[submissionId].score = score;
         serviceSubmissions[submissionId].graded = true;
 
-        // _unlockReputation(
-        //     msg.sender,
-        //     reputationModule.getSignalStake(address(this))
-        // );
+        unchecked {
+            --reviewSignals[msg.sender][requestId].remainder;
+        }
+
+        network.unlockReputation(
+            msg.sender,
+            address(reputationToken),
+            configuration.reputationTokenId,
+            (network.getBaseSignalStake(
+                address(reputationToken),
+                configuration.reputationTokenId
+            ) / reviewSignals[msg.sender][requestId].total)
+        );
 
         emit RequestReviewed(msg.sender, requestId, submissionId, score);
     }
@@ -386,22 +394,22 @@ contract LaborMarket is
             "LaborMarket::claim: Submission does not exist."
         );
         require(
-            serviceSubmissions[submissionId].graded,
-            "LaborMarket::claim: Not graded."
+            !hasClaimed[submissionId][msg.sender],
+            "LaborMarket::claim: Already claimed."
         );
         require(
-            block.timestamp >=
-                serviceRequests[serviceSubmissions[submissionId].requestId]
-                    .enforcementExp,
-            "LaborMarket::claim: Enforcement deadline not passed."
+            serviceSubmissions[submissionId].graded,
+            "LaborMarket::claim: Not graded."
         );
         require(
             serviceSubmissions[submissionId].serviceProvider == msg.sender,
             "LaborMarket::claim: Not service provider."
         );
         require(
-            !hasClaimed[submissionId][msg.sender],
-            "LaborMarket::claim: Already claimed."
+            block.timestamp >=
+                serviceRequests[serviceSubmissions[submissionId].requestId]
+                    .enforcementExp,
+            "LaborMarket::claim: Enforcement deadline not passed."
         );
 
         uint256 curveIndex = enforcementCriteria.verify(submissionId);
@@ -459,30 +467,15 @@ contract LaborMarket is
         return serviceSubmissions[submissionId];
     }
 
-    function _lockReputation(
-          address account
-        , uint256 amount
-    ) 
-        internal 
-    {
+    function _lockReputation(address account, uint256 amount) internal {
         reputationModule.lockReputation(account, amount);
     }
 
-    function _unlockReputation(
-          address account
-        , uint256 amount
-    ) 
-        internal 
-    {
+    function _unlockReputation(address account, uint256 amount) internal {
         reputationModule.unlockReputation(account, amount);
     }
 
-    function _freezeReputation(
-          address account
-        , uint256 amount
-    ) 
-        internal 
-    {
+    function _freezeReputation(address account, uint256 amount) internal {
         reputationModule.freezeReputation(account, amount);
     }
 
