@@ -53,6 +53,7 @@ contract ContractTest is PRBTest, Cheats {
     uint256 private constant DELEGATE_TOKEN_ID = 0;
     uint256 private constant REPUTATION_TOKEN_ID = 1;
     uint256 private constant PAYMENT_TOKEN_ID = 2;
+    uint256 private constant MAINTAINER_TOKEN_ID = 3;
     uint256 private constant REPUTATION_DECAY_RATE = 0;
     uint256 private constant REPUTATION_DECAY_INTERVAL = 0;
 
@@ -196,6 +197,8 @@ contract ContractTest is PRBTest, Cheats {
                     marketUri: "ipfs://000",
                     delegateBadge: address(repToken),
                     delegateTokenId: DELEGATE_TOKEN_ID,
+                    maintainerBadge: address(repToken),
+                    maintainerTokenId: MAINTAINER_TOKEN_ID,
                     reputationModule: address(reputationModule),
                     reputationConfig: repConfig
                 });
@@ -218,6 +221,7 @@ contract ContractTest is PRBTest, Cheats {
         changePrank(bob);
         repToken.freeMint(bob, REPUTATION_TOKEN_ID, 1000e18);
         repToken.freeMint(bob, DELEGATE_TOKEN_ID, 1);
+        repToken.freeMint(bob, MAINTAINER_TOKEN_ID, 1);
         repToken.setApprovalForAll(address(market), true);
 
         vm.stopPrank();
@@ -411,6 +415,8 @@ contract ContractTest is PRBTest, Cheats {
                     marketUri: "ipfs://000",
                     delegateBadge: address(repToken),
                     delegateTokenId: DELEGATE_TOKEN_ID,
+                    maintainerBadge: address(repToken),
+                    maintainerTokenId: MAINTAINER_TOKEN_ID,
                     reputationModule: address(reputationModule),
                     reputationConfig: repConfig
                 });
@@ -536,6 +542,8 @@ contract ContractTest is PRBTest, Cheats {
                     marketUri: "ipfs://000",
                     delegateBadge: address(repToken),
                     delegateTokenId: DELEGATE_TOKEN_ID,
+                    maintainerBadge: address(repToken),
+                    maintainerTokenId: MAINTAINER_TOKEN_ID,
                     reputationModule: address(reputationModule),
                     reputationConfig: repConfig
                 });
@@ -695,6 +703,8 @@ contract ContractTest is PRBTest, Cheats {
                     marketUri: "ipfs://000",
                     delegateBadge: address(repToken),
                     delegateTokenId: DELEGATE_TOKEN_ID,
+                    maintainerBadge: address(repToken),
+                    maintainerTokenId: MAINTAINER_TOKEN_ID,
                     reputationModule: address(reputationModule),
                     reputationConfig: repConfig
                 });

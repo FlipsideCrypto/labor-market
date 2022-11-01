@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.17;
 
-import { ReputationModuleInterface } from "src/Modules/Reputation/interfaces/ReputationModuleInterface.sol";
+import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/ReputationModuleInterface.sol";
 
 interface LaborMarketConfigurationInterface {
     struct LaborMarketConfiguration {
@@ -12,6 +12,8 @@ interface LaborMarketConfigurationInterface {
         string marketUri;
         address delegateBadge;
         uint256 delegateTokenId;
+        address maintainerBadge;
+        uint256 maintainerTokenId;
         address reputationModule;
         ReputationModuleInterface.ReputationMarketConfig reputationConfig;
     }
