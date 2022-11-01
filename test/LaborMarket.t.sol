@@ -123,7 +123,8 @@ contract ContractTest is PRBTest, Cheats {
     event RequestPayClaimed(
         address indexed claimer,
         uint256 indexed submissionId,
-        uint256 indexed payAmount
+        uint256 indexed payAmount,
+        address to
     );
 
     /*//////////////////////////////////////////////////////////////
@@ -302,7 +303,7 @@ contract ContractTest is PRBTest, Cheats {
 
         // Skip to enforcement deadline
         vm.warp(5 weeks);
-        market.claim(submissionId);
+        market.claim(submissionId, msg.sender, "");
     }
 
     function test_ExampleEnforcementTest() public {
@@ -375,7 +376,7 @@ contract ContractTest is PRBTest, Cheats {
             changePrank(user);
 
             // Claim
-            totalPaid += market.claim(i + 1);
+            totalPaid += market.claim(i + 1, msg.sender, "");
         }
 
         assertAlmostEq(totalPaid, 1000e18, 0.000001e18);
@@ -437,15 +438,15 @@ contract ContractTest is PRBTest, Cheats {
 
             changePrank(alice);
             market.signal(requestId);
-            market.provide(requestId, "IPFS://333");
+            uint256 submissionId = market.provide(requestId, "IPFS://333");
 
             changePrank(bob);
             market.signalReview(requestId, 8);
-            market.review(requestId, 1, 2);
+            market.review(submissionId, 1, 2);
 
             changePrank(alice);
             vm.warp(block.timestamp + 5 weeks);
-            market.claim(requestId);
+            market.claim(submissionId, msg.sender, "");
         }
         vm.stopPrank();
     }
@@ -512,7 +513,7 @@ contract ContractTest is PRBTest, Cheats {
 
         // Skip to enforcement deadline
         vm.warp(5 weeks);
-        market.claim(submissionId);
+        market.claim(submissionId, msg.sender, "");
     }
 
     function test_VerifyAllEmittedEvents() public {
@@ -613,13 +614,14 @@ contract ContractTest is PRBTest, Cheats {
         vm.expectEmit(true, true, true, true);
         emit RequestPayClaimed(
             address(alice),
-            requestId,
-            799999999973870935009 // (100e18 * 0.8)
+            submissionId,
+            799999999973870935009, // (100e18 * 0.8)
+            address(alice)
         );
 
         changePrank(alice);
         vm.warp(block.timestamp + 5 weeks);
-        market.claim(requestId);
+        market.claim(submissionId, address(alice), "");
 
         // Verify withdrawing request event
         changePrank(bob);
@@ -786,11 +788,11 @@ contract ContractTest is PRBTest, Cheats {
 
         // User claims reward
         changePrank(alice);
-        market.claim(submissionId);
+        market.claim(submissionId, msg.sender, "");
 
         // User tries to claim same reward again
         vm.expectRevert("LaborMarket::claim: Already claimed.");
-        market.claim(submissionId);
+        market.claim(submissionId, msg.sender, "");
 
         vm.stopPrank();
     }
@@ -839,7 +841,7 @@ contract ContractTest is PRBTest, Cheats {
         // User attempts to claim the reward, we expect a revert
         changePrank(alice);
         vm.expectRevert("LaborMarket::claim: Not graded.");
-        market.claim(submissionId);
+        market.claim(submissionId, msg.sender, "");
 
         vm.stopPrank();
     }
@@ -867,7 +869,7 @@ contract ContractTest is PRBTest, Cheats {
         // User claims reward
         changePrank(evilUser);
         vm.expectRevert("LaborMarket::claim: Not service provider.");
-        market.claim(submissionId);
+        market.claim(submissionId, msg.sender, "");
 
         vm.stopPrank();
     }

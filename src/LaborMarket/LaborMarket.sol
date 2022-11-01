@@ -117,7 +117,8 @@ contract LaborMarket is
     event RequestPayClaimed(
         address indexed claimer,
         uint256 indexed submissionId,
-        uint256 indexed payAmount
+        uint256 indexed payAmount,
+        address to
     );
 
     modifier permittedParticipant() {
@@ -362,7 +363,11 @@ contract LaborMarket is
      * @notice Allows a service provider to claim payment for a service submission.
      * @param submissionId The id of the service providers submission.
      */
-    function claim(uint256 submissionId) external returns (uint256) {
+    function claim(
+        uint256 submissionId,
+        address to,
+        bytes calldata data
+    ) external returns (uint256) {
         require(
             submissionId <= serviceSubmissionId,
             "LaborMarket::claim: Submission does not exist."
@@ -395,7 +400,7 @@ contract LaborMarket is
 
         hasClaimed[submissionId][msg.sender] = true;
 
-        emit RequestPayClaimed(msg.sender, submissionId, amount);
+        emit RequestPayClaimed(msg.sender, submissionId, amount, to);
 
         return amount;
     }
