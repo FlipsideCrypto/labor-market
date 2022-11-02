@@ -396,9 +396,6 @@ contract LaborMarket is
 
         uint256 curveIndex = enforcementCriteria.verify(submissionId);
 
-        // Increase/(decrease) reputation here for submitter
-        // Mint/burn(lock) rep
-
         uint256 amount = paymentCurve.curvePoint(curveIndex);
 
         hasClaimed[submissionId][msg.sender] = true;
@@ -427,8 +424,12 @@ contract LaborMarket is
             signalCount[requestId] < 1,
             "LaborMarket::withdrawRequest: Already active."
         );
+        address pToken = serviceRequests[requestId].pToken;
+        uint256 amount = serviceRequests[requestId].pTokenQ;
 
         delete serviceRequests[requestId];
+
+        IERC20(pToken).transfer(msg.sender, amount);
 
         emit RequestWithdrawn(requestId);
     }
