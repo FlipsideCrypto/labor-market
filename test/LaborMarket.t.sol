@@ -7,8 +7,6 @@ import {console} from "forge-std/console.sol";
 import {PRBTest} from "@prb/test/PRBTest.sol";
 
 // Contracts
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
 import {AnyReputationToken, PaymentToken} from "./Helpers/HelperTokens.sol";
 import {ReputationEngineInterface} from "src/Modules/Reputation/interfaces/ReputationEngineInterface.sol";
 import {ReputationEngine} from "src/Modules/Reputation/ReputationEngine.sol";
