@@ -43,7 +43,7 @@ contract LaborMarket is
     mapping(uint256 => ServiceSubmission) public serviceSubmissions;
 
     mapping(uint256 => mapping(address => bool)) public submissionSignals;
-    mapping(address => mapping(uint256 => ReviewPromise)) public reviewSignals;
+    mapping(address => ReviewPromise) public reviewSignals;
 
     mapping(uint256 => mapping(address => bool)) public hasSubmitted;
     mapping(uint256 => mapping(address => bool)) public hasClaimed;
@@ -92,7 +92,6 @@ contract LaborMarket is
     /// @notice emitted when a maintainer signals a review
     event ReviewSignal(
         address indexed signaler,
-        uint256 indexed requestId,
         uint256 indexed quantity,
         uint256 signalAmount
     );
@@ -244,15 +243,11 @@ contract LaborMarket is
 
     /**
      * @notice Signals interest in reviewing a submission.
-     * @param requestId The id of the service providers submission.
      * @param quantity The amount of submissions a maintainer is willing to review.
      */
-    function signalReview(uint256 requestId, uint256 quantity)
-        external
-        onlyMaintainer
-    {
+    function signalReview(uint256 quantity) external onlyMaintainer {
         require(
-            reviewSignals[msg.sender][requestId].remainder == 0,
+            reviewSignals[msg.sender].remainder == 0,
             "LaborMarket::signalReview: Already signaled."
         );
 
@@ -260,10 +255,10 @@ contract LaborMarket is
 
         _lockReputation(msg.sender, signalStake);
 
-        reviewSignals[msg.sender][requestId].total = quantity;
-        reviewSignals[msg.sender][requestId].remainder = quantity;
+        reviewSignals[msg.sender].total = quantity;
+        reviewSignals[msg.sender].remainder = quantity;
 
-        emit ReviewSignal(msg.sender, requestId, quantity, signalStake);
+        emit ReviewSignal(msg.sender, quantity, signalStake);
     }
 
     /**
@@ -333,7 +328,7 @@ contract LaborMarket is
         );
 
         require(
-            reviewSignals[msg.sender][requestId].remainder > 0,
+            reviewSignals[msg.sender].remainder > 0,
             "LaborMarket::review: Not signaled."
         );
         require(
@@ -351,12 +346,12 @@ contract LaborMarket is
         serviceSubmissions[submissionId].graded = true;
 
         unchecked {
-            --reviewSignals[msg.sender][requestId].remainder;
+            --reviewSignals[msg.sender].remainder;
         }
 
         _unlockReputation(
             msg.sender,
-            (_baseStake()) / reviewSignals[msg.sender][requestId].total
+            (_baseStake()) / reviewSignals[msg.sender].total
         );
 
         emit RequestReviewed(msg.sender, requestId, submissionId, score);

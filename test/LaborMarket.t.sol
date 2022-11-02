@@ -104,7 +104,6 @@ contract ContractTest is PRBTest, Cheats {
 
     event ReviewSignal(
         address indexed signaler,
-        uint256 indexed requestId,
         uint256 indexed quantity,
         uint256 signalAmount
     );
@@ -300,7 +299,7 @@ contract ContractTest is PRBTest, Cheats {
 
         changePrank(bob);
         // Review the request
-        market.signalReview(requestId, 2);
+        market.signalReview(2);
         market.review(requestId, submissionId, 2);
 
         // Claim the reward
@@ -353,7 +352,7 @@ contract ContractTest is PRBTest, Cheats {
         changePrank(bob);
 
         // The reviewer signals the requestId
-        market.signalReview(requestId, 115);
+        market.signalReview(115);
 
         // The reviewer reviews the submissions
         for (uint256 i; i < 113; i++) {
@@ -447,7 +446,7 @@ contract ContractTest is PRBTest, Cheats {
             uint256 submissionId = market.provide(requestId, "IPFS://333");
 
             changePrank(bob);
-            market.signalReview(requestId, 8);
+            market.signalReview(8);
             market.review(submissionId, 1, 2);
 
             changePrank(alice);
@@ -495,7 +494,7 @@ contract ContractTest is PRBTest, Cheats {
         changePrank(bob);
 
         // Review the request
-        market.signalReview(requestId, 3);
+        market.signalReview(3);
 
         // Verify that Maintainers's reputation is locked
         assertEq(
@@ -598,11 +597,11 @@ contract ContractTest is PRBTest, Cheats {
         changePrank(alice);
         market.signal(requestId);
 
-        vm.expectEmit(true, true, true, true);
-        emit ReviewSignal(address(bob), requestId, 3, 1e18);
+        vm.expectEmit(true, true, false, true);
+        emit ReviewSignal(address(bob), 3, 1e18);
 
         changePrank(bob);
-        market.signalReview(requestId, 3);
+        market.signalReview(3);
 
         // Verify submission events
         vm.expectEmit(true, true, true, true);
@@ -675,13 +674,13 @@ contract ContractTest is PRBTest, Cheats {
 
         // A user tries to signal for review and we expect it to revert
         vm.expectRevert("LaborMarket::onlyMaintainer: Not a maintainer");
-        market.signalReview(requestId, 3);
+        market.signalReview(3);
 
         // We also expect a revert if a random address tries to review
         changePrank(evilUser);
 
         vm.expectRevert("LaborMarket::onlyMaintainer: Not a maintainer");
-        market.signalReview(requestId, 3);
+        market.signalReview(3);
 
         vm.stopPrank();
     }
@@ -742,11 +741,11 @@ contract ContractTest is PRBTest, Cheats {
 
         // A maintainer signals for review
         changePrank(bob);
-        market.signalReview(requestId, 3);
+        market.signalReview(3);
 
         // Maintainer tries to signal same request again and we expect it to revert
         vm.expectRevert("LaborMarket::signalReview: Already signaled.");
-        market.signalReview(requestId, 3);
+        market.signalReview(3);
 
         vm.stopPrank();
     }
@@ -763,7 +762,7 @@ contract ContractTest is PRBTest, Cheats {
 
         // A maintainer signals for review
         changePrank(bob);
-        market.signalReview(requestId, 3);
+        market.signalReview(3);
 
         // Maintainer tries to review twice
         market.review(requestId, 1, 2);
@@ -788,7 +787,7 @@ contract ContractTest is PRBTest, Cheats {
 
         // A valid maintainer signals for review
         changePrank(bob);
-        market.signalReview(requestId, 3);
+        market.signalReview(3);
 
         // A valid maintainer reviews the request
         market.review(requestId, submissionId, 2);
@@ -844,7 +843,7 @@ contract ContractTest is PRBTest, Cheats {
 
         // A valid maintainer signals for review
         changePrank(bob);
-        market.signalReview(requestId, 3);
+        market.signalReview(3);
 
         // No reviewing happens
 
@@ -871,7 +870,7 @@ contract ContractTest is PRBTest, Cheats {
 
         // A valid maintainer signals for review
         changePrank(bob);
-        market.signalReview(requestId, 3);
+        market.signalReview(3);
 
         // A valid maintainer reviews the request
         market.review(requestId, submissionId, 2);
@@ -950,7 +949,7 @@ contract ContractTest is PRBTest, Cheats {
 
         // A valid maintainer signals for review
         changePrank(bob);
-        market.signalReview(requestId, 3);
+        market.signalReview(3);
 
         // Skip past enforcement deadline
         vm.warp(block.timestamp + 100 weeks);
