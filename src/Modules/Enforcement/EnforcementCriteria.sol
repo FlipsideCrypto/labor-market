@@ -36,19 +36,19 @@ contract EnforcementCriteria {
         uint256 score = submissionToScore[msg.sender][submissionId];
         uint256 alloc = (1e18 / getTotalBucket(msg.sender, Likert(score)));
 
-        // LaborMarketInterface market = LaborMarketInterface(msg.sender);
-        // uint256 pTokens = market
-        //     .getRequest(market.getSubmission(submissionId).requestId)
-        //     .pTokenQ / 1e18;
+        LaborMarketInterface market = LaborMarketInterface(msg.sender);
+        uint256 pTokens = market
+            .getRequest(market.getSubmission(submissionId).requestId)
+            .pTokenQ / 1e18;
 
         uint256 x;
 
         if (score == uint256(Likert.BAD)) {
-            x = sqrt(alloc * (0 * 1000));
+            x = sqrt(alloc * (pTokens * 0));
         } else if (score == uint256(Likert.OK)) {
-            x = sqrt(alloc * (0.2 * 1000));
+            x = sqrt(alloc * ((pTokens * 20) / 100));
         } else if (score == uint256(Likert.GOOD)) {
-            x = sqrt(alloc * (0.8 * 1000));
+            x = sqrt(alloc * ((pTokens * 80) / 100));
         }
 
         return x;

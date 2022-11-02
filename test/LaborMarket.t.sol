@@ -7,7 +7,9 @@ import {console} from "forge-std/console.sol";
 import {PRBTest} from "@prb/test/PRBTest.sol";
 
 // Contracts
-import {AnyReputationToken, CapacityToken} from "./Helpers/HelperTokens.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+import {AnyReputationToken, PaymentToken} from "./Helpers/HelperTokens.sol";
 import {ReputationEngineInterface} from "src/Modules/Reputation/interfaces/ReputationEngineInterface.sol";
 import {ReputationEngine} from "src/Modules/Reputation/ReputationEngine.sol";
 
@@ -31,7 +33,7 @@ import {LaborMarketNetworkInterface} from "src/Network/interfaces/LaborMarketNet
 
 contract ContractTest is PRBTest, Cheats {
     AnyReputationToken public repToken;
-    CapacityToken public capToken;
+    PaymentToken public payToken;
 
     LaborMarket public marketImplementation;
     LaborMarket public market;
@@ -134,7 +136,7 @@ contract ContractTest is PRBTest, Cheats {
         vm.startPrank(deployer);
 
         // Create a capacity & reputation token
-        capToken = new CapacityToken();
+        payToken = new PaymentToken();
 
         // Generic reputation token
         repToken = new AnyReputationToken("reputation nation");
@@ -151,7 +153,7 @@ contract ContractTest is PRBTest, Cheats {
         // Deploy a labor market network
         network = new LaborMarketNetwork({
             _factoryImplementation: address(marketImplementation),
-            _capacityImplementation: address(capToken)
+            _capacityImplementation: address(address(0))
         });
 
         // Deploy a new reputation module
@@ -219,7 +221,10 @@ contract ContractTest is PRBTest, Cheats {
         changePrank(bob);
         repToken.freeMint(bob, REPUTATION_TOKEN_ID, 1000e18);
         repToken.freeMint(bob, DELEGATE_TOKEN_ID, 1);
+        payToken.freeMint(bob, 1_000_000e18);
+
         repToken.setApprovalForAll(address(market), true);
+        payToken.approve(address(market), 1_000e18);
 
         vm.stopPrank();
     }
@@ -229,9 +234,9 @@ contract ContractTest is PRBTest, Cheats {
         returns (uint256)
     {
         uint256 rid = simpleMarket.submitRequest({
-            pToken: address(repToken),
+            pToken: address(payToken),
             pTokenId: PAYMENT_TOKEN_ID,
-            pTokenQ: 100e18,
+            pTokenQ: 1000e18,
             signalExp: block.timestamp + 1 hours,
             submissionExp: block.timestamp + 1 days,
             enforcementExp: block.timestamp + 1 weeks,
@@ -249,7 +254,7 @@ contract ContractTest is PRBTest, Cheats {
         /**
         | Here we test the creation of a service request
         | A service request contains:
-        |  - A payment token (ERC1155)
+        |  - A payment token (ERC20)
         |  - A payment token ID
         |  - A payment token quantity
         |  - A signal expiration
@@ -269,7 +274,7 @@ contract ContractTest is PRBTest, Cheats {
 
         // Create a request
         uint256 requestId = market.submitRequest({
-            pToken: address(repToken),
+            pToken: address(payToken),
             pTokenId: PAYMENT_TOKEN_ID,
             pTokenQ: 100e18,
             signalExp: block.timestamp + 1 hours,
@@ -281,7 +286,7 @@ contract ContractTest is PRBTest, Cheats {
         // Verify the request was created
         assertEq(market.serviceRequestId(), 1);
         assertEq(market.getRequest(requestId).serviceRequester, bob);
-        assertEq(market.getRequest(requestId).pToken, address(repToken));
+        assertEq(market.getRequest(requestId).pToken, address(payToken));
 
         // Signal the request
         changePrank(alice);
@@ -434,6 +439,7 @@ contract ContractTest is PRBTest, Cheats {
 
             // Populate all markets with a demo request
             changePrank(bob);
+            payToken.approve(address(market), 1_000e18);
             uint256 requestId = createSimpleRequest(market);
 
             changePrank(alice);
@@ -558,10 +564,12 @@ contract ContractTest is PRBTest, Cheats {
             })
         );
 
+        payToken.approve(address(market), 1_000e18);
+
         // Verify service request creation event
-        address pToken = address(repToken);
+        address pToken = address(payToken);
         uint256 pTokenId = PAYMENT_TOKEN_ID;
-        uint256 pTokenQ = 100e18;
+        uint256 pTokenQ = 1000e18;
         uint256 signalExp = block.timestamp + 1 hours;
         uint256 submissionExp = block.timestamp + 1 days;
         uint256 enforcementExp = block.timestamp + 1 weeks;
@@ -625,6 +633,8 @@ contract ContractTest is PRBTest, Cheats {
 
         // Verify withdrawing request event
         changePrank(bob);
+
+        payToken.approve(address(market), 1_000e18);
         uint256 requestId2 = createSimpleRequest(market);
 
         vm.expectEmit(true, false, false, true);

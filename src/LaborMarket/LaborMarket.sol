@@ -16,6 +16,7 @@ import {EnforcementCriteriaInterface} from "../Modules/Enforcement/interfaces/En
 import {PayCurveInterface} from "../Modules/Payment/interfaces/PayCurveInterface.sol";
 import {ReputationModuleInterface} from "../Modules/Reputation/interfaces/ReputationModuleInterface.sol";
 import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @dev Supported interfaces.
 import {IERC1155ReceiverUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155ReceiverUpgradeable.sol";
@@ -196,6 +197,8 @@ contract LaborMarket is
         });
 
         serviceRequests[serviceRequestId] = serviceRequest;
+
+        IERC20(pToken).transferFrom(msg.sender, address(this), pTokenQ);
 
         emit RequestCreated(
             msg.sender,
@@ -399,6 +402,10 @@ contract LaborMarket is
         uint256 amount = paymentCurve.curvePoint(curveIndex);
 
         hasClaimed[submissionId][msg.sender] = true;
+
+        IERC20(
+            serviceRequests[serviceSubmissions[submissionId].requestId].pToken
+        ).transfer(to, amount);
 
         emit RequestPayClaimed(msg.sender, submissionId, amount, to);
 
