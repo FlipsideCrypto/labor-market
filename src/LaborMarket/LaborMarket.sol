@@ -34,6 +34,7 @@ contract LaborMarket is
     ReputationModuleInterface public reputationModule;
 
     IERC1155 public delegateBadge;
+    IERC1155 public maintainerBadge;
 
     LaborMarketConfiguration public configuration;
 
@@ -57,6 +58,7 @@ contract LaborMarket is
     event LaborMarketCreated(
         uint256 indexed marketId,
         address delegateBadge,
+        address maintainerBadge,
         address payCurve,
         address enforcementCriteria,
         uint256 repParticipantMultiplier,
@@ -142,10 +144,10 @@ contract LaborMarket is
 
     modifier onlyMaintainer() {
         require(
-            _getAvailableReputation() >=
-                reputationModule
-                    .getMarketReputationConfig(address(this))
-                    .maintainerThreshold,
+            (maintainerBadge.balanceOf(
+                msg.sender,
+                configuration.maintainerTokenId
+            ) >= 1),
             "LaborMarket::onlyMaintainer: Not a maintainer"
         );
         _;
@@ -522,6 +524,7 @@ contract LaborMarket is
 
         /// @dev Configure the Labor Market access control.
         delegateBadge = IERC1155(_configuration.delegateBadge);
+        maintainerBadge = IERC1155(_configuration.maintainerBadge);
 
         /// @dev Configure the Labor Market parameters.
         configuration = _configuration;
