@@ -48,6 +48,7 @@ contract LaborMarket is
 
     mapping(uint256 => mapping(address => bool)) public hasSubmitted;
     mapping(uint256 => mapping(address => bool)) public hasClaimed;
+    mapping(uint256 => mapping(address => bool)) public hasReviewed;
 
     mapping(address => bool) public permissioned;
 
@@ -123,7 +124,7 @@ contract LaborMarket is
         address to
     );
 
-    modifier isDelegate() {
+    modifier onlyDelegate() {
         require(
             (delegateBadge.balanceOf(
                 msg.sender,
@@ -142,10 +143,6 @@ contract LaborMarket is
                     .providerThreshold),
             "LaborMarket::permittedParticipant: Not a permitted participant"
         );
-        _;
-    }
-
-    modifier onlyPermissioned() {
         _;
     }
 
@@ -188,7 +185,7 @@ contract LaborMarket is
         uint256 submissionExp,
         uint256 enforcementExp,
         string calldata requestUri
-    ) external onlyPermissioned returns (uint256 requestId) {
+    ) external onlyDelegate returns (uint256 requestId) {
         unchecked {
             ++serviceRequestId;
         }
@@ -301,8 +298,8 @@ contract LaborMarket is
             requestId: requestId,
             timestamp: block.timestamp,
             uri: uri,
-            score: 0,
-            graded: false
+            scores: new uint256[](0),
+            reviewed: false
         });
 
         serviceSubmissions[serviceSubmissionId] = serviceSubmission;
@@ -341,7 +338,7 @@ contract LaborMarket is
             "LaborMarket::review: Not signaled."
         );
         require(
-            !serviceSubmissions[submissionId].graded,
+            !hasReviewed[submissionId][msg.sender],
             "LaborMarket::review: Already reviewed."
         );
         require(
@@ -351,8 +348,12 @@ contract LaborMarket is
 
         score = enforcementCriteria.review(submissionId, score);
 
-        serviceSubmissions[submissionId].score = score;
-        serviceSubmissions[submissionId].graded = true;
+        serviceSubmissions[submissionId].scores.push(score);
+
+        if (!serviceSubmissions[submissionId].reviewed)
+            serviceSubmissions[submissionId].reviewed = true;
+
+        hasReviewed[submissionId][msg.sender] = true;
 
         unchecked {
             --reviewSignals[msg.sender].remainder;
@@ -384,8 +385,8 @@ contract LaborMarket is
             "LaborMarket::claim: Already claimed."
         );
         require(
-            serviceSubmissions[submissionId].graded,
-            "LaborMarket::claim: Not graded."
+            serviceSubmissions[submissionId].reviewed,
+            "LaborMarket::claim: Not reviewed."
         );
         require(
             serviceSubmissions[submissionId].serviceProvider == msg.sender,
@@ -419,7 +420,7 @@ contract LaborMarket is
      * Requirements:
      * - The request must not have been signaled.
      */
-    function withdrawRequest(uint256 requestId) external onlyPermissioned {
+    function withdrawRequest(uint256 requestId) external onlyDelegate {
         require(
             serviceRequests[requestId].serviceRequester == msg.sender,
             "LaborMarket::withdrawRequest: Not service requester."

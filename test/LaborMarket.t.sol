@@ -63,12 +63,20 @@ contract ContractTest is PRBTest, Cheats {
     // Maintainer
     address private bob = address(0x1);
 
+    // Maintainer 2
+    address private bobert = address(0x11);
+
     // User
     address private alice = address(0x2);
 
     // Evil user
     address private evilUser =
         address(uint160(uint256(keccak256("EVIL_USER"))));
+
+    // Alt delegate
+    // Evil user
+    address private delegate =
+        address(uint160(uint256(keccak256("DELEGATOOOR"))));
 
     // Events
     event MarketParametersUpdated(
@@ -221,14 +229,19 @@ contract ContractTest is PRBTest, Cheats {
         changePrank(bob);
         repToken.freeMint(bob, REPUTATION_TOKEN_ID, 1000e18);
         repToken.freeMint(bob, DELEGATE_TOKEN_ID, 1);
-<<<<<<< HEAD
         payToken.freeMint(bob, 1_000_000e18);
 
-=======
         repToken.freeMint(bob, MAINTAINER_TOKEN_ID, 1);
->>>>>>> 10-fix-implement-usage-of-maintainer-badge-rather-than-generalized-participation-badge
         repToken.setApprovalForAll(address(market), true);
         payToken.approve(address(market), 1_000e18);
+
+        changePrank(bobert);
+        repToken.freeMint(bobert, REPUTATION_TOKEN_ID, 1000e18);
+        repToken.freeMint(bobert, MAINTAINER_TOKEN_ID, 1);
+        repToken.setApprovalForAll(address(market), true);
+
+        changePrank(delegate);
+        repToken.freeMint(delegate, DELEGATE_TOKEN_ID, 1);
 
         vm.stopPrank();
     }
@@ -748,7 +761,7 @@ contract ContractTest is PRBTest, Cheats {
         vm.startPrank(bob);
 
         // Create a request
-        uint256 requestId = createSimpleRequest(market);
+        createSimpleRequest(market);
 
         // A maintainer signals for review
         changePrank(bob);
@@ -839,7 +852,7 @@ contract ContractTest is PRBTest, Cheats {
 
     function test_CannotSelfReview() public {}
 
-    function test_CannotClaimForUngradedSubmission() public {
+    function test_CannotClaimForUnReviewedSubmission() public {
         vm.startPrank(bob);
 
         // Create a request
@@ -860,7 +873,7 @@ contract ContractTest is PRBTest, Cheats {
 
         // User attempts to claim the reward, we expect a revert
         changePrank(alice);
-        vm.expectRevert("LaborMarket::claim: Not graded.");
+        vm.expectRevert("LaborMarket::claim: Not reviewed.");
         market.claim(submissionId, msg.sender, "");
 
         vm.stopPrank();
@@ -918,8 +931,8 @@ contract ContractTest is PRBTest, Cheats {
         // Create a request
         uint256 requestId = createSimpleRequest(market);
 
-        // An evil user attempts to withdraw the request
-        changePrank(evilUser);
+        // Another delegate attempts to withdraw the request
+        changePrank(delegate);
         vm.expectRevert("LaborMarket::withdrawRequest: Not service requester.");
         market.withdrawRequest(requestId);
 
@@ -1003,5 +1016,47 @@ contract ContractTest is PRBTest, Cheats {
         market.review(requestId, submissionId, 2);
 
         vm.stopPrank();
+    }
+
+    function test_TwoReviewers() public {
+        vm.startPrank(bob);
+
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
+
+        // A valid user signals
+        changePrank(alice);
+        market.signal(requestId);
+
+        // User fulfills the request
+        uint256 submissionId = market.provide(requestId, "IPFS://333");
+
+        // A valid maintainer signals for review
+        changePrank(bob);
+        market.signalReview(3);
+
+        // Another maintainer signals
+        changePrank(bobert);
+        market.signalReview(3);
+
+        // A valid maintainer reviews the request
+        changePrank(bob);
+        market.review(requestId, submissionId, 2);
+
+        // Another maintainer reviews the request
+        changePrank(bobert);
+        market.review(requestId, submissionId, 0);
+
+        // Scores
+        assertEq(market.getSubmission(submissionId).scores[0], 2);
+        assertEq(market.getSubmission(submissionId).scores[1], 0);
+
+        changePrank(alice);
+        vm.warp(123 weeks);
+
+        // User claims reward
+        // Score should average to 1 meaning it falls in the 20% bucket and should receive 20% of the reward
+        uint256 qClaimed = market.claim(submissionId, alice, "");
+        assertAlmostEq(qClaimed, 200e18, 0.000001e18);
     }
 }
