@@ -123,16 +123,23 @@ contract LaborMarket is
         address to
     );
 
-    modifier permittedParticipant() {
+    modifier isDelegate() {
         require(
             (delegateBadge.balanceOf(
                 msg.sender,
                 configuration.delegateTokenId
-            ) >= 1) ||
-                (_getAvailableReputation() >=
-                    reputationModule
-                        .getMarketReputationConfig(address(this))
-                        .providerThreshold),
+            ) >= 1),
+            "LaborMarket::permittedParticipant: Not a delegate."
+        );
+        _;
+    }
+
+    modifier permittedParticipant() {
+        require(
+            (_getAvailableReputation() >=
+                reputationModule
+                    .getMarketReputationConfig(address(this))
+                    .providerThreshold),
             "LaborMarket::permittedParticipant: Not a permitted participant"
         );
         _;
