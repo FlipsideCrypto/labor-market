@@ -7,7 +7,7 @@ import {console} from "forge-std/console.sol";
 import {PRBTest} from "@prb/test/PRBTest.sol";
 
 // Contracts
-import {AnyReputationToken, CapacityToken} from "./Helpers/HelperTokens.sol";
+import {AnyReputationToken, PaymentToken} from "./Helpers/HelperTokens.sol";
 import {ReputationEngineInterface} from "src/Modules/Reputation/interfaces/ReputationEngineInterface.sol";
 import {ReputationEngine} from "src/Modules/Reputation/ReputationEngine.sol";
 
@@ -31,7 +31,7 @@ import {LaborMarketNetworkInterface} from "src/Network/interfaces/LaborMarketNet
 
 contract ContractTest is PRBTest, Cheats {
     AnyReputationToken public repToken;
-    CapacityToken public capToken;
+    PaymentToken public payToken;
 
     LaborMarket public marketImplementation;
     LaborMarket public market;
@@ -53,6 +53,7 @@ contract ContractTest is PRBTest, Cheats {
     uint256 private constant DELEGATE_TOKEN_ID = 0;
     uint256 private constant REPUTATION_TOKEN_ID = 1;
     uint256 private constant PAYMENT_TOKEN_ID = 2;
+    uint256 private constant MAINTAINER_TOKEN_ID = 3;
     uint256 private constant REPUTATION_DECAY_RATE = 0;
     uint256 private constant REPUTATION_DECAY_INTERVAL = 0;
 
@@ -62,12 +63,20 @@ contract ContractTest is PRBTest, Cheats {
     // Maintainer
     address private bob = address(0x1);
 
+    // Maintainer 2
+    address private bobert = address(0x11);
+
     // User
     address private alice = address(0x2);
 
     // Evil user
     address private evilUser =
         address(uint160(uint256(keccak256("EVIL_USER"))));
+
+    // Alt delegate
+    // Evil user
+    address private delegate =
+        address(uint160(uint256(keccak256("DELEGATOOOR"))));
 
     // Events
     event MarketParametersUpdated(
@@ -102,7 +111,6 @@ contract ContractTest is PRBTest, Cheats {
 
     event ReviewSignal(
         address indexed signaler,
-        uint256 indexed requestId,
         uint256 indexed quantity,
         uint256 signalAmount
     );
@@ -123,7 +131,8 @@ contract ContractTest is PRBTest, Cheats {
     event RequestPayClaimed(
         address indexed claimer,
         uint256 indexed submissionId,
-        uint256 indexed payAmount
+        uint256 indexed payAmount,
+        address to
     );
 
     /*//////////////////////////////////////////////////////////////
@@ -133,7 +142,7 @@ contract ContractTest is PRBTest, Cheats {
         vm.startPrank(deployer);
 
         // Create a capacity & reputation token
-        capToken = new CapacityToken();
+        payToken = new PaymentToken();
 
         // Generic reputation token
         repToken = new AnyReputationToken("reputation nation");
@@ -150,7 +159,7 @@ contract ContractTest is PRBTest, Cheats {
         // Deploy a labor market network
         network = new LaborMarketNetwork({
             _factoryImplementation: address(marketImplementation),
-            _capacityImplementation: address(capToken)
+            _capacityImplementation: address(address(0))
         });
 
         // Deploy a new reputation module
@@ -196,6 +205,8 @@ contract ContractTest is PRBTest, Cheats {
                     marketUri: "ipfs://000",
                     delegateBadge: address(repToken),
                     delegateTokenId: DELEGATE_TOKEN_ID,
+                    maintainerBadge: address(repToken),
+                    maintainerTokenId: MAINTAINER_TOKEN_ID,
                     reputationModule: address(reputationModule),
                     reputationConfig: repConfig
                 });
@@ -218,7 +229,19 @@ contract ContractTest is PRBTest, Cheats {
         changePrank(bob);
         repToken.freeMint(bob, REPUTATION_TOKEN_ID, 1000e18);
         repToken.freeMint(bob, DELEGATE_TOKEN_ID, 1);
+        payToken.freeMint(bob, 1_000_000e18);
+
+        repToken.freeMint(bob, MAINTAINER_TOKEN_ID, 1);
         repToken.setApprovalForAll(address(market), true);
+        payToken.approve(address(market), 1_000e18);
+
+        changePrank(bobert);
+        repToken.freeMint(bobert, REPUTATION_TOKEN_ID, 1000e18);
+        repToken.freeMint(bobert, MAINTAINER_TOKEN_ID, 1);
+        repToken.setApprovalForAll(address(market), true);
+
+        changePrank(delegate);
+        repToken.freeMint(delegate, DELEGATE_TOKEN_ID, 1);
 
         vm.stopPrank();
     }
@@ -228,9 +251,9 @@ contract ContractTest is PRBTest, Cheats {
         returns (uint256)
     {
         uint256 rid = simpleMarket.submitRequest({
-            pToken: address(repToken),
+            pToken: address(payToken),
             pTokenId: PAYMENT_TOKEN_ID,
-            pTokenQ: 100e18,
+            pTokenQ: 1000e18,
             signalExp: block.timestamp + 1 hours,
             submissionExp: block.timestamp + 1 days,
             enforcementExp: block.timestamp + 1 weeks,
@@ -248,7 +271,7 @@ contract ContractTest is PRBTest, Cheats {
         /**
         | Here we test the creation of a service request
         | A service request contains:
-        |  - A payment token (ERC1155)
+        |  - A payment token (ERC20)
         |  - A payment token ID
         |  - A payment token quantity
         |  - A signal expiration
@@ -268,7 +291,7 @@ contract ContractTest is PRBTest, Cheats {
 
         // Create a request
         uint256 requestId = market.submitRequest({
-            pToken: address(repToken),
+            pToken: address(payToken),
             pTokenId: PAYMENT_TOKEN_ID,
             pTokenQ: 100e18,
             signalExp: block.timestamp + 1 hours,
@@ -280,7 +303,7 @@ contract ContractTest is PRBTest, Cheats {
         // Verify the request was created
         assertEq(market.serviceRequestId(), 1);
         assertEq(market.getRequest(requestId).serviceRequester, bob);
-        assertEq(market.getRequest(requestId).pToken, address(repToken));
+        assertEq(market.getRequest(requestId).pToken, address(payToken));
 
         // Signal the request
         changePrank(alice);
@@ -294,7 +317,7 @@ contract ContractTest is PRBTest, Cheats {
 
         changePrank(bob);
         // Review the request
-        market.signalReview(requestId, 2);
+        market.signalReview(2);
         market.review(requestId, submissionId, 2);
 
         // Claim the reward
@@ -302,7 +325,7 @@ contract ContractTest is PRBTest, Cheats {
 
         // Skip to enforcement deadline
         vm.warp(5 weeks);
-        market.claim(submissionId);
+        market.claim(submissionId, msg.sender, "");
     }
 
     function test_ExampleEnforcementTest() public {
@@ -347,7 +370,7 @@ contract ContractTest is PRBTest, Cheats {
         changePrank(bob);
 
         // The reviewer signals the requestId
-        market.signalReview(requestId, 115);
+        market.signalReview(115);
 
         // The reviewer reviews the submissions
         for (uint256 i; i < 113; i++) {
@@ -375,7 +398,7 @@ contract ContractTest is PRBTest, Cheats {
             changePrank(user);
 
             // Claim
-            totalPaid += market.claim(i + 1);
+            totalPaid += market.claim(i + 1, msg.sender, "");
         }
 
         assertAlmostEq(totalPaid, 1000e18, 0.000001e18);
@@ -411,6 +434,8 @@ contract ContractTest is PRBTest, Cheats {
                     marketUri: "ipfs://000",
                     delegateBadge: address(repToken),
                     delegateTokenId: DELEGATE_TOKEN_ID,
+                    maintainerBadge: address(repToken),
+                    maintainerTokenId: MAINTAINER_TOKEN_ID,
                     reputationModule: address(reputationModule),
                     reputationConfig: repConfig
                 });
@@ -433,19 +458,20 @@ contract ContractTest is PRBTest, Cheats {
 
             // Populate all markets with a demo request
             changePrank(bob);
+            payToken.approve(address(market), 1_000e18);
             uint256 requestId = createSimpleRequest(market);
 
             changePrank(alice);
             market.signal(requestId);
-            market.provide(requestId, "IPFS://333");
+            uint256 submissionId = market.provide(requestId, "IPFS://333");
 
             changePrank(bob);
-            market.signalReview(requestId, 8);
-            market.review(requestId, 1, 2);
+            market.signalReview(8);
+            market.review(submissionId, 1, 2);
 
             changePrank(alice);
             vm.warp(block.timestamp + 5 weeks);
-            market.claim(requestId);
+            market.claim(submissionId, msg.sender, "");
         }
         vm.stopPrank();
     }
@@ -488,7 +514,7 @@ contract ContractTest is PRBTest, Cheats {
         changePrank(bob);
 
         // Review the request
-        market.signalReview(requestId, 3);
+        market.signalReview(3);
 
         // Verify that Maintainers's reputation is locked
         assertEq(
@@ -512,7 +538,7 @@ contract ContractTest is PRBTest, Cheats {
 
         // Skip to enforcement deadline
         vm.warp(5 weeks);
-        market.claim(submissionId);
+        market.claim(submissionId, msg.sender, "");
     }
 
     function test_VerifyAllEmittedEvents() public {
@@ -536,6 +562,8 @@ contract ContractTest is PRBTest, Cheats {
                     marketUri: "ipfs://000",
                     delegateBadge: address(repToken),
                     delegateTokenId: DELEGATE_TOKEN_ID,
+                    maintainerBadge: address(repToken),
+                    maintainerTokenId: MAINTAINER_TOKEN_ID,
                     reputationModule: address(reputationModule),
                     reputationConfig: repConfig
                 });
@@ -557,10 +585,12 @@ contract ContractTest is PRBTest, Cheats {
             })
         );
 
+        payToken.approve(address(market), 1_000e18);
+
         // Verify service request creation event
-        address pToken = address(repToken);
+        address pToken = address(payToken);
         uint256 pTokenId = PAYMENT_TOKEN_ID;
-        uint256 pTokenQ = 100e18;
+        uint256 pTokenQ = 1000e18;
         uint256 signalExp = block.timestamp + 1 hours;
         uint256 submissionExp = block.timestamp + 1 days;
         uint256 enforcementExp = block.timestamp + 1 weeks;
@@ -589,11 +619,11 @@ contract ContractTest is PRBTest, Cheats {
         changePrank(alice);
         market.signal(requestId);
 
-        vm.expectEmit(true, true, true, true);
-        emit ReviewSignal(address(bob), requestId, 3, 1e18);
+        vm.expectEmit(true, true, false, true);
+        emit ReviewSignal(address(bob), 3, 1e18);
 
         changePrank(bob);
-        market.signalReview(requestId, 3);
+        market.signalReview(3);
 
         // Verify submission events
         vm.expectEmit(true, true, true, true);
@@ -613,16 +643,19 @@ contract ContractTest is PRBTest, Cheats {
         vm.expectEmit(true, true, true, true);
         emit RequestPayClaimed(
             address(alice),
-            requestId,
-            799999999973870935009 // (100e18 * 0.8)
+            submissionId,
+            799999999973870935009, // (100e18 * 0.8)
+            address(alice)
         );
 
         changePrank(alice);
         vm.warp(block.timestamp + 5 weeks);
-        market.claim(requestId);
+        market.claim(submissionId, address(alice), "");
 
         // Verify withdrawing request event
         changePrank(bob);
+
+        payToken.approve(address(market), 1_000e18);
         uint256 requestId2 = createSimpleRequest(market);
 
         vm.expectEmit(true, false, false, true);
@@ -663,13 +696,13 @@ contract ContractTest is PRBTest, Cheats {
 
         // A user tries to signal for review and we expect it to revert
         vm.expectRevert("LaborMarket::onlyMaintainer: Not a maintainer");
-        market.signalReview(requestId, 3);
+        market.signalReview(3);
 
         // We also expect a revert if a random address tries to review
         changePrank(evilUser);
 
         vm.expectRevert("LaborMarket::onlyMaintainer: Not a maintainer");
-        market.signalReview(requestId, 3);
+        market.signalReview(3);
 
         vm.stopPrank();
     }
@@ -695,6 +728,8 @@ contract ContractTest is PRBTest, Cheats {
                     marketUri: "ipfs://000",
                     delegateBadge: address(repToken),
                     delegateTokenId: DELEGATE_TOKEN_ID,
+                    maintainerBadge: address(repToken),
+                    maintainerTokenId: MAINTAINER_TOKEN_ID,
                     reputationModule: address(reputationModule),
                     reputationConfig: repConfig
                 });
@@ -726,15 +761,15 @@ contract ContractTest is PRBTest, Cheats {
         vm.startPrank(bob);
 
         // Create a request
-        uint256 requestId = createSimpleRequest(market);
+        createSimpleRequest(market);
 
         // A maintainer signals for review
         changePrank(bob);
-        market.signalReview(requestId, 3);
+        market.signalReview(3);
 
         // Maintainer tries to signal same request again and we expect it to revert
         vm.expectRevert("LaborMarket::signalReview: Already signaled.");
-        market.signalReview(requestId, 3);
+        market.signalReview(3);
 
         vm.stopPrank();
     }
@@ -751,7 +786,7 @@ contract ContractTest is PRBTest, Cheats {
 
         // A maintainer signals for review
         changePrank(bob);
-        market.signalReview(requestId, 3);
+        market.signalReview(3);
 
         // Maintainer tries to review twice
         market.review(requestId, 1, 2);
@@ -776,7 +811,7 @@ contract ContractTest is PRBTest, Cheats {
 
         // A valid maintainer signals for review
         changePrank(bob);
-        market.signalReview(requestId, 3);
+        market.signalReview(3);
 
         // A valid maintainer reviews the request
         market.review(requestId, submissionId, 2);
@@ -786,11 +821,11 @@ contract ContractTest is PRBTest, Cheats {
 
         // User claims reward
         changePrank(alice);
-        market.claim(submissionId);
+        market.claim(submissionId, msg.sender, "");
 
         // User tries to claim same reward again
         vm.expectRevert("LaborMarket::claim: Already claimed.");
-        market.claim(submissionId);
+        market.claim(submissionId, msg.sender, "");
 
         vm.stopPrank();
     }
@@ -817,7 +852,7 @@ contract ContractTest is PRBTest, Cheats {
 
     function test_CannotSelfReview() public {}
 
-    function test_CannotClaimForUngradedSubmission() public {
+    function test_CannotClaimForUnReviewedSubmission() public {
         vm.startPrank(bob);
 
         // Create a request
@@ -832,14 +867,14 @@ contract ContractTest is PRBTest, Cheats {
 
         // A valid maintainer signals for review
         changePrank(bob);
-        market.signalReview(requestId, 3);
+        market.signalReview(3);
 
         // No reviewing happens
 
         // User attempts to claim the reward, we expect a revert
         changePrank(alice);
-        vm.expectRevert("LaborMarket::claim: Not graded.");
-        market.claim(submissionId);
+        vm.expectRevert("LaborMarket::claim: Not reviewed.");
+        market.claim(submissionId, msg.sender, "");
 
         vm.stopPrank();
     }
@@ -859,7 +894,7 @@ contract ContractTest is PRBTest, Cheats {
 
         // A valid maintainer signals for review
         changePrank(bob);
-        market.signalReview(requestId, 3);
+        market.signalReview(3);
 
         // A valid maintainer reviews the request
         market.review(requestId, submissionId, 2);
@@ -867,7 +902,7 @@ contract ContractTest is PRBTest, Cheats {
         // User claims reward
         changePrank(evilUser);
         vm.expectRevert("LaborMarket::claim: Not service provider.");
-        market.claim(submissionId);
+        market.claim(submissionId, msg.sender, "");
 
         vm.stopPrank();
     }
@@ -896,8 +931,8 @@ contract ContractTest is PRBTest, Cheats {
         // Create a request
         uint256 requestId = createSimpleRequest(market);
 
-        // An evil user attempts to withdraw the request
-        changePrank(evilUser);
+        // Another delegate attempts to withdraw the request
+        changePrank(delegate);
         vm.expectRevert("LaborMarket::withdrawRequest: Not service requester.");
         market.withdrawRequest(requestId);
 
@@ -938,7 +973,7 @@ contract ContractTest is PRBTest, Cheats {
 
         // A valid maintainer signals for review
         changePrank(bob);
-        market.signalReview(requestId, 3);
+        market.signalReview(3);
 
         // Skip past enforcement deadline
         vm.warp(block.timestamp + 100 weeks);
@@ -981,5 +1016,47 @@ contract ContractTest is PRBTest, Cheats {
         market.review(requestId, submissionId, 2);
 
         vm.stopPrank();
+    }
+
+    function test_TwoReviewers() public {
+        vm.startPrank(bob);
+
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
+
+        // A valid user signals
+        changePrank(alice);
+        market.signal(requestId);
+
+        // User fulfills the request
+        uint256 submissionId = market.provide(requestId, "IPFS://333");
+
+        // A valid maintainer signals for review
+        changePrank(bob);
+        market.signalReview(3);
+
+        // Another maintainer signals
+        changePrank(bobert);
+        market.signalReview(3);
+
+        // A valid maintainer reviews the request
+        changePrank(bob);
+        market.review(requestId, submissionId, 2);
+
+        // Another maintainer reviews the request
+        changePrank(bobert);
+        market.review(requestId, submissionId, 0);
+
+        // Scores
+        assertEq(market.getSubmission(submissionId).scores[0], 2);
+        assertEq(market.getSubmission(submissionId).scores[1], 0);
+
+        changePrank(alice);
+        vm.warp(123 weeks);
+
+        // User claims reward
+        // Score should average to 1 meaning it falls in the 20% bucket and should receive 20% of the reward
+        uint256 qClaimed = market.claim(submissionId, alice, "");
+        assertAlmostEq(qClaimed, 200e18, 0.000001e18);
     }
 }

@@ -26,7 +26,7 @@ contract AnyReputationToken is ERC1155 {
     }
 }
 
-contract CapacityToken is ERC20("Capacity Token", "CAP", 18) {
+contract PaymentToken is ERC20("Payment Token", "PAY", 18) {
     function freeMint(address receiver, uint256 amount) external {
         _mint(receiver, amount);
     }

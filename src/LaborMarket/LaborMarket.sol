@@ -16,6 +16,7 @@ import {EnforcementCriteriaInterface} from "../Modules/Enforcement/interfaces/En
 import {PayCurveInterface} from "../Modules/Payment/interfaces/PayCurveInterface.sol";
 import {ReputationModuleInterface} from "../Modules/Reputation/interfaces/ReputationModuleInterface.sol";
 import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @dev Supported interfaces.
 import {IERC1155ReceiverUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155ReceiverUpgradeable.sol";
@@ -33,6 +34,7 @@ contract LaborMarket is
     ReputationModuleInterface public reputationModule;
 
     IERC1155 public delegateBadge;
+    IERC1155 public maintainerBadge;
 
     LaborMarketConfiguration public configuration;
 
@@ -42,10 +44,11 @@ contract LaborMarket is
     mapping(uint256 => ServiceSubmission) public serviceSubmissions;
 
     mapping(uint256 => mapping(address => bool)) public submissionSignals;
-    mapping(address => mapping(uint256 => ReviewPromise)) public reviewSignals;
+    mapping(address => ReviewPromise) public reviewSignals;
 
     mapping(uint256 => mapping(address => bool)) public hasSubmitted;
     mapping(uint256 => mapping(address => bool)) public hasClaimed;
+    mapping(uint256 => mapping(address => bool)) public hasReviewed;
 
     mapping(address => bool) public permissioned;
 
@@ -56,6 +59,7 @@ contract LaborMarket is
     event LaborMarketCreated(
         uint256 indexed marketId,
         address delegateBadge,
+        address maintainerBadge,
         address payCurve,
         address enforcementCriteria,
         uint256 repParticipantMultiplier,
@@ -91,7 +95,6 @@ contract LaborMarket is
     /// @notice emitted when a maintainer signals a review
     event ReviewSignal(
         address indexed signaler,
-        uint256 indexed requestId,
         uint256 indexed quantity,
         uint256 signalAmount
     );
@@ -117,34 +120,38 @@ contract LaborMarket is
     event RequestPayClaimed(
         address indexed claimer,
         uint256 indexed submissionId,
-        uint256 indexed payAmount
+        uint256 indexed payAmount,
+        address to
     );
 
-    modifier permittedParticipant() {
+    modifier onlyDelegate() {
         require(
             (delegateBadge.balanceOf(
                 msg.sender,
                 configuration.delegateTokenId
-            ) >= 1) ||
-                (_getAvailableReputation() >=
-                    reputationModule
-                        .getMarketReputationConfig(address(this))
-                        .providerThreshold),
+            ) >= 1),
+            "LaborMarket::permittedParticipant: Not a delegate."
+        );
+        _;
+    }
+
+    modifier permittedParticipant() {
+        require(
+            (_getAvailableReputation() >=
+                reputationModule
+                    .getMarketReputationConfig(address(this))
+                    .providerThreshold),
             "LaborMarket::permittedParticipant: Not a permitted participant"
         );
         _;
     }
 
-    modifier onlyPermissioned() {
-        _;
-    }
-
     modifier onlyMaintainer() {
         require(
-            _getAvailableReputation() >=
-                reputationModule
-                    .getMarketReputationConfig(address(this))
-                    .maintainerThreshold,
+            (maintainerBadge.balanceOf(
+                msg.sender,
+                configuration.maintainerTokenId
+            ) >= 1),
             "LaborMarket::onlyMaintainer: Not a maintainer"
         );
         _;
@@ -178,7 +185,7 @@ contract LaborMarket is
         uint256 submissionExp,
         uint256 enforcementExp,
         string calldata requestUri
-    ) external onlyPermissioned returns (uint256 requestId) {
+    ) external onlyDelegate returns (uint256 requestId) {
         unchecked {
             ++serviceRequestId;
         }
@@ -195,6 +202,8 @@ contract LaborMarket is
         });
 
         serviceRequests[serviceRequestId] = serviceRequest;
+
+        IERC20(pToken).transferFrom(msg.sender, address(this), pTokenQ);
 
         emit RequestCreated(
             msg.sender,
@@ -240,15 +249,11 @@ contract LaborMarket is
 
     /**
      * @notice Signals interest in reviewing a submission.
-     * @param requestId The id of the service providers submission.
      * @param quantity The amount of submissions a maintainer is willing to review.
      */
-    function signalReview(uint256 requestId, uint256 quantity)
-        external
-        onlyMaintainer
-    {
+    function signalReview(uint256 quantity) external onlyMaintainer {
         require(
-            reviewSignals[msg.sender][requestId].remainder == 0,
+            reviewSignals[msg.sender].remainder == 0,
             "LaborMarket::signalReview: Already signaled."
         );
 
@@ -256,10 +261,10 @@ contract LaborMarket is
 
         _lockReputation(msg.sender, signalStake);
 
-        reviewSignals[msg.sender][requestId].total = quantity;
-        reviewSignals[msg.sender][requestId].remainder = quantity;
+        reviewSignals[msg.sender].total = quantity;
+        reviewSignals[msg.sender].remainder = quantity;
 
-        emit ReviewSignal(msg.sender, requestId, quantity, signalStake);
+        emit ReviewSignal(msg.sender, quantity, signalStake);
     }
 
     /**
@@ -293,8 +298,8 @@ contract LaborMarket is
             requestId: requestId,
             timestamp: block.timestamp,
             uri: uri,
-            score: 0,
-            graded: false
+            scores: new uint256[](0),
+            reviewed: false
         });
 
         serviceSubmissions[serviceSubmissionId] = serviceSubmission;
@@ -329,11 +334,11 @@ contract LaborMarket is
         );
 
         require(
-            reviewSignals[msg.sender][requestId].remainder > 0,
+            reviewSignals[msg.sender].remainder > 0,
             "LaborMarket::review: Not signaled."
         );
         require(
-            !serviceSubmissions[submissionId].graded,
+            !hasReviewed[submissionId][msg.sender],
             "LaborMarket::review: Already reviewed."
         );
         require(
@@ -343,16 +348,20 @@ contract LaborMarket is
 
         score = enforcementCriteria.review(submissionId, score);
 
-        serviceSubmissions[submissionId].score = score;
-        serviceSubmissions[submissionId].graded = true;
+        serviceSubmissions[submissionId].scores.push(score);
+
+        if (!serviceSubmissions[submissionId].reviewed)
+            serviceSubmissions[submissionId].reviewed = true;
+
+        hasReviewed[submissionId][msg.sender] = true;
 
         unchecked {
-            --reviewSignals[msg.sender][requestId].remainder;
+            --reviewSignals[msg.sender].remainder;
         }
 
         _unlockReputation(
             msg.sender,
-            (_baseStake()) / reviewSignals[msg.sender][requestId].total
+            (_baseStake()) / reviewSignals[msg.sender].total
         );
 
         emit RequestReviewed(msg.sender, requestId, submissionId, score);
@@ -362,7 +371,11 @@ contract LaborMarket is
      * @notice Allows a service provider to claim payment for a service submission.
      * @param submissionId The id of the service providers submission.
      */
-    function claim(uint256 submissionId) external returns (uint256) {
+    function claim(
+        uint256 submissionId,
+        address to,
+        bytes calldata data
+    ) external returns (uint256) {
         require(
             submissionId <= serviceSubmissionId,
             "LaborMarket::claim: Submission does not exist."
@@ -372,8 +385,8 @@ contract LaborMarket is
             "LaborMarket::claim: Already claimed."
         );
         require(
-            serviceSubmissions[submissionId].graded,
-            "LaborMarket::claim: Not graded."
+            serviceSubmissions[submissionId].reviewed,
+            "LaborMarket::claim: Not reviewed."
         );
         require(
             serviceSubmissions[submissionId].serviceProvider == msg.sender,
@@ -388,14 +401,15 @@ contract LaborMarket is
 
         uint256 curveIndex = enforcementCriteria.verify(submissionId);
 
-        // Increase/(decrease) reputation here for submitter
-        // Mint/burn(lock) rep
-
         uint256 amount = paymentCurve.curvePoint(curveIndex);
 
         hasClaimed[submissionId][msg.sender] = true;
 
-        emit RequestPayClaimed(msg.sender, submissionId, amount);
+        IERC20(
+            serviceRequests[serviceSubmissions[submissionId].requestId].pToken
+        ).transfer(to, amount);
+
+        emit RequestPayClaimed(msg.sender, submissionId, amount, to);
 
         return amount;
     }
@@ -406,7 +420,7 @@ contract LaborMarket is
      * Requirements:
      * - The request must not have been signaled.
      */
-    function withdrawRequest(uint256 requestId) external onlyPermissioned {
+    function withdrawRequest(uint256 requestId) external onlyDelegate {
         require(
             serviceRequests[requestId].serviceRequester == msg.sender,
             "LaborMarket::withdrawRequest: Not service requester."
@@ -415,8 +429,12 @@ contract LaborMarket is
             signalCount[requestId] < 1,
             "LaborMarket::withdrawRequest: Already active."
         );
+        address pToken = serviceRequests[requestId].pToken;
+        uint256 amount = serviceRequests[requestId].pTokenQ;
 
         delete serviceRequests[requestId];
+
+        IERC20(pToken).transfer(msg.sender, amount);
 
         emit RequestWithdrawn(requestId);
     }
@@ -514,6 +532,7 @@ contract LaborMarket is
 
         /// @dev Configure the Labor Market access control.
         delegateBadge = IERC1155(_configuration.delegateBadge);
+        maintainerBadge = IERC1155(_configuration.maintainerBadge);
 
         /// @dev Configure the Labor Market parameters.
         configuration = _configuration;
