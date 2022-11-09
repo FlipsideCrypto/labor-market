@@ -20,6 +20,11 @@ contract EnforcementCriteria {
         uint256 avg;
     }
 
+    struct ClaimableBucket {
+        uint256 count;
+        uint256 allocation;
+    }
+
     function review(uint256 submissionId, uint256 score)
         external
         returns (uint256)
@@ -84,6 +89,40 @@ contract EnforcementCriteria {
         returns (uint256)
     {
         return bucketCount[market][score];
+    }
+
+    function getClaimableAllocation(uint256 requestId)
+        public
+        view
+        returns (uint256)
+    {
+        uint256 claimable;
+
+        LaborMarketInterface market = LaborMarketInterface(msg.sender);
+        uint256 pTokens = market.getRequest(requestId).pTokenQ;
+
+        ClaimableBucket[3] memory buckets = [
+            ClaimableBucket({
+                count: getTotalBucket(msg.sender, Likert.BAD),
+                allocation: ((pTokens * 0))
+            }),
+            ClaimableBucket({
+                count: getTotalBucket(msg.sender, Likert.OK),
+                allocation: (((pTokens * 20) / 100))
+            }),
+            ClaimableBucket({
+                count: getTotalBucket(msg.sender, Likert.GOOD),
+                allocation: (((pTokens * 80) / 100))
+            })
+        ];
+
+        for (uint256 i; i < buckets.length; ++i) {
+            if (buckets[i].count > 0) {
+                claimable += buckets[i].allocation;
+            }
+        }
+
+        return claimable;
     }
 
     function sqrt(uint256 x) internal pure returns (uint256 result) {

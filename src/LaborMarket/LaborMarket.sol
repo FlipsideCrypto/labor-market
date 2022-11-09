@@ -48,6 +48,7 @@ contract LaborMarket is
 
     mapping(uint256 => mapping(address => bool)) public hasSubmitted;
     mapping(uint256 => mapping(address => bool)) public hasClaimed;
+    mapping(uint256 => mapping(address => bool)) public hasClaimedRemainder;
     mapping(uint256 => mapping(address => bool)) public hasReviewed;
 
     mapping(address => bool) public permissioned;
@@ -122,6 +123,12 @@ contract LaborMarket is
         uint256 indexed submissionId,
         uint256 indexed payAmount,
         address to
+    );
+
+    event RemainderClaimed(
+        address indexed claimer,
+        uint256 indexed requestId,
+        uint256 remainderAmount
     );
 
     modifier onlyDelegate() {
@@ -412,6 +419,32 @@ contract LaborMarket is
         emit RequestPayClaimed(msg.sender, submissionId, amount, to);
 
         return amount;
+    }
+
+    function claimRemainder(uint256 requestId) public {
+        require(
+            serviceRequests[requestId].serviceRequester == msg.sender,
+            "LaborMarket::claimRemainder: Not service requester."
+        );
+        require(
+            block.timestamp >= serviceRequests[requestId].enforcementExp,
+            "LaborMarket::claimRemainder: Enforcement deadline not passed."
+        );
+        require(
+            !hasClaimedRemainder[requestId][msg.sender],
+            "LaborMarket::claimRemainder: Already claimed."
+        );
+        uint256 totalClaimable = serviceRequests[requestId].pTokenQ -
+            enforcementCriteria.getClaimableAllocation(requestId);
+
+        hasClaimedRemainder[requestId][msg.sender] = true;
+
+        IERC20(serviceRequests[requestId].pToken).transfer(
+            msg.sender,
+            totalClaimable
+        );
+
+        emit RemainderClaimed(msg.sender, requestId, totalClaimable);
     }
 
     /**

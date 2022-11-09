@@ -74,7 +74,6 @@ contract ContractTest is PRBTest, Cheats {
         address(uint160(uint256(keccak256("EVIL_USER"))));
 
     // Alt delegate
-    // Evil user
     address private delegate =
         address(uint160(uint256(keccak256("DELEGATOOOR"))));
 
@@ -133,6 +132,12 @@ contract ContractTest is PRBTest, Cheats {
         uint256 indexed submissionId,
         uint256 indexed payAmount,
         address to
+    );
+
+    event RemainderClaimed(
+        address indexed claimer,
+        uint256 indexed requestId,
+        uint256 remainderAmount
     );
 
     /*//////////////////////////////////////////////////////////////
@@ -1058,5 +1063,38 @@ contract ContractTest is PRBTest, Cheats {
         // Score should average to 1 meaning it falls in the 20% bucket and should receive 20% of the reward
         uint256 qClaimed = market.claim(submissionId, alice, "");
         assertAlmostEq(qClaimed, 200e18, 0.000001e18);
+
+        vm.stopPrank();
+    }
+
+    function test_ClaimRemainder() public {
+        vm.startPrank(bob);
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
+
+        // A valid user signals
+        changePrank(alice);
+        market.signal(requestId);
+
+        // User fulfills the request
+        uint256 submissionId = market.provide(requestId, "IPFS://333");
+
+        // A valid maintainer signals for review
+        changePrank(bobert);
+        market.signalReview(3);
+
+        // A valid maintainer reviews the request and scores it a 1
+        market.review(requestId, submissionId, 1);
+
+        // Skip past enforcement deadline
+        vm.warp(block.timestamp + 100 weeks);
+
+        // Requester withdraws remainder
+        // Score should average to 1 meaning it falls in the 20% bucket, the remainder should therefore be 80% of the reward
+        changePrank(bob);
+
+        vm.expectEmit(true, true, true, true);
+        emit RemainderClaimed(address(bob), requestId, 800e18);
+        market.claimRemainder(requestId);
     }
 }
