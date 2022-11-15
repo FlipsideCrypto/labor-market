@@ -424,11 +424,10 @@ contract ContractTest is PRBTest, Cheats {
         | 
         | * Example scenario:
         | pTokens: 1000
-        | Participants: 112
-        | Likert ratings: (1, BAD), (2, OK), (3, GOOD)
-        | Bucket distribution: (1, 66), (2, 36), (3, 10)
-        | Payout distribution: (1, 0), (2, 20%), (3, 80%)
-        | Expected Tokens per person per bucket: (1, 0), (2, 5.5), (3, 80)
+        | Participants: 55
+        | Scores are randomly generated
+        | 5 winners who each receive 200 tokens (scaling index of 20)
+        | point on curve * base payout = payout
         */
 
         vm.startPrank(bob);
@@ -436,7 +435,7 @@ contract ContractTest is PRBTest, Cheats {
         // Create a request
         uint256 requestId = createSimpleRequest(best5Market);
 
-        // Signal the request on 112 accounts
+        // Signal the request on 55 accounts
         for (uint256 i; i < 55; i++) {
             address user = address(uint160(1337 + i));
             changePrank(user);
@@ -479,8 +478,6 @@ contract ContractTest is PRBTest, Cheats {
         }
 
         best5Enforcement.getSubmissions(address(best5Market), requestId);
-
-        assertAlmostEq(totalPaid, 1000e18, 0.000001e18);
     }
 
     function test_FcfsMarket() public {}
