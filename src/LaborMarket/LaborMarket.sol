@@ -28,34 +28,61 @@ contract LaborMarket is
     ERC1155HolderUpgradeable,
     ERC721HolderUpgradeable
 {
+    /// @dev The network contract.
     LaborMarketNetwork public network;
+
+    /// @dev The enforcement criteria.
     EnforcementCriteriaInterface public enforcementCriteria;
+
+    /// @dev The payment curve.
     PayCurveInterface public paymentCurve;
+
+    /// @dev The reputation module.
     ReputationModuleInterface public reputationModule;
 
+    /// @dev The address of the ERC1155 token used for delegates.
     IERC1155 public delegateBadge;
+
+    /// @dev The address of the ERC1155 token used for maintainers
     IERC1155 public maintainerBadge;
 
+    /// @dev The configuration of the labor market.
     LaborMarketConfiguration public configuration;
 
+    /// @dev Tracking the signals per service request.
     mapping(uint256 => uint256) public signalCount;
 
+    /// @dev Tracking the service requests.
     mapping(uint256 => ServiceRequest) public serviceRequests;
+
+    /// @dev Tracking the service submissions.
     mapping(uint256 => ServiceSubmission) public serviceSubmissions;
 
+    /// @dev Tracking the service submission signals.
     mapping(uint256 => mapping(address => bool)) public submissionSignals;
+
+    /// @dev Tracking the review signals.
     mapping(address => ReviewPromise) public reviewSignals;
 
+    /// @dev Tracking whether a submission has been submitted.
     mapping(uint256 => mapping(address => bool)) public hasSubmitted;
+
+    /// @dev Tracking whether a submission has been claimed.
     mapping(uint256 => mapping(address => bool)) public hasClaimed;
+
+    /// @dev Tracking whether a remainder has been claimed.
+    mapping(uint256 => mapping(address => bool)) public hasClaimedRemainder;
+
+    /// @dev Tracking whether a submission has been reviewed.
     mapping(uint256 => mapping(address => bool)) public hasReviewed;
 
-    mapping(address => bool) public permissioned;
-
+    /// @dev The service request id counter.
     uint256 public serviceRequestId;
+
+    /// @dev The service submission id counter.
     uint256 public serviceSubmissionId;
 
-    /// @notice emitted when a new labor market is created
+    /// @notice emitted when a new labor market is created.
     event LaborMarketCreated(
         uint256 indexed marketId,
         address delegateBadge,
@@ -67,12 +94,12 @@ contract LaborMarket is
         string marketUri
     );
 
-    /// @notice emitted when labor market parameters are updated
+    /// @notice emitted when labor market parameters are updated.
     event MarketParametersUpdated(
         LaborMarketConfiguration indexed configuration
     );
 
-    /// @notice emitted when a new service request is made
+    /// @notice emitted when a new service request is made.
     event RequestCreated(
         address indexed requester,
         uint256 indexed requestId,
@@ -85,24 +112,24 @@ contract LaborMarket is
         uint256 enforcementExp
     );
 
-    /// @notice emitted when a user signals a service request
+    /// @notice emitted when a user signals a service request.
     event RequestSignal(
         address indexed signaler,
         uint256 indexed requestId,
         uint256 signalAmount
     );
 
-    /// @notice emitted when a maintainer signals a review
+    /// @notice emitted when a maintainer signals a review.
     event ReviewSignal(
         address indexed signaler,
         uint256 indexed quantity,
         uint256 signalAmount
     );
 
-    /// @notice emitted when a service request is withdrawn
+    /// @notice emitted when a service request is withdrawn.
     event RequestWithdrawn(uint256 indexed requestId);
 
-    /// @notice emitted when a service request is fulfilled
+    /// @notice emitted when a service request is fulfilled.
     event RequestFulfilled(
         address indexed fulfiller,
         uint256 indexed requestId,
@@ -110,13 +137,14 @@ contract LaborMarket is
     );
 
     /// @notice emitted when a service submission is reviewed
-    event RequestReviewed(
+    event RequestReviewed(.
         address reviewer,
         uint256 indexed requestId,
         uint256 indexed submissionId,
         uint256 indexed reviewScore
     );
 
+    /// @notice emitted when a service submission is claimed.
     event RequestPayClaimed(
         address indexed claimer,
         uint256 indexed submissionId,
@@ -124,6 +152,16 @@ contract LaborMarket is
         address to
     );
 
+    /// @notice emitted when a remainder is claimed.
+    event RemainderClaimed(
+        address indexed claimer,
+        uint256 indexed requestId,
+        uint256 remainderAmount
+    );
+
+    /*
+     * @notice Make sure that only addresses holding the delegate badge can call the function.
+     */
     modifier onlyDelegate() {
         require(
             (delegateBadge.balanceOf(
@@ -135,6 +173,9 @@ contract LaborMarket is
         _;
     }
 
+    /*
+     * @notice Make sure that only addresses conforming to the reputational barrier can call the function.
+     */
     modifier permittedParticipant() {
         require(
             (_getAvailableReputation() >=
@@ -146,6 +187,9 @@ contract LaborMarket is
         _;
     }
 
+    /*
+     * @notice Make sure that only addresses holding the maintainer badge can call the function.
+     */
     modifier onlyMaintainer() {
         require(
             (maintainerBadge.balanceOf(
@@ -157,6 +201,7 @@ contract LaborMarket is
         _;
     }
 
+    /// @notice Initialize the labor market.
     function initialize(LaborMarketConfiguration calldata _configuration)
         external
         override
@@ -415,6 +460,36 @@ contract LaborMarket is
     }
 
     /**
+    * @notice Allows a service requester to claim the remainder of funds not allocated to service providers.
+    * @param requestId The id of the service request.
+    */
+    function claimRemainder(uint256 requestId) public {
+        require(
+            serviceRequests[requestId].serviceRequester == msg.sender,
+            "LaborMarket::claimRemainder: Not service requester."
+        );
+        require(
+            block.timestamp >= serviceRequests[requestId].enforcementExp,
+            "LaborMarket::claimRemainder: Enforcement deadline not passed."
+        );
+        require(
+            !hasClaimedRemainder[requestId][msg.sender],
+            "LaborMarket::claimRemainder: Already claimed."
+        );
+        uint256 totalClaimable = serviceRequests[requestId].pTokenQ -
+            enforcementCriteria.getClaimableAllocation(requestId);
+
+        hasClaimedRemainder[requestId][msg.sender] = true;
+
+        IERC20(serviceRequests[requestId].pToken).transfer(
+            msg.sender,
+            totalClaimable
+        );
+
+        emit RemainderClaimed(msg.sender, requestId, totalClaimable);
+    }
+
+    /**
      * @notice Allows a service requester to withdraw a request.
      * @param requestId The id of the service requesters request.
      * Requirements:
@@ -467,6 +542,10 @@ contract LaborMarket is
         return serviceSubmissions[_submissionId];
     }
 
+    /*//////////////////////////////////////////////////////////////
+                            INTERNAL SETTERS
+    //////////////////////////////////////////////////////////////*/
+
     /**
      * @dev See {ReputationModule-lockReputation}.
      */
@@ -486,26 +565,6 @@ contract LaborMarket is
      */
     function _freezeReputation(address account, uint256 amount) internal {
         reputationModule.freezeReputation(account, amount);
-    }
-
-    /**
-     * @dev See {ReputationModule-getAvailableReputation}
-     */
-
-    function _getAvailableReputation() internal view returns (uint256) {
-        return
-            reputationModule.getAvailableReputation(address(this), msg.sender);
-    }
-
-    /**
-     * @dev See {ReputationModule-getMarketReputationConfig}
-     */
-
-    function _baseStake() internal view returns (uint256) {
-        return
-            reputationModule
-                .getMarketReputationConfig(address(this))
-                .signalStake;
     }
 
     /**
@@ -538,5 +597,29 @@ contract LaborMarket is
         configuration = _configuration;
 
         emit MarketParametersUpdated(_configuration);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                            INTERNAL GETTERS
+    //////////////////////////////////////////////////////////////*/
+
+    /**
+     * @dev See {ReputationModule-getAvailableReputation}
+     */
+
+    function _getAvailableReputation() internal view returns (uint256) {
+        return
+            reputationModule.getAvailableReputation(address(this), msg.sender);
+    }
+
+    /**
+     * @dev See {ReputationModule-getMarketReputationConfig}
+     */
+
+    function _baseStake() internal view returns (uint256) {
+        return
+            reputationModule
+                .getMarketReputationConfig(address(this))
+                .signalStake;
     }
 }

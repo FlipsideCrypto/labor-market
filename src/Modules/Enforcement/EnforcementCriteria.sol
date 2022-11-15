@@ -3,23 +3,38 @@ pragma solidity 0.8.17;
 
 // TODO: look into https://github.com/paulrberg/prb-math
 import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
-import {console} from "forge-std/console.sol";
 
 contract EnforcementCriteria {
+    /// @dev Tracks the scores given to service submissions.
     mapping(address => mapping(uint256 => Scores)) private submissionToScores;
+
+    /// @dev Tracks the amount of submitters per Likert scale score.
     mapping(address => mapping(Likert => uint256)) private bucketCount;
 
+    /// @dev The scoring scale.
     enum Likert {
         BAD,
         OK,
         GOOD
     }
 
+    /// @dev The scores given to a service submission.
     struct Scores {
         uint256[] scores;
         uint256 avg;
     }
 
+    /// @dev The count and allocation per bucket
+    struct ClaimableBucket {
+        uint256 count;
+        uint256 allocation;
+    }
+
+    /**
+     * @notice Allows a maintainer to review a submission.
+     * @param submissionId The submission to review.
+     * @param score The score to give the submission.
+     */
     function review(uint256 submissionId, uint256 score)
         external
         returns (uint256)
@@ -56,6 +71,11 @@ contract EnforcementCriteria {
         return uint256(Likert(score));
     }
 
+    /**
+     * @notice Returns the point on the payment curve for a submission.
+     * @param submissionId The submission to calculate the point for.
+     * @return The point on the payment curve.
+     */
     function verify(uint256 submissionId) external view returns (uint256) {
         uint256 x;
         uint256 score = submissionToScores[msg.sender][submissionId].avg;
@@ -78,6 +98,7 @@ contract EnforcementCriteria {
         return x;
     }
 
+    /// @notice Returns the total number of submissions for a given score.
     function getTotalBucket(address market, Likert score)
         internal
         view
@@ -86,6 +107,42 @@ contract EnforcementCriteria {
         return bucketCount[market][score];
     }
 
+    /// @notice Returns the amount claimable for a service request.
+    function getClaimableAllocation(uint256 requestId)
+        public
+        view
+        returns (uint256)
+    {
+        uint256 claimable;
+
+        LaborMarketInterface market = LaborMarketInterface(msg.sender);
+        uint256 pTokens = market.getRequest(requestId).pTokenQ;
+
+        ClaimableBucket[3] memory buckets = [
+            ClaimableBucket({
+                count: getTotalBucket(msg.sender, Likert.BAD),
+                allocation: ((pTokens * 0))
+            }),
+            ClaimableBucket({
+                count: getTotalBucket(msg.sender, Likert.OK),
+                allocation: (((pTokens * 20) / 100))
+            }),
+            ClaimableBucket({
+                count: getTotalBucket(msg.sender, Likert.GOOD),
+                allocation: (((pTokens * 80) / 100))
+            })
+        ];
+
+        for (uint256 i; i < buckets.length; ++i) {
+            if (buckets[i].count > 0) {
+                claimable += buckets[i].allocation;
+            }
+        }
+
+        return claimable;
+    }
+
+    /// @notice Returns the sqrt of a number.
     function sqrt(uint256 x) internal pure returns (uint256 result) {
         // Stolen from prbmath
         if (x == 0) {
@@ -137,6 +194,7 @@ contract EnforcementCriteria {
         }
     }
 
+    /// @notice Returns the average of an array of numbers.
     function _getAvg(uint256[] memory scores) internal pure returns (uint256) {
         uint256 cumScore;
         uint256 qScores = scores.length;
