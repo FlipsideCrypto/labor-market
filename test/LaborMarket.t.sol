@@ -21,7 +21,7 @@ import {LaborMarketVersions} from "src/Network/LaborMarketVersions.sol";
 import {ReputationModule} from "src/Modules/Reputation/ReputationModule.sol";
 import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/ReputationModuleInterface.sol";
 
-import {EnforcementCriteria} from "src/Modules/Enforcement/EnforcementCriteria.sol";
+import {LikertEnforcementCriteria} from "src/Modules/Enforcement//LikertEnforcementCriteria.sol";
 
 import {PaymentModule} from "src/Modules/Payment/PaymentModule.sol";
 import {PayCurve} from "src/Modules/Payment/PayCurve.sol";
@@ -45,7 +45,7 @@ contract ContractTest is PRBTest, Cheats {
 
     LaborMarketNetwork public network;
 
-    EnforcementCriteria public enforcementCriteria;
+    LikertEnforcementCriteria public enforcementCriteria;
     PaymentModule public paymentModule;
     PayCurve public payCurve;
 
@@ -171,7 +171,7 @@ contract ContractTest is PRBTest, Cheats {
         reputationModule = new ReputationModule(address(network));
 
         // Create enforcement criteria
-        enforcementCriteria = new EnforcementCriteria();
+        enforcementCriteria = new LikertEnforcementCriteria();
 
         // Create a payment module
         paymentModule = new PaymentModule();
@@ -331,82 +331,6 @@ contract ContractTest is PRBTest, Cheats {
         // Skip to enforcement deadline
         vm.warp(5 weeks);
         market.claim(submissionId, msg.sender, "");
-    }
-
-    function test_ExampleEnforcementTest() public {
-        /**
-        | Here we test the workings of enforcement (reviewing)
-        |
-        | First, we populate the request with submissions
-        | Second, we review the submissions
-        | Third, we test the enforcement criteria following an example scenario.
-        | 
-        | * Example scenario:
-        | pTokens: 1000
-        | Participants: 112
-        | Likert ratings: (1, BAD), (2, OK), (3, GOOD)
-        | Bucket distribution: (1, 66), (2, 36), (3, 10)
-        | Payout distribution: (1, 0), (2, 20%), (3, 80%)
-        | Expected Tokens per person per bucket: (1, 0), (2, 5.5), (3, 80)
-        */
-
-        vm.startPrank(bob);
-
-        // Create a request
-        uint256 requestId = createSimpleRequest(market);
-
-        // Signal the request on 112 accounts
-        for (uint256 i; i < 113; i++) {
-            address user = address(uint160(1337 + i));
-            changePrank(user);
-
-            // Mint required tokens
-            repToken.freeMint(user, DELEGATE_TOKEN_ID, 1);
-            repToken.freeMint(user, REPUTATION_TOKEN_ID, 100e18);
-
-            // Aprove the market
-            repToken.setApprovalForAll(address(market), true);
-
-            market.signal(requestId);
-            market.provide(requestId, "NaN");
-        }
-
-        // Have bob review the submissions
-        changePrank(bob);
-
-        // The reviewer signals the requestId
-        market.signalReview(115);
-
-        // The reviewer reviews the submissions
-        for (uint256 i; i < 113; i++) {
-            if (i < 67) {
-                // BAD
-                market.review(requestId, i + 1, 0);
-            } else if (i < 103) {
-                // OK
-                market.review(requestId, i + 1, 1);
-            } else {
-                // GOOD
-                market.review(requestId, i + 1, 2);
-            }
-        }
-
-        // Keeps track of the total amount paid out
-        uint256 totalPaid;
-
-        // Skip to enforcement deadline
-        vm.warp(5 weeks);
-
-        // Claim rewards
-        for (uint256 i; i < 113; i++) {
-            address user = address(uint160(1337 + i));
-            changePrank(user);
-
-            // Claim
-            totalPaid += market.claim(i + 1, msg.sender, "");
-        }
-
-        assertAlmostEq(totalPaid, 1000e18, 0.000001e18);
     }
 
     function test_CreateMultipleMarkets() public {

@@ -1,4 +1,5 @@
 @prb/test/=lib/prb-test/src/
+@prb/math/=node_modules/@prb/math/
+@openzeppelin/=node_modules/@openzeppelin/
 forge-std/=lib/forge-std/src/
 solmate/=lib/solmate/src/
-@openzeppelin/=node_modules/@openzeppelin/

@@ -137,7 +137,7 @@ contract LaborMarket is
     );
 
     /// @notice emitted when a service submission is reviewed
-    event RequestReviewed(.
+    event RequestReviewed(
         address reviewer,
         uint256 indexed requestId,
         uint256 indexed submissionId,
@@ -460,9 +460,9 @@ contract LaborMarket is
     }
 
     /**
-    * @notice Allows a service requester to claim the remainder of funds not allocated to service providers.
-    * @param requestId The id of the service request.
-    */
+     * @notice Allows a service requester to claim the remainder of funds not allocated to service providers.
+     * @param requestId The id of the service request.
+     */
     function claimRemainder(uint256 requestId) public {
         require(
             serviceRequests[requestId].serviceRequester == msg.sender,
