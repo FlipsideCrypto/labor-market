@@ -1,14 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
+
 contract FCFSEnforcementCriteria {
     /// @dev First come first servce on linear decreasing payout curve
     /// @dev First 100 submissions that are marked as good get paid
 
     mapping(address => mapping(uint256 => uint256)) public submissionToIndex;
 
-    uint256 public constant MAX_SCORE = 100;
-    uint256 public payCount;
+    /// @dev Max number of submissions that can be paid out
+    uint256 public constant MAX_SCORE = 10;
+
+    /// @dev Tracks the number of submissions per requestId that have been paid out
+    mapping(uint256 => uint256) public payCount;
 
     /**
      * @notice Allows maintainer to review with either 0 (bad) or 1 (good)
@@ -19,14 +24,15 @@ contract FCFSEnforcementCriteria {
         external
         returns (uint256)
     {
-        require(score <= 1, "EnforcementCriteria::review: invalid score");
-        require(payCount < 100, "EnforcementCriteria::review: no more payouts");
+        uint256 requestId = getRid(submissionId);
 
-        if (score == 1) {
-            submissionToIndex[msg.sender][submissionId] = payCount;
+        require(score <= 1, "EnforcementCriteria::review: invalid score");
+
+        if (score > 0 && payCount[requestId] < MAX_SCORE) {
+            submissionToIndex[msg.sender][submissionId] = payCount[requestId];
 
             unchecked {
-                payCount++;
+                payCount[requestId]++;
             }
         }
 
@@ -35,5 +41,13 @@ contract FCFSEnforcementCriteria {
 
     function verify(uint256 submissionId) external view returns (uint256) {
         return submissionToIndex[msg.sender][submissionId];
+    }
+
+    /// @dev Gets a users requestId from submissionId
+    function getRid(uint256 submissionId) internal view returns (uint256) {
+        return
+            LaborMarketInterface(msg.sender)
+                .getSubmission(submissionId)
+                .requestId;
     }
 }

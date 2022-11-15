@@ -338,6 +338,10 @@ contract ContractTest is PRBTest, Cheats {
             ) / 1.5e75;
     }
 
+    function coinflip() internal view returns (uint256) {
+        return ((pseudoRandom(123) + uint160(msg.sender)) % 2) == 0 ? 1 : 0;
+    }
+
     function test_LikertMarket() public {
         /**
         | Here we test the workings of enforcement (reviewing) following a likert metric.
@@ -480,5 +484,65 @@ contract ContractTest is PRBTest, Cheats {
         best5Enforcement.getSubmissions(address(best5Market), requestId);
     }
 
-    function test_FcfsMarket() public {}
+    function test_FcfsMarket() public {
+        /**
+        | Here we test the workings of enforcement (reviewing) following a first come first serve metric
+        |
+        | First, we populate the request with submissions
+        | Second, we review the submissions
+        | Third, the first 10 submissions scored a 1 are paid out
+        | 
+        | * Example scenario:
+        | pTokens: 1000
+        | Participants: 75
+        | Scores are randomly generated
+        */
+
+        vm.startPrank(bob);
+
+        // Create a request
+        uint256 requestId = createSimpleRequest(fcfsMarket);
+
+        // Signal the request on 55 accounts
+        for (uint256 i; i < 75; i++) {
+            address user = address(uint160(1337 + i));
+            changePrank(user);
+
+            // Mint required tokens
+            repToken.freeMint(user, DELEGATE_TOKEN_ID, 1);
+            repToken.freeMint(user, REPUTATION_TOKEN_ID, 100e18);
+
+            // Aprove the market
+            repToken.setApprovalForAll(address(fcfsMarket), true);
+
+            fcfsMarket.signal(requestId);
+            fcfsMarket.provide(requestId, "NaN");
+        }
+
+        // Have bob review the submissions
+        changePrank(bob);
+
+        // The reviewer signals the requestId
+        fcfsMarket.signalReview(115);
+
+        // The reviewer reviews the submissions
+        for (uint256 i; i < 75; i++) {
+            fcfsMarket.review(requestId, i + 1, coinflip());
+        }
+
+        // Keeps track of the total amount paid out
+        uint256 totalPaid;
+
+        // Skip to enforcement deadline
+        vm.warp(5 weeks);
+
+        // Claim rewards
+        for (uint256 i; i < 55; i++) {
+            address user = address(uint160(1337 + i));
+            changePrank(user);
+
+            // Claim
+            totalPaid += fcfsMarket.claim(i + 1, msg.sender, "");
+        }
+    }
 }
