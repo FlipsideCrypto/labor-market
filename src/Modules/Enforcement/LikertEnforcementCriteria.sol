@@ -8,8 +8,9 @@ contract LikertEnforcementCriteria {
     /// @dev Tracks the scores given to service submissions.
     mapping(address => mapping(uint256 => Scores)) private submissionToScores;
 
-    /// @dev Tracks the amount of submitters per Likert scale score.
-    mapping(address => mapping(Likert => uint256)) private bucketCount;
+    /// @dev Tracks the amount of submitters per Likert scale score for a requestId.
+    mapping(address => mapping(uint256 => mapping(Likert => uint256)))
+        private bucketCount;
 
     /// @dev The scoring scale.
     enum Likert {
@@ -44,10 +45,12 @@ contract LikertEnforcementCriteria {
             "EnforcementCriteria::review: invalid score"
         );
 
+        uint256 requestId = getRid(submissionId);
+
         // Update the bucket count for old score
         if (submissionToScores[msg.sender][submissionId].scores.length != 0) {
             unchecked {
-                --bucketCount[msg.sender][
+                --bucketCount[msg.sender][requestId][
                     Likert(submissionToScores[msg.sender][submissionId].avg)
                 ];
             }
@@ -63,7 +66,7 @@ contract LikertEnforcementCriteria {
 
         // Update the bucket count for new score
         unchecked {
-            ++bucketCount[msg.sender][
+            ++bucketCount[msg.sender][requestId][
                 Likert(submissionToScores[msg.sender][submissionId].avg)
             ];
         }
@@ -78,9 +81,11 @@ contract LikertEnforcementCriteria {
      */
     function verify(uint256 submissionId) external view returns (uint256) {
         uint256 x;
+
         uint256 score = submissionToScores[msg.sender][submissionId].avg;
 
-        uint256 alloc = (1e18 / getTotalBucket(msg.sender, Likert(score)));
+        uint256 alloc = (1e18 /
+            getTotalBucket(msg.sender, Likert(score), getRid(submissionId)));
 
         LaborMarketInterface market = LaborMarketInterface(msg.sender);
         uint256 pTokens = market
@@ -103,12 +108,12 @@ contract LikertEnforcementCriteria {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Returns the total number of submissions for a given score.
-    function getTotalBucket(address market, Likert score)
-        internal
-        view
-        returns (uint256)
-    {
-        return bucketCount[market][score];
+    function getTotalBucket(
+        address market,
+        Likert score,
+        uint256 requestId
+    ) internal view returns (uint256) {
+        return bucketCount[market][requestId][score];
     }
 
     /// @notice Returns the sqrt of a number.
@@ -175,6 +180,14 @@ contract LikertEnforcementCriteria {
         return cumScore / qScores;
     }
 
+    /// @dev Gets a users requestId from submissionId
+    function getRid(uint256 submissionId) internal view returns (uint256) {
+        return
+            LaborMarketInterface(msg.sender)
+                .getSubmission(submissionId)
+                .requestId;
+    }
+
     /*//////////////////////////////////////////////////////////////
                                 GETTERS
     //////////////////////////////////////////////////////////////*/
@@ -192,15 +205,15 @@ contract LikertEnforcementCriteria {
 
         ClaimableBucket[3] memory buckets = [
             ClaimableBucket({
-                count: getTotalBucket(msg.sender, Likert.BAD),
+                count: getTotalBucket(msg.sender, Likert.BAD, requestId),
                 allocation: ((pTokens * 0))
             }),
             ClaimableBucket({
-                count: getTotalBucket(msg.sender, Likert.OK),
+                count: getTotalBucket(msg.sender, Likert.OK, requestId),
                 allocation: (((pTokens * 20) / 100))
             }),
             ClaimableBucket({
-                count: getTotalBucket(msg.sender, Likert.GOOD),
+                count: getTotalBucket(msg.sender, Likert.GOOD, requestId),
                 allocation: (((pTokens * 80) / 100))
             })
         ];
