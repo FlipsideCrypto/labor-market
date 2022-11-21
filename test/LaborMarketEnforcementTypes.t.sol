@@ -142,6 +142,12 @@ contract ContractTest is PRBTest, Cheats {
         address to
     );
 
+    event RemainderClaimed(
+        address indexed claimer,
+        uint256 indexed requestId,
+        uint256 remainderAmount
+    );
+
     /*//////////////////////////////////////////////////////////////
                         HELPER FUNCTIONALITY
     //////////////////////////////////////////////////////////////*/
@@ -544,5 +550,98 @@ contract ContractTest is PRBTest, Cheats {
             // Claim
             totalPaid += fcfsMarket.claim(i + 1, msg.sender, "");
         }
+    }
+
+    function test_LikertClaimRemainder() public {
+        vm.startPrank(bob);
+        // Create a request
+        uint256 requestId = createSimpleRequest(likertMarket);
+
+        // A valid user signals
+        changePrank(alice);
+        likertMarket.signal(requestId);
+
+        // User fulfills the request
+        uint256 submissionId = likertMarket.provide(requestId, "IPFS://333");
+
+        // A valid maintainer signals for review
+        changePrank(bobert);
+        likertMarket.signalReview(3);
+
+        // A valid maintainer reviews the request and scores it a 1
+        likertMarket.review(requestId, submissionId, 1);
+
+        // Skip past enforcement deadline
+        vm.warp(block.timestamp + 100 weeks);
+
+        // Requester withdraws remainder
+        // Score should average to 1 meaning it falls in the 20% bucket, the remainder should therefore be 80% of the reward
+        changePrank(bob);
+
+        vm.expectEmit(true, true, true, true);
+        emit RemainderClaimed(address(bob), requestId, 800e18);
+        likertMarket.claimRemainder(requestId);
+    }
+
+    function test_Best5ClaimRemainder() public {
+        vm.startPrank(bob);
+        // Create a request
+        uint256 requestId = createSimpleRequest(best5Market);
+
+        // A valid user signals
+        changePrank(alice);
+        best5Market.signal(requestId);
+
+        // User fulfills the request
+        uint256 submissionId = best5Market.provide(requestId, "IPFS://333");
+
+        // A valid maintainer signals for review
+        changePrank(bobert);
+        best5Market.signalReview(3);
+
+        // A valid maintainer reviews the request and scores it a 1
+        best5Market.review(requestId, submissionId, 1);
+
+        // Skip past enforcement deadline
+        vm.warp(block.timestamp + 100 weeks);
+
+        // Requester withdraws remainder
+        // The remainder should be indexes 2, 3, 4 and 5.
+        changePrank(bob);
+
+        vm.expectEmit(true, true, true, true);
+        emit RemainderClaimed(address(bob), requestId, 21600);
+        best5Market.claimRemainder(requestId);
+    }
+
+    function test_FcfsClaimRemainder() public {
+        vm.startPrank(bob);
+        // Create a request
+        uint256 requestId = createSimpleRequest(fcfsMarket);
+
+        // A valid user signals
+        changePrank(alice);
+        fcfsMarket.signal(requestId);
+
+        // User fulfills the request
+        uint256 submissionId = fcfsMarket.provide(requestId, "IPFS://333");
+
+        // A valid maintainer signals for review
+        changePrank(bobert);
+        fcfsMarket.signalReview(3);
+
+        // A valid maintainer reviews the request and scores it a 1
+        fcfsMarket.review(requestId, submissionId, 1);
+
+        // Skip past enforcement deadline
+        vm.warp(block.timestamp + 100 weeks);
+
+        // Requester withdraws remainder
+        // The remainder should be indexes 2...9.
+        changePrank(bob);
+
+        vm.expectEmit(true, true, true, true);
+        emit RemainderClaimed(address(bob), requestId, 285);
+        fcfsMarket.claimRemainder(requestId);
     }
 }

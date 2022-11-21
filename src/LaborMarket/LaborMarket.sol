@@ -476,8 +476,7 @@ contract LaborMarket is
             !hasClaimedRemainder[requestId][msg.sender],
             "LaborMarket::claimRemainder: Already claimed."
         );
-        uint256 totalClaimable = serviceRequests[requestId].pTokenQ -
-            enforcementCriteria.getClaimableAllocation(requestId);
+        uint256 totalClaimable = enforcementCriteria.getRemainder(requestId);
 
         hasClaimedRemainder[requestId][msg.sender] = true;
 
@@ -540,6 +539,17 @@ contract LaborMarket is
         returns (ServiceSubmission memory)
     {
         return serviceSubmissions[_submissionId];
+    }
+
+    /**
+     * @notice Returns the market configuration.
+     */
+    function getConfiguration()
+        external
+        view
+        returns (LaborMarketConfiguration memory)
+    {
+        return configuration;
     }
 
     /*//////////////////////////////////////////////////////////////

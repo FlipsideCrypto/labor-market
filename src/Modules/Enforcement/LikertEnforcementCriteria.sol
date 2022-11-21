@@ -193,11 +193,7 @@ contract LikertEnforcementCriteria {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Returns the amount claimable for a service request.
-    function getClaimableAllocation(uint256 requestId)
-        public
-        view
-        returns (uint256)
-    {
+    function getRemainder(uint256 requestId) public view returns (uint256) {
         uint256 claimable;
 
         LaborMarketInterface market = LaborMarketInterface(msg.sender);
@@ -224,6 +220,6 @@ contract LikertEnforcementCriteria {
             }
         }
 
-        return claimable;
+        return (pTokens - claimable);
     }
 }

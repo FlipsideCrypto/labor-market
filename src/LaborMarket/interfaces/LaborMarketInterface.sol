@@ -42,4 +42,9 @@ interface LaborMarketInterface is LaborMarketConfigurationInterface {
         external
         view
         returns (ServiceRequest memory);
+
+    function getConfiguration()
+        external
+        view
+        returns (LaborMarketConfiguration memory);
 }

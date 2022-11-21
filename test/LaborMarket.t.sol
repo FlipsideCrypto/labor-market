@@ -990,35 +990,4 @@ contract ContractTest is PRBTest, Cheats {
 
         vm.stopPrank();
     }
-
-    function test_ClaimRemainder() public {
-        vm.startPrank(bob);
-        // Create a request
-        uint256 requestId = createSimpleRequest(market);
-
-        // A valid user signals
-        changePrank(alice);
-        market.signal(requestId);
-
-        // User fulfills the request
-        uint256 submissionId = market.provide(requestId, "IPFS://333");
-
-        // A valid maintainer signals for review
-        changePrank(bobert);
-        market.signalReview(3);
-
-        // A valid maintainer reviews the request and scores it a 1
-        market.review(requestId, submissionId, 1);
-
-        // Skip past enforcement deadline
-        vm.warp(block.timestamp + 100 weeks);
-
-        // Requester withdraws remainder
-        // Score should average to 1 meaning it falls in the 20% bucket, the remainder should therefore be 80% of the reward
-        changePrank(bob);
-
-        vm.expectEmit(true, true, true, true);
-        emit RemainderClaimed(address(bob), requestId, 800e18);
-        market.claimRemainder(requestId);
-    }
 }

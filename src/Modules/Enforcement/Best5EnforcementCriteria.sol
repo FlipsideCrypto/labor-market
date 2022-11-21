@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
+import {PayCurveInterface} from "../Payment/interfaces/PayCurveInterface.sol";
 
 // TODO: Add multiple reviewers (get average)
 // TODO: Find good averaging function
@@ -73,12 +74,12 @@ contract Best5EnforcementCriteria {
     /// @dev Sorts the submissions for a given requestId
     function sort(uint256 requestId) internal {
         for (
-            uint256 i = 0;
+            uint256 i;
             i < marketSubmissions[msg.sender][requestId].length;
             ++i
         ) {
             for (
-                uint256 j = 0;
+                uint256 j;
                 j < marketSubmissions[msg.sender][requestId].length - 1;
                 ++j
             ) {
@@ -132,5 +133,25 @@ contract Best5EnforcementCriteria {
         return marketSubmissions[market][requestId];
     }
 
-    function getClaimableAllocation() public returns (uint256) {}
+    /// @dev Returns the remainder that is claimable by the requester of a requestId
+    function getRemainder(uint256 requestId) public returns (uint256) {
+        if (marketSubmissions[msg.sender][requestId].length >= MAX_WINNERS) {
+            return 0;
+        } else {
+            uint256 claimable;
+
+            LaborMarketInterface market = LaborMarketInterface(msg.sender);
+            PayCurveInterface curve = PayCurveInterface(
+                market.getConfiguration().paymentModule
+            );
+            uint256 submissions = marketSubmissions[msg.sender][requestId]
+                .length;
+
+            for (uint256 i; i < (MAX_WINNERS - submissions); i++) {
+                uint256 index = ((submissions + i) + 1) * 20;
+                claimable += curve.curvePoint(index);
+            }
+            return claimable;
+        }
+    }
 }

@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
+import {PayCurveInterface} from "../Payment/interfaces/PayCurveInterface.sol";
 
 contract FCFSEnforcementCriteria {
     /// @dev First come first servce on linear decreasing payout curve
@@ -14,6 +15,10 @@ contract FCFSEnforcementCriteria {
 
     /// @dev Tracks the number of submissions per requestId that have been paid out
     mapping(uint256 => uint256) public payCount;
+
+    /*//////////////////////////////////////////////////////////////
+                                SETTERS
+    //////////////////////////////////////////////////////////////*/
 
     /**
      * @notice Allows maintainer to review with either 0 (bad) or 1 (good)
@@ -39,9 +44,36 @@ contract FCFSEnforcementCriteria {
         return score;
     }
 
+    /*//////////////////////////////////////////////////////////////
+                                GETTERS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev Gets the curve index of a submission
     function verify(uint256 submissionId) external view returns (uint256) {
         return submissionToIndex[msg.sender][submissionId];
     }
+
+    /// @dev Returns the remainder that is claimable by the requester of a requestId
+    function getRemainder(uint256 requestId) public returns (uint256) {
+        if (payCount[requestId] >= MAX_SCORE) {
+            return 0;
+        } else {
+            uint256 claimable;
+            LaborMarketInterface market = LaborMarketInterface(msg.sender);
+            PayCurveInterface curve = PayCurveInterface(
+                market.getConfiguration().paymentModule
+            );
+            for (uint256 i; i < (MAX_SCORE - payCount[requestId]); i++) {
+                uint256 index = (payCount[requestId] + i);
+                claimable += curve.curvePoint(index);
+            }
+            return claimable;
+        }
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                            INTERNAL GETTERS
+    //////////////////////////////////////////////////////////////*/
 
     /// @dev Gets a users requestId from submissionId
     function getRid(uint256 submissionId) internal view returns (uint256) {
