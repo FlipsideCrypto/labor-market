@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.17;
+pragma solidity 0.8.17;
 
-import { LaborMarketVersionsInterface } from "./LaborMarketVersionsInterface.sol";
+import {LaborMarketVersionsInterface} from "./LaborMarketVersionsInterface.sol";
 
-interface LaborMarketFactoryInterface is 
-    LaborMarketVersionsInterface
-{
+interface LaborMarketFactoryInterface is LaborMarketVersionsInterface {
     /**
      * @notice Allows an individual to deploy a new Labor Market given they meet the version funding requirements.
      * @param _implementation The address of the implementation to be used.
@@ -14,12 +12,8 @@ interface LaborMarketFactoryInterface is
      * @param _configuration The struct containing the config of the Market being created.
      */
     function createLaborMarket(
-          address _implementation
-        , address _deployer
-        , LaborMarketConfiguration calldata _configuration
-    ) 
-        external 
-        returns (
-            address
-        );
+        address _implementation,
+        address _deployer,
+        LaborMarketConfiguration calldata _configuration
+    ) external returns (address);
 }

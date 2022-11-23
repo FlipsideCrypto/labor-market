@@ -315,7 +315,9 @@ contract ContractTest is PRBTest, Cheats {
         market.signal(requestId);
 
         // Verify signaling logic
-        assertTrue(market.submissionSignals(requestId, alice));
+        assertTrue(
+            market.hasPerformed(requestId, alice, keccak256("hasSignaled"))
+        );
 
         // Fulfill the request
         uint256 submissionId = market.provide(requestId, "IPFS://333");
