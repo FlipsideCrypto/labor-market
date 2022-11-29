@@ -24,6 +24,7 @@ import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/Reput
 import {LikertEnforcementCriteria} from "src/Modules/Enforcement/LikertEnforcementCriteria.sol";
 import {FCFSEnforcementCriteria} from "src/Modules/Enforcement/FCFSEnforcementCriteria.sol";
 import {Best5EnforcementCriteria} from "src/Modules/Enforcement/Best5EnforcementCriteria.sol";
+import {MerkleEnforcementCriteria} from "src/Modules/Enforcement/MerkleEnforcementCriteria.sol";
 
 import {PaymentModule} from "src/Modules/Payment/PaymentModule.sol";
 import {PayCurve} from "src/Modules/Payment/PayCurve.sol";
@@ -39,6 +40,7 @@ contract ContractTest is PRBTest, Cheats {
     LaborMarket public likertMarket;
     LaborMarket public fcfsMarket;
     LaborMarket public best5Market;
+    LaborMarket public merkleMarket;
 
     ReputationEngine public reputationEngineMaster;
     ReputationEngine public reputationEngine;
@@ -52,6 +54,7 @@ contract ContractTest is PRBTest, Cheats {
     LikertEnforcementCriteria public likertEnforcement;
     FCFSEnforcementCriteria public fcfsEnforcement;
     Best5EnforcementCriteria public best5Enforcement;
+    MerkleEnforcementCriteria public merkleEnforcement;
 
     PaymentModule public paymentModule;
     PayCurve public payCurve;
@@ -182,6 +185,7 @@ contract ContractTest is PRBTest, Cheats {
         likertEnforcement = new LikertEnforcementCriteria();
         fcfsEnforcement = new FCFSEnforcementCriteria();
         best5Enforcement = new Best5EnforcementCriteria();
+        merkleEnforcement = new MerkleEnforcementCriteria();
 
         // Create a payment module
         paymentModule = new PaymentModule();
@@ -258,6 +262,22 @@ contract ContractTest is PRBTest, Cheats {
                     reputationConfig: repConfig
                 });
 
+        // Create a new labor market configuration for merkle
+        LaborMarketConfigurationInterface.LaborMarketConfiguration
+            memory merkleConfig = LaborMarketConfigurationInterface
+                .LaborMarketConfiguration({
+                    network: address(network),
+                    enforcementModule: address(merkleEnforcement),
+                    paymentModule: address(payCurve),
+                    marketUri: "ipfs://000",
+                    delegateBadge: address(repToken),
+                    delegateTokenId: DELEGATE_TOKEN_ID,
+                    maintainerBadge: address(repToken),
+                    maintainerTokenId: MAINTAINER_TOKEN_ID,
+                    reputationModule: address(reputationModule),
+                    reputationConfig: repConfig
+                });
+
         // Create a new likert labor market
         likertMarket = LaborMarket(
             network.createLaborMarket({
@@ -285,6 +305,15 @@ contract ContractTest is PRBTest, Cheats {
             })
         );
 
+        // Create a new merkle labor market
+        merkleMarket = LaborMarket(
+            network.createLaborMarket({
+                _implementation: address(marketImplementation),
+                _deployer: deployer,
+                _configuration: merkleConfig
+            })
+        );
+
         // Approve and mint tokens
         changePrank(alice);
         repToken.freeMint(alice, REPUTATION_TOKEN_ID, 100e18);
@@ -292,6 +321,7 @@ contract ContractTest is PRBTest, Cheats {
         repToken.setApprovalForAll(address(likertMarket), true);
         repToken.setApprovalForAll(address(fcfsMarket), true);
         repToken.setApprovalForAll(address(best5Market), true);
+        repToken.setApprovalForAll(address(merkleMarket), true);
 
         changePrank(bob);
         repToken.freeMint(bob, REPUTATION_TOKEN_ID, 1000e18);
@@ -302,10 +332,12 @@ contract ContractTest is PRBTest, Cheats {
         repToken.setApprovalForAll(address(likertMarket), true);
         repToken.setApprovalForAll(address(fcfsMarket), true);
         repToken.setApprovalForAll(address(best5Market), true);
+        repToken.setApprovalForAll(address(merkleMarket), true);
 
         payToken.approve(address(likertMarket), 1_000e18);
         payToken.approve(address(fcfsMarket), 1_000e18);
         payToken.approve(address(best5Market), 1_000e18);
+        payToken.approve(address(merkleMarket), 1_000e18);
 
         changePrank(bobert);
         repToken.freeMint(bobert, REPUTATION_TOKEN_ID, 1000e18);
@@ -313,6 +345,7 @@ contract ContractTest is PRBTest, Cheats {
         repToken.setApprovalForAll(address(likertMarket), true);
         repToken.setApprovalForAll(address(fcfsMarket), true);
         repToken.setApprovalForAll(address(best5Market), true);
+        repToken.setApprovalForAll(address(merkleMarket), true);
 
         changePrank(delegate);
         repToken.freeMint(delegate, DELEGATE_TOKEN_ID, 1);
@@ -643,5 +676,107 @@ contract ContractTest is PRBTest, Cheats {
         vm.expectEmit(true, true, true, true);
         emit RemainderClaimed(address(bob), requestId, 285);
         fcfsMarket.claimRemainder(requestId);
+    }
+
+    function test_MerkleMarket() public {
+        /**
+        | Here we test the workings of enforcement (reviewing), where submissions are required to be in a given merkle tree
+        |
+        | First, we populate the tree with submissions,market pairs: [[1, 0xc0425dBe34a7C865A90e8B3d9535Fa8b26e1ef8f], [2, 0xc0425dBe34a7C865A90e8B3d9535Fa8b26e1ef8f], [3, 0xc0425dBe34a7C865A90e8B3d9535Fa8b26e1ef8f], [4, 0xc0425dBe34a7C865A90e8B3d9535Fa8b26e1ef8f], [5, 0xc0425dBe34a7C865A90e8B3d9535Fa8b26e1ef8f]]; which gives us:
+        Root: 0xe53a420a8be832d2d6d50aa7f5d9805ffe3ec89795af36bf2c738b719b52fae3
+        0) e53a420a8be832d2d6d50aa7f5d9805ffe3ec89795af36bf2c738b719b52fae3
+        ├─ 1) 04a603ce59d42ef7bb52d5cfeeac775d6478333a176a39ea3dbeed971bca82b3
+        │  ├─ 3) f45555fa491944479ca61cd307da5181f83f3fe03b20244c693065658de9573b
+        │  │  ├─ 7) 52745c64e39ba07f218a832f27edf3845f50b3b7502ac4f9e881c0461b8ff37f
+        │  │  └─ 8) 0433f2ddce883004c48489ffade0a993100ab19aa4a9b064b78dc4f477275573
+        │  └─ 4) d193f622940a2b677aea02cd195c5a692eca67b29fa54b93f1e0a03bb48d8a6a
+        └─ 2) 3bbe8d68e7fb3c3f69bc13e345b5d3df35bff882dc09169b24a4c946456551cc
+        ├─ 5) 916845823bd997f675d71546551d80e5c9f7c69ea8efc5ab4fe955c6cf25ab1b
+        └─ 6) 8c35c85082c0770ca640e6a83f8ec917fcfaebdee709a5eb98e1aeac5ed0a921
+        | 
+        | Second, we review the submissions
+        | Third, we claim the reward with a valid proof
+        */
+
+        vm.startPrank(deployer);
+        merkleEnforcement.setRoot(
+            1,
+            0xe53a420a8be832d2d6d50aa7f5d9805ffe3ec89795af36bf2c738b719b52fae3
+        );
+
+        changePrank(bob);
+
+        // Create a request
+        uint256 requestId = createSimpleRequest(merkleMarket);
+
+        // Signal the request on an account
+        address user = address(uint160(1337));
+        changePrank(user);
+
+        // Mint required tokens
+        repToken.freeMint(user, DELEGATE_TOKEN_ID, 1);
+        repToken.freeMint(user, REPUTATION_TOKEN_ID, 100e18);
+
+        // Aprove the market
+        repToken.setApprovalForAll(address(merkleMarket), true);
+
+        merkleMarket.signal(requestId);
+        merkleMarket.provide(requestId, "NaN");
+
+        // Have bob review the submissions
+        changePrank(bob);
+
+        // The reviewer signals the requestId
+        merkleMarket.signalReview(115);
+
+        // The reviewer reviews the submissions
+        merkleMarket.review(requestId, 1, 5);
+
+        // Keeps track of the total amount paid out
+        uint256 totalPaid;
+
+        // Skip to enforcement deadline
+        vm.warp(5 weeks);
+
+        // Claim rewards
+        changePrank(user);
+
+        bytes memory invalidProof = bytes.concat(
+            bytes32(
+                0x00000000000000000000000000000000000000000000000000000000000000Ee
+            ),
+            bytes32(
+                0x00000000000000000000000000000000000000000000000000000000000000aA
+            )
+        );
+
+        bytes memory proof = bytes.concat(
+            bytes32(
+                0x52745c64e39ba07f218a832f27edf3845f50b3b7502ac4f9e881c0461b8ff37f
+            ),
+            bytes32(
+                0xd193f622940a2b677aea02cd195c5a692eca67b29fa54b93f1e0a03bb48d8a6a
+            ),
+            bytes32(
+                0x3bbe8d68e7fb3c3f69bc13e345b5d3df35bff882dc09169b24a4c946456551cc
+            )
+        );
+
+        // Another user cannot claim with others proof
+        changePrank(alice);
+        vm.expectRevert("LaborMarket::claim: Not service provider.");
+        merkleMarket.claim(1, msg.sender, proof);
+
+        // Claim with invalid proof should fail
+        changePrank(user);
+        vm.expectRevert("EnforcementCriteria::verifyWithData: invalid proof");
+        totalPaid += merkleMarket.claim(1, msg.sender, invalidProof);
+
+        // Successful Claim
+        totalPaid += merkleMarket.claim(1, msg.sender, proof);
+
+        // Claiming again should fail
+        vm.expectRevert("LaborMarket::claim: Already claimed.");
+        merkleMarket.claim(1, msg.sender, proof);
     }
 }

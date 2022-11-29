@@ -8,5 +8,9 @@ interface EnforcementCriteriaInterface {
 
     function verify(uint256 submissionId) external returns (uint256);
 
+    function verifyWithData(uint256 submissionId, bytes calldata data)
+        external
+        returns (uint256);
+
     function getRemainder(uint256 requestId) external view returns (uint256);
 }

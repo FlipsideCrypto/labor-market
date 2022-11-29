@@ -443,7 +443,9 @@ contract LaborMarket is
             "LaborMarket::claim: Enforcement deadline not passed."
         );
 
-        uint256 curveIndex = enforcementCriteria.verify(submissionId);
+        uint256 curveIndex = (data.length > 0)
+            ? enforcementCriteria.verifyWithData(submissionId, data)
+            : enforcementCriteria.verify(submissionId);
 
         uint256 amount = paymentCurve.curvePoint(curveIndex);
 
