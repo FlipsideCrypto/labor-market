@@ -2,7 +2,7 @@
 pragma solidity 0.8.17;
 
 // Testing imports
-import {Cheats} from "forge-std/Cheats.sol";
+import {StdCheats} from "forge-std/StdCheats.sol";
 import {console} from "forge-std/console.sol";
 import {PRBTest} from "@prb/test/PRBTest.sol";
 
@@ -29,7 +29,7 @@ import {PayCurve} from "src/Modules/Payment/PayCurve.sol";
 import {LaborMarketConfigurationInterface} from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
 import {LaborMarketNetworkInterface} from "src/Network/interfaces/LaborMarketNetworkInterface.sol";
 
-contract ContractTest is PRBTest, Cheats {
+contract ContractTest is PRBTest, StdCheats {
     AnyReputationToken public repToken;
     PaymentToken public payToken;
 

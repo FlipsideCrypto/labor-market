@@ -1,14 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.6.0 <0.9.0;
+pragma solidity >=0.6.2 <0.9.0;
 
-import "./Components.sol";
+import {CommonBase} from "./Common.sol";
 import "ds-test/test.sol";
+// forgefmt: disable-next-line
+import {console, console2, StdAssertions, StdChains, StdCheats, stdError, stdJson, stdMath, StdStorage, stdStorage, StdUtils, Vm} from "./Components.sol";
 
-abstract contract TestBase {
-    address internal constant VM_ADDRESS = address(uint160(uint256(keccak256("hevm cheat code"))));
+abstract contract TestBase is CommonBase {}
 
-    StdStorage internal stdstore;
-    Vm internal constant vm = Vm(VM_ADDRESS);
-}
-
-abstract contract Test is TestBase, DSTest, Assertions, Cheats, Utils {}
+abstract contract Test is DSTest, StdAssertions, StdChains, StdCheats, StdUtils, TestBase {}
