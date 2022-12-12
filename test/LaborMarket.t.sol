@@ -147,10 +147,10 @@ contract ContractTest is PRBTest, StdCheats {
         vm.startPrank(deployer);
 
         // Create a capacity & reputation token
-        payToken = new PaymentToken();
+        payToken = new PaymentToken(deployer);
 
         // Generic reputation token
-        repToken = new AnyReputationToken("reputation nation");
+        repToken = new AnyReputationToken("reputation nation", deployer);
 
         // Deploy an empty labor market for implementation
         marketImplementation = new LaborMarket();
@@ -226,26 +226,31 @@ contract ContractTest is PRBTest, StdCheats {
         );
 
         // Approve and mint tokens
-        changePrank(alice);
         repToken.freeMint(alice, REPUTATION_TOKEN_ID, 100e18);
         repToken.freeMint(alice, DELEGATE_TOKEN_ID, 1);
+
+        changePrank(alice);
         repToken.setApprovalForAll(address(market), true);
 
-        changePrank(bob);
+        changePrank(deployer);
         repToken.freeMint(bob, REPUTATION_TOKEN_ID, 1000e18);
         repToken.freeMint(bob, DELEGATE_TOKEN_ID, 1);
         payToken.freeMint(bob, 1_000_000e18);
 
         repToken.freeMint(bob, MAINTAINER_TOKEN_ID, 1);
+
+        changePrank(bob);
         repToken.setApprovalForAll(address(market), true);
         payToken.approve(address(market), 1_000e18);
 
-        changePrank(bobert);
+        changePrank(deployer);
         repToken.freeMint(bobert, REPUTATION_TOKEN_ID, 1000e18);
         repToken.freeMint(bobert, MAINTAINER_TOKEN_ID, 1);
+
+        changePrank(bobert);
         repToken.setApprovalForAll(address(market), true);
 
-        changePrank(delegate);
+        changePrank(deployer);
         repToken.freeMint(delegate, DELEGATE_TOKEN_ID, 1);
 
         vm.stopPrank();

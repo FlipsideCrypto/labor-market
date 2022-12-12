@@ -3,6 +3,8 @@ pragma solidity 0.8.17;
 
 import {Script} from "forge-std/Script.sol";
 
+import {AnyReputationToken, PaymentToken} from "test/Helpers/HelperTokens.sol";
+
 import {ReputationEngineInterface} from "src/Modules/Reputation/interfaces/ReputationEngineInterface.sol";
 import {ReputationEngine} from "src/Modules/Reputation/ReputationEngine.sol";
 
@@ -30,8 +32,8 @@ import {LaborMarketNetworkInterface} from "src/Network/interfaces/LaborMarketNet
 // ETHERSCAN_API_KEY= GHI
 
 contract X is Script {
-    address public repToken;
-    address public payToken;
+    AnyReputationToken public repToken;
+    PaymentToken public payToken;
 
     LaborMarket public marketImplementation;
     LaborMarket public market;
@@ -61,11 +63,11 @@ contract X is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        // Create a capacity & reputation token
-        payToken = address(0x0);
+        // Create a p token
+        payToken = new PaymentToken(address(0xEd));
 
         // Generic reputation token
-        repToken = address(0x0);
+        repToken = new AnyReputationToken("Mock reputation", address(0xEd));
 
         // Deploy an empty labor market for implementation
         marketImplementation = new LaborMarket();

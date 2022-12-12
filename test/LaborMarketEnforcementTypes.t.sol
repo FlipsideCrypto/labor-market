@@ -158,10 +158,10 @@ contract ContractTest is PRBTest, StdCheats {
         vm.startPrank(deployer);
 
         // Create a capacity & reputation token
-        payToken = new PaymentToken();
+        payToken = new PaymentToken(deployer);
 
         // Generic reputation token
-        repToken = new AnyReputationToken("reputation nation");
+        repToken = new AnyReputationToken("reputation nation", deployer);
 
         // Deploy an empty labor market for implementation
         marketImplementation = new LaborMarket();
@@ -315,20 +315,22 @@ contract ContractTest is PRBTest, StdCheats {
         );
 
         // Approve and mint tokens
-        changePrank(alice);
         repToken.freeMint(alice, REPUTATION_TOKEN_ID, 100e18);
         repToken.freeMint(alice, DELEGATE_TOKEN_ID, 1);
+
+        changePrank(alice);
         repToken.setApprovalForAll(address(likertMarket), true);
         repToken.setApprovalForAll(address(fcfsMarket), true);
         repToken.setApprovalForAll(address(best5Market), true);
         repToken.setApprovalForAll(address(merkleMarket), true);
 
-        changePrank(bob);
+        changePrank(deployer);
         repToken.freeMint(bob, REPUTATION_TOKEN_ID, 1000e18);
         repToken.freeMint(bob, DELEGATE_TOKEN_ID, 1);
         payToken.freeMint(bob, 1_000_000e18);
-
         repToken.freeMint(bob, MAINTAINER_TOKEN_ID, 1);
+
+        changePrank(bob);
         repToken.setApprovalForAll(address(likertMarket), true);
         repToken.setApprovalForAll(address(fcfsMarket), true);
         repToken.setApprovalForAll(address(best5Market), true);
@@ -339,15 +341,17 @@ contract ContractTest is PRBTest, StdCheats {
         payToken.approve(address(best5Market), 1_000e18);
         payToken.approve(address(merkleMarket), 1_000e18);
 
-        changePrank(bobert);
+        changePrank(deployer);
         repToken.freeMint(bobert, REPUTATION_TOKEN_ID, 1000e18);
         repToken.freeMint(bobert, MAINTAINER_TOKEN_ID, 1);
+
+        changePrank(bobert);
         repToken.setApprovalForAll(address(likertMarket), true);
         repToken.setApprovalForAll(address(fcfsMarket), true);
         repToken.setApprovalForAll(address(best5Market), true);
         repToken.setApprovalForAll(address(merkleMarket), true);
 
-        changePrank(delegate);
+        changePrank(deployer);
         repToken.freeMint(delegate, DELEGATE_TOKEN_ID, 1);
 
         vm.stopPrank();
@@ -406,11 +410,12 @@ contract ContractTest is PRBTest, StdCheats {
         // Signal the request on 112 accounts
         for (uint256 i; i < 113; i++) {
             address user = address(uint160(1337 + i));
-            changePrank(user);
 
             // Mint required tokens
+            changePrank(deployer);
             repToken.freeMint(user, DELEGATE_TOKEN_ID, 1);
             repToken.freeMint(user, REPUTATION_TOKEN_ID, 100e18);
+            changePrank(user);
 
             // Aprove the market
             repToken.setApprovalForAll(address(likertMarket), true);
@@ -481,11 +486,12 @@ contract ContractTest is PRBTest, StdCheats {
         // Signal the request on 55 accounts
         for (uint256 i; i < 55; i++) {
             address user = address(uint160(1337 + i));
-            changePrank(user);
 
             // Mint required tokens
+            changePrank(deployer);
             repToken.freeMint(user, DELEGATE_TOKEN_ID, 1);
             repToken.freeMint(user, REPUTATION_TOKEN_ID, 100e18);
+            changePrank(user);
 
             // Aprove the market
             repToken.setApprovalForAll(address(best5Market), true);
@@ -542,14 +548,15 @@ contract ContractTest is PRBTest, StdCheats {
         // Create a request
         uint256 requestId = createSimpleRequest(fcfsMarket);
 
-        // Signal the request on 55 accounts
+        // Signal the request on 75 accounts
         for (uint256 i; i < 75; i++) {
             address user = address(uint160(1337 + i));
-            changePrank(user);
 
             // Mint required tokens
+            changePrank(deployer);
             repToken.freeMint(user, DELEGATE_TOKEN_ID, 1);
             repToken.freeMint(user, REPUTATION_TOKEN_ID, 100e18);
+            changePrank(user);
 
             // Aprove the market
             repToken.setApprovalForAll(address(fcfsMarket), true);
@@ -711,11 +718,12 @@ contract ContractTest is PRBTest, StdCheats {
 
         // Signal the request on an account
         address user = address(uint160(1337));
-        changePrank(user);
 
         // Mint required tokens
+        changePrank(deployer);
         repToken.freeMint(user, DELEGATE_TOKEN_ID, 1);
         repToken.freeMint(user, REPUTATION_TOKEN_ID, 100e18);
+        changePrank(user);
 
         // Aprove the market
         repToken.setApprovalForAll(address(merkleMarket), true);
