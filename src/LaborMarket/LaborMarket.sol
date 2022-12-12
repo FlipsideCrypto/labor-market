@@ -234,11 +234,18 @@ contract LaborMarket is
             ++serviceRequestId;
         }
 
+        // Keep accounting in mind for ERC20s with transfer fees.
+        uint256 pTokenBefore = IERC20(pToken).balanceOf(address(this));
+
+        IERC20(pToken).transferFrom(_msgSender(), address(this), pTokenQ);
+
+        uint256 pTokenAfter = IERC20(pToken).balanceOf(address(this));
+
         ServiceRequest memory serviceRequest = ServiceRequest({
             serviceRequester: _msgSender(),
             pToken: pToken,
             pTokenId: pTokenId,
-            pTokenQ: pTokenQ,
+            pTokenQ: (pTokenAfter - pTokenBefore),
             signalExp: signalExp,
             submissionExp: submissionExp,
             enforcementExp: enforcementExp,
@@ -246,8 +253,6 @@ contract LaborMarket is
         });
 
         serviceRequests[serviceRequestId] = serviceRequest;
-
-        IERC20(pToken).transferFrom(_msgSender(), address(this), pTokenQ);
 
         emit RequestCreated(
             _msgSender(),
