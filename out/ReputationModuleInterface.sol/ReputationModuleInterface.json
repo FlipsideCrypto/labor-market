@@ -1,0 +1,2039 @@
+{
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_implementation",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_baseToken",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_baseTokenId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_decayRate",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_decayInterval",
+          "type": "uint256"
+        }
+      ],
+      "name": "createReputationEngine",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_account",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_frozenUntilEpoch",
+          "type": "uint256"
+        }
+      ],
+      "name": "freezeReputation",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_laborMarket",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_account",
+          "type": "address"
+        }
+      ],
+      "name": "getAvailableReputation",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_laborMarket",
+          "type": "address"
+        }
+      ],
+      "name": "getMarketReputationConfig",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "reputationEngine",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "signalStake",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "providerThreshold",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "maintainerThreshold",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct ReputationModuleInterface.ReputationMarketConfig",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_laborMarket",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_account",
+          "type": "address"
+        }
+      ],
+      "name": "getPendingDecay",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_laborMarket",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_account",
+          "type": "address"
+        }
+      ],
+      "name": "getReputationAccountInfo",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "locked",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "lastDecayEpoch",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "frozenUntilEpoch",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct ReputationEngineInterface.ReputationAccountInfo",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_laborMarket",
+          "type": "address"
+        }
+      ],
+      "name": "getReputationEngine",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_account",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "lockReputation",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "reputationEngine",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "signalStake",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "providerThreshold",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "maintainerThreshold",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct ReputationModuleInterface.ReputationMarketConfig",
+          "name": "_repConfig",
+          "type": "tuple"
+        }
+      ],
+      "name": "setMarketRepConfig",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_account",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "unlockReputation",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_laborMarket",
+          "type": "address"
+        },
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "reputationEngine",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "signalStake",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "providerThreshold",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "maintainerThreshold",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct ReputationModuleInterface.ReputationMarketConfig",
+          "name": "_repConfig",
+          "type": "tuple"
+        }
+      ],
+      "name": "useReputationModule",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "deployedBytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "methodIdentifiers": {
+    "createReputationEngine(address,address,uint256,uint256,uint256)": "744bd273",
+    "freezeReputation(address,uint256)": "f943898f",
+    "getAvailableReputation(address,address)": "c56286e5",
+    "getMarketReputationConfig(address)": "0b8d9748",
+    "getPendingDecay(address,address)": "5c71493e",
+    "getReputationAccountInfo(address,address)": "e3672c66",
+    "getReputationEngine(address)": "33a7c9b1",
+    "lockReputation(address,uint256)": "5d3bd678",
+    "setMarketRepConfig((address,uint256,uint256,uint256))": "4cb3730d",
+    "unlockReputation(address,uint256)": "1daa26e2",
+    "useReputationModule(address,(address,uint256,uint256,uint256))": "2c3a5039"
+  },
+  "rawMetadata": "{\"compiler\":{\"version\":\"0.8.17+commit.8df45f5f\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_implementation\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_baseToken\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_baseTokenId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_decayRate\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_decayInterval\",\"type\":\"uint256\"}],\"name\":\"createReputationEngine\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_account\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_frozenUntilEpoch\",\"type\":\"uint256\"}],\"name\":\"freezeReputation\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_laborMarket\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_account\",\"type\":\"address\"}],\"name\":\"getAvailableReputation\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_laborMarket\",\"type\":\"address\"}],\"name\":\"getMarketReputationConfig\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"reputationEngine\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"signalStake\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"providerThreshold\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maintainerThreshold\",\"type\":\"uint256\"}],\"internalType\":\"struct ReputationModuleInterface.ReputationMarketConfig\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_laborMarket\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_account\",\"type\":\"address\"}],\"name\":\"getPendingDecay\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_laborMarket\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_account\",\"type\":\"address\"}],\"name\":\"getReputationAccountInfo\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"locked\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lastDecayEpoch\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"frozenUntilEpoch\",\"type\":\"uint256\"}],\"internalType\":\"struct ReputationEngineInterface.ReputationAccountInfo\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_laborMarket\",\"type\":\"address\"}],\"name\":\"getReputationEngine\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_account\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"lockReputation\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"reputationEngine\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"signalStake\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"providerThreshold\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maintainerThreshold\",\"type\":\"uint256\"}],\"internalType\":\"struct ReputationModuleInterface.ReputationMarketConfig\",\"name\":\"_repConfig\",\"type\":\"tuple\"}],\"name\":\"setMarketRepConfig\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_account\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"unlockReputation\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_laborMarket\",\"type\":\"address\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"reputationEngine\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"signalStake\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"providerThreshold\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maintainerThreshold\",\"type\":\"uint256\"}],\"internalType\":\"struct ReputationModuleInterface.ReputationMarketConfig\",\"name\":\"_repConfig\",\"type\":\"tuple\"}],\"name\":\"useReputationModule\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"src/Modules/Reputation/interfaces/ReputationModuleInterface.sol\":\"ReputationModuleInterface\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"none\"},\"optimizer\":{\"enabled\":true,\"runs\":10000},\"remappings\":[\":@openzeppelin/=node_modules/@openzeppelin/\",\":@prb/test/=lib/prb-test/src/\",\":ds-test/=lib/forge-std/lib/ds-test/src/\",\":forge-std/=lib/forge-std/src/\",\":prb-test/=lib/prb-test/src/\",\":solmate/=lib/solmate/src/\"],\"viaIR\":true},\"sources\":{\"src/Modules/Reputation/interfaces/ReputationEngineInterface.sol\":{\"keccak256\":\"0x27fe0cf30f911af658dee454e95ba294469d7cec7baec2f02b444cc7abf4cac0\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://d8b9eb7229a0d0b06eed0f0b3b49a14f6c335cffafed10cf7dae6abaaeaecd61\",\"dweb:/ipfs/QmVFybAG2HayPb1hW4SVThWPFhfgtwsvMeu6xXeKsF4gyt\"]},\"src/Modules/Reputation/interfaces/ReputationModuleInterface.sol\":{\"keccak256\":\"0x46214f0c7acaa72bc7ea78d5525f28f3d09910215e3ae49d514d5e6a01ff0333\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://2c76d5179827d0e254a214812748832c9d285e4b5d84f164b07857a2e15734c2\",\"dweb:/ipfs/QmY23kGNrhnKzSCLye442ngnegX4uvoSrFCjbnou7NKwsT\"]}},\"version\":1}",
+  "metadata": {
+    "compiler": {
+      "version": "0.8.17+commit.8df45f5f"
+    },
+    "language": "Solidity",
+    "output": {
+      "abi": [
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_implementation",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_baseToken",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_baseTokenId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_decayRate",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_decayInterval",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function",
+          "name": "createReputationEngine",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ]
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_account",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_frozenUntilEpoch",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function",
+          "name": "freezeReputation"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_laborMarket",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_account",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function",
+          "name": "getAvailableReputation",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ]
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_laborMarket",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function",
+          "name": "getMarketReputationConfig",
+          "outputs": [
+            {
+              "internalType": "struct ReputationModuleInterface.ReputationMarketConfig",
+              "name": "",
+              "type": "tuple",
+              "components": [
+                {
+                  "internalType": "address",
+                  "name": "reputationEngine",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "signalStake",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "providerThreshold",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "maintainerThreshold",
+                  "type": "uint256"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_laborMarket",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_account",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function",
+          "name": "getPendingDecay",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+            }
+          ]
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_laborMarket",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "_account",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function",
+          "name": "getReputationAccountInfo",
+          "outputs": [
+            {
+              "internalType": "struct ReputationEngineInterface.ReputationAccountInfo",
+              "name": "",
+              "type": "tuple",
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "locked",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "lastDecayEpoch",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "frozenUntilEpoch",
+                  "type": "uint256"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_laborMarket",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function",
+          "name": "getReputationEngine",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ]
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_account",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_amount",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function",
+          "name": "lockReputation"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "struct ReputationModuleInterface.ReputationMarketConfig",
+              "name": "_repConfig",
+              "type": "tuple",
+              "components": [
+                {
+                  "internalType": "address",
+                  "name": "reputationEngine",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "signalStake",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "providerThreshold",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "maintainerThreshold",
+                  "type": "uint256"
+                }
+              ]
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function",
+          "name": "setMarketRepConfig"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_account",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "_amount",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function",
+          "name": "unlockReputation"
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "_laborMarket",
+              "type": "address"
+            },
+            {
+              "internalType": "struct ReputationModuleInterface.ReputationMarketConfig",
+              "name": "_repConfig",
+              "type": "tuple",
+              "components": [
+                {
+                  "internalType": "address",
+                  "name": "reputationEngine",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "signalStake",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "providerThreshold",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "maintainerThreshold",
+                  "type": "uint256"
+                }
+              ]
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function",
+          "name": "useReputationModule"
+        }
+      ],
+      "devdoc": {
+        "kind": "dev",
+        "methods": {},
+        "version": 1
+      },
+      "userdoc": {
+        "kind": "user",
+        "methods": {},
+        "version": 1
+      }
+    },
+    "settings": {
+      "remappings": [
+        ":@openzeppelin/=node_modules/@openzeppelin/",
+        ":@prb/test/=lib/prb-test/src/",
+        ":ds-test/=lib/forge-std/lib/ds-test/src/",
+        ":forge-std/=lib/forge-std/src/",
+        ":prb-test/=lib/prb-test/src/",
+        ":solmate/=lib/solmate/src/"
+      ],
+      "optimizer": {
+        "enabled": true,
+        "runs": 10000
+      },
+      "metadata": {
+        "bytecodeHash": "none"
+      },
+      "compilationTarget": {
+        "src/Modules/Reputation/interfaces/ReputationModuleInterface.sol": "ReputationModuleInterface"
+      },
+      "libraries": {},
+      "viaIR": true
+    },
+    "sources": {
+      "src/Modules/Reputation/interfaces/ReputationEngineInterface.sol": {
+        "keccak256": "0x27fe0cf30f911af658dee454e95ba294469d7cec7baec2f02b444cc7abf4cac0",
+        "urls": [
+          "bzz-raw://d8b9eb7229a0d0b06eed0f0b3b49a14f6c335cffafed10cf7dae6abaaeaecd61",
+          "dweb:/ipfs/QmVFybAG2HayPb1hW4SVThWPFhfgtwsvMeu6xXeKsF4gyt"
+        ],
+        "license": "MIT"
+      },
+      "src/Modules/Reputation/interfaces/ReputationModuleInterface.sol": {
+        "keccak256": "0x46214f0c7acaa72bc7ea78d5525f28f3d09910215e3ae49d514d5e6a01ff0333",
+        "urls": [
+          "bzz-raw://2c76d5179827d0e254a214812748832c9d285e4b5d84f164b07857a2e15734c2",
+          "dweb:/ipfs/QmY23kGNrhnKzSCLye442ngnegX4uvoSrFCjbnou7NKwsT"
+        ],
+        "license": "MIT"
+      }
+    },
+    "version": 1
+  },
+  "ast": {
+    "absolutePath": "src/Modules/Reputation/interfaces/ReputationModuleInterface.sol",
+    "id": 32195,
+    "exportedSymbols": {
+      "ReputationEngineInterface": [
+        32087
+      ],
+      "ReputationModuleInterface": [
+        32194
+      ]
+    },
+    "nodeType": "SourceUnit",
+    "src": "32:2059:52",
+    "nodes": [
+      {
+        "id": 32089,
+        "nodeType": "PragmaDirective",
+        "src": "32:23:52",
+        "literals": [
+          "solidity",
+          "0.8",
+          ".17"
+        ]
+      },
+      {
+        "id": 32091,
+        "nodeType": "ImportDirective",
+        "src": "57:76:52",
+        "absolutePath": "src/Modules/Reputation/interfaces/ReputationEngineInterface.sol",
+        "file": "./ReputationEngineInterface.sol",
+        "nameLocation": "-1:-1:-1",
+        "scope": 32195,
+        "sourceUnit": 32088,
+        "symbolAliases": [
+          {
+            "foreign": {
+              "id": 32090,
+              "name": "ReputationEngineInterface",
+              "nodeType": "Identifier",
+              "overloadedDeclarations": [],
+              "referencedDeclaration": 32087,
+              "src": "66:25:52",
+              "typeDescriptions": {}
+            },
+            "nameLocation": "-1:-1:-1"
+          }
+        ],
+        "unitAlias": ""
+      },
+      {
+        "id": 32194,
+        "nodeType": "ContractDefinition",
+        "src": "135:1956:52",
+        "nodes": [
+          {
+            "id": 32100,
+            "nodeType": "StructDefinition",
+            "src": "177:172:52",
+            "canonicalName": "ReputationModuleInterface.ReputationMarketConfig",
+            "members": [
+              {
+                "constant": false,
+                "id": 32093,
+                "mutability": "mutable",
+                "name": "reputationEngine",
+                "nameLocation": "225:16:52",
+                "nodeType": "VariableDeclaration",
+                "scope": 32100,
+                "src": "217:24:52",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                },
+                "typeName": {
+                  "id": 32092,
+                  "name": "address",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "217:7:52",
+                  "stateMutability": "nonpayable",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 32095,
+                "mutability": "mutable",
+                "name": "signalStake",
+                "nameLocation": "259:11:52",
+                "nodeType": "VariableDeclaration",
+                "scope": 32100,
+                "src": "251:19:52",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 32094,
+                  "name": "uint256",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "251:7:52",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 32097,
+                "mutability": "mutable",
+                "name": "providerThreshold",
+                "nameLocation": "288:17:52",
+                "nodeType": "VariableDeclaration",
+                "scope": 32100,
+                "src": "280:25:52",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 32096,
+                  "name": "uint256",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "280:7:52",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 32099,
+                "mutability": "mutable",
+                "name": "maintainerThreshold",
+                "nameLocation": "323:19:52",
+                "nodeType": "VariableDeclaration",
+                "scope": 32100,
+                "src": "315:27:52",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 32098,
+                  "name": "uint256",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "315:7:52",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              }
+            ],
+            "name": "ReputationMarketConfig",
+            "nameLocation": "184:22:52",
+            "scope": 32194,
+            "visibility": "public"
+          },
+          {
+            "id": 32115,
+            "nodeType": "FunctionDefinition",
+            "src": "355:260:52",
+            "functionSelector": "744bd273",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "createReputationEngine",
+            "nameLocation": "364:22:52",
+            "parameters": {
+              "id": 32111,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 32102,
+                  "mutability": "mutable",
+                  "name": "_implementation",
+                  "nameLocation": "406:15:52",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32115,
+                  "src": "398:23:52",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 32101,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "398:7:52",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 32104,
+                  "mutability": "mutable",
+                  "name": "_baseToken",
+                  "nameLocation": "440:10:52",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32115,
+                  "src": "432:18:52",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 32103,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "432:7:52",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 32106,
+                  "mutability": "mutable",
+                  "name": "_baseTokenId",
+                  "nameLocation": "469:12:52",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32115,
+                  "src": "461:20:52",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 32105,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "461:7:52",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 32108,
+                  "mutability": "mutable",
+                  "name": "_decayRate",
+                  "nameLocation": "500:10:52",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32115,
+                  "src": "492:18:52",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 32107,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "492:7:52",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 32110,
+                  "mutability": "mutable",
+                  "name": "_decayInterval",
+                  "nameLocation": "529:14:52",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32115,
+                  "src": "521:22:52",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 32109,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "521:7:52",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "386:163:52"
+            },
+            "returnParameters": {
+              "id": 32114,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 32113,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32115,
+                  "src": "597:7:52",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 32112,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "597:7:52",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "583:31:52"
+            },
+            "scope": 32194,
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "id": 32123,
+            "nodeType": "FunctionDefinition",
+            "src": "621:137:52",
+            "functionSelector": "2c3a5039",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "useReputationModule",
+            "nameLocation": "630:19:52",
+            "parameters": {
+              "id": 32121,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 32117,
+                  "mutability": "mutable",
+                  "name": "_laborMarket",
+                  "nameLocation": "669:12:52",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32123,
+                  "src": "661:20:52",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 32116,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "661:7:52",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 32120,
+                  "mutability": "mutable",
+                  "name": "_repConfig",
+                  "nameLocation": "724:10:52",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32123,
+                  "src": "692:42:52",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_ReputationMarketConfig_$32100_calldata_ptr",
+                    "typeString": "struct ReputationModuleInterface.ReputationMarketConfig"
+                  },
+                  "typeName": {
+                    "id": 32119,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 32118,
+                      "name": "ReputationMarketConfig",
+                      "nameLocations": [
+                        "692:22:52"
+                      ],
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 32100,
+                      "src": "692:22:52"
+                    },
+                    "referencedDeclaration": 32100,
+                    "src": "692:22:52",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_ReputationMarketConfig_$32100_storage_ptr",
+                      "typeString": "struct ReputationModuleInterface.ReputationMarketConfig"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "649:91:52"
+            },
+            "returnParameters": {
+              "id": 32122,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "757:0:52"
+            },
+            "scope": 32194,
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "id": 32129,
+            "nodeType": "FunctionDefinition",
+            "src": "764:103:52",
+            "functionSelector": "4cb3730d",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "setMarketRepConfig",
+            "nameLocation": "773:18:52",
+            "parameters": {
+              "id": 32127,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 32126,
+                  "mutability": "mutable",
+                  "name": "_repConfig",
+                  "nameLocation": "833:10:52",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32129,
+                  "src": "801:42:52",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_ReputationMarketConfig_$32100_calldata_ptr",
+                    "typeString": "struct ReputationModuleInterface.ReputationMarketConfig"
+                  },
+                  "typeName": {
+                    "id": 32125,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 32124,
+                      "name": "ReputationMarketConfig",
+                      "nameLocations": [
+                        "801:22:52"
+                      ],
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 32100,
+                      "src": "801:22:52"
+                    },
+                    "referencedDeclaration": 32100,
+                    "src": "801:22:52",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_ReputationMarketConfig_$32100_storage_ptr",
+                      "typeString": "struct ReputationModuleInterface.ReputationMarketConfig"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "791:58:52"
+            },
+            "returnParameters": {
+              "id": 32128,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "866:0:52"
+            },
+            "scope": 32194,
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "id": 32136,
+            "nodeType": "FunctionDefinition",
+            "src": "873:113:52",
+            "functionSelector": "f943898f",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "freezeReputation",
+            "nameLocation": "882:16:52",
+            "parameters": {
+              "id": 32134,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 32131,
+                  "mutability": "mutable",
+                  "name": "_account",
+                  "nameLocation": "918:8:52",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32136,
+                  "src": "910:16:52",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 32130,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "910:7:52",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 32133,
+                  "mutability": "mutable",
+                  "name": "_frozenUntilEpoch",
+                  "nameLocation": "945:17:52",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32136,
+                  "src": "937:25:52",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 32132,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "937:7:52",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "898:70:52"
+            },
+            "returnParameters": {
+              "id": 32135,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "985:0:52"
+            },
+            "scope": 32194,
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "id": 32143,
+            "nodeType": "FunctionDefinition",
+            "src": "993:102:52",
+            "functionSelector": "5d3bd678",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "lockReputation",
+            "nameLocation": "1002:14:52",
+            "parameters": {
+              "id": 32141,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 32138,
+                  "mutability": "mutable",
+                  "name": "_account",
+                  "nameLocation": "1036:8:52",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32143,
+                  "src": "1028:16:52",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 32137,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1028:7:52",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 32140,
+                  "mutability": "mutable",
+                  "name": "_amount",
+                  "nameLocation": "1063:7:52",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32143,
+                  "src": "1055:15:52",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 32139,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1055:7:52",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1016:60:52"
+            },
+            "returnParameters": {
+              "id": 32142,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1094:0:52"
+            },
+            "scope": 32194,
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "id": 32150,
+            "nodeType": "FunctionDefinition",
+            "src": "1101:104:52",
+            "functionSelector": "1daa26e2",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "unlockReputation",
+            "nameLocation": "1110:16:52",
+            "parameters": {
+              "id": 32148,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 32145,
+                  "mutability": "mutable",
+                  "name": "_account",
+                  "nameLocation": "1146:8:52",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32150,
+                  "src": "1138:16:52",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 32144,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1138:7:52",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 32147,
+                  "mutability": "mutable",
+                  "name": "_amount",
+                  "nameLocation": "1173:7:52",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32150,
+                  "src": "1165:15:52",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 32146,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1165:7:52",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1126:60:52"
+            },
+            "returnParameters": {
+              "id": 32149,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1204:0:52"
+            },
+            "scope": 32194,
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "id": 32159,
+            "nodeType": "FunctionDefinition",
+            "src": "1211:175:52",
+            "functionSelector": "c56286e5",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getAvailableReputation",
+            "nameLocation": "1220:22:52",
+            "parameters": {
+              "id": 32155,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 32152,
+                  "mutability": "mutable",
+                  "name": "_laborMarket",
+                  "nameLocation": "1262:12:52",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32159,
+                  "src": "1254:20:52",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 32151,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1254:7:52",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 32154,
+                  "mutability": "mutable",
+                  "name": "_account",
+                  "nameLocation": "1293:8:52",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32159,
+                  "src": "1285:16:52",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 32153,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1285:7:52",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1242:65:52"
+            },
+            "returnParameters": {
+              "id": 32158,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 32157,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32159,
+                  "src": "1368:7:52",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 32156,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1368:7:52",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1354:31:52"
+            },
+            "scope": 32194,
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "id": 32168,
+            "nodeType": "FunctionDefinition",
+            "src": "1392:168:52",
+            "functionSelector": "5c71493e",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getPendingDecay",
+            "nameLocation": "1401:15:52",
+            "parameters": {
+              "id": 32164,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 32161,
+                  "mutability": "mutable",
+                  "name": "_laborMarket",
+                  "nameLocation": "1436:12:52",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32168,
+                  "src": "1428:20:52",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 32160,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1428:7:52",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 32163,
+                  "mutability": "mutable",
+                  "name": "_account",
+                  "nameLocation": "1467:8:52",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32168,
+                  "src": "1459:16:52",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 32162,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1459:7:52",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1416:65:52"
+            },
+            "returnParameters": {
+              "id": 32167,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 32166,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32168,
+                  "src": "1542:7:52",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 32165,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1542:7:52",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1528:31:52"
+            },
+            "scope": 32194,
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "id": 32178,
+            "nodeType": "FunctionDefinition",
+            "src": "1566:224:52",
+            "functionSelector": "e3672c66",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getReputationAccountInfo",
+            "nameLocation": "1575:24:52",
+            "parameters": {
+              "id": 32173,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 32170,
+                  "mutability": "mutable",
+                  "name": "_laborMarket",
+                  "nameLocation": "1619:12:52",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32178,
+                  "src": "1611:20:52",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 32169,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1611:7:52",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 32172,
+                  "mutability": "mutable",
+                  "name": "_account",
+                  "nameLocation": "1650:8:52",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32178,
+                  "src": "1642:16:52",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 32171,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1642:7:52",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1599:65:52"
+            },
+            "returnParameters": {
+              "id": 32177,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 32176,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32178,
+                  "src": "1725:54:52",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_ReputationAccountInfo_$32023_memory_ptr",
+                    "typeString": "struct ReputationEngineInterface.ReputationAccountInfo"
+                  },
+                  "typeName": {
+                    "id": 32175,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 32174,
+                      "name": "ReputationEngineInterface.ReputationAccountInfo",
+                      "nameLocations": [
+                        "1725:25:52",
+                        "1751:21:52"
+                      ],
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 32023,
+                      "src": "1725:47:52"
+                    },
+                    "referencedDeclaration": 32023,
+                    "src": "1725:47:52",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_ReputationAccountInfo_$32023_storage_ptr",
+                      "typeString": "struct ReputationEngineInterface.ReputationAccountInfo"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1711:78:52"
+            },
+            "scope": 32194,
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "id": 32186,
+            "nodeType": "FunctionDefinition",
+            "src": "1796:157:52",
+            "functionSelector": "0b8d9748",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getMarketReputationConfig",
+            "nameLocation": "1805:25:52",
+            "parameters": {
+              "id": 32181,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 32180,
+                  "mutability": "mutable",
+                  "name": "_laborMarket",
+                  "nameLocation": "1839:12:52",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32186,
+                  "src": "1831:20:52",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 32179,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1831:7:52",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1830:22:52"
+            },
+            "returnParameters": {
+              "id": 32185,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 32184,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32186,
+                  "src": "1913:29:52",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_ReputationMarketConfig_$32100_memory_ptr",
+                    "typeString": "struct ReputationModuleInterface.ReputationMarketConfig"
+                  },
+                  "typeName": {
+                    "id": 32183,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 32182,
+                      "name": "ReputationMarketConfig",
+                      "nameLocations": [
+                        "1913:22:52"
+                      ],
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 32100,
+                      "src": "1913:22:52"
+                    },
+                    "referencedDeclaration": 32100,
+                    "src": "1913:22:52",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_ReputationMarketConfig_$32100_storage_ptr",
+                      "typeString": "struct ReputationModuleInterface.ReputationMarketConfig"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1899:53:52"
+            },
+            "scope": 32194,
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "id": 32193,
+            "nodeType": "FunctionDefinition",
+            "src": "1959:130:52",
+            "functionSelector": "33a7c9b1",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getReputationEngine",
+            "nameLocation": "1968:19:52",
+            "parameters": {
+              "id": 32189,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 32188,
+                  "mutability": "mutable",
+                  "name": "_laborMarket",
+                  "nameLocation": "1996:12:52",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32193,
+                  "src": "1988:20:52",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 32187,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1988:7:52",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1987:22:52"
+            },
+            "returnParameters": {
+              "id": 32192,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 32191,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 32193,
+                  "src": "2071:7:52",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 32190,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2071:7:52",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2057:31:52"
+            },
+            "scope": 32194,
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          }
+        ],
+        "abstract": false,
+        "baseContracts": [],
+        "canonicalName": "ReputationModuleInterface",
+        "contractDependencies": [],
+        "contractKind": "interface",
+        "fullyImplemented": false,
+        "linearizedBaseContracts": [
+          32194
+        ],
+        "name": "ReputationModuleInterface",
+        "nameLocation": "145:25:52",
+        "scope": 32195,
+        "usedErrors": []
+      }
+    ],
+    "license": "MIT"
+  },
+  "id": 52
+}

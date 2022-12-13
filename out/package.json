@@ -1,0 +1,23 @@
+{
+  "name": "labor-markets-abi",
+  "version": "1.0.5",
+  "description": "Labor markets ABI and deployed contract for the app team to utilize for integration",
+  "files": [
+    "**/*.json"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "contributors": [
+    {
+      "name": "masonchain"
+    }, 
+    {
+      "name":"nftchance"
+    }, 
+    { 
+      "name": "thermohaline" 
+    }
+  ],
+  "license": "MIT"
+}

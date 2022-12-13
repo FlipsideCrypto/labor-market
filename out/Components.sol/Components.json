@@ -1,0 +1,178 @@
+{
+  "abi": [],
+  "bytecode": {
+    "object": "0x",
+    "linkReferences": {}
+  },
+  "deployedBytecode": {
+    "object": "0x",
+    "linkReferences": {}
+  },
+  "ast": {
+    "absolutePath": "lib/forge-std/src/Components.sol",
+    "id": 3103,
+    "exportedSymbols": {
+      "Assertions": [
+        2579
+      ],
+      "Cheats": [
+        3091
+      ],
+      "DSTest": [
+        1786
+      ],
+      "StdStorage": [
+        3383
+      ],
+      "Utils": [
+        4783
+      ],
+      "Vm": [
+        5367
+      ],
+      "console": [
+        13431
+      ],
+      "console2": [
+        21496
+      ],
+      "stdError": [
+        3168
+      ],
+      "stdMath": [
+        3310
+      ],
+      "stdStorage": [
+        4479
+      ]
+    },
+    "nodeType": "SourceUnit",
+    "src": "32:241:3",
+    "nodes": [
+      {
+        "id": 3093,
+        "nodeType": "PragmaDirective",
+        "src": "32:31:3",
+        "literals": [
+          "solidity",
+          ">=",
+          "0.6",
+          ".0",
+          "<",
+          "0.9",
+          ".0"
+        ]
+      },
+      {
+        "id": 3094,
+        "nodeType": "ImportDirective",
+        "src": "65:26:3",
+        "absolutePath": "lib/forge-std/src/Assertions.sol",
+        "file": "./Assertions.sol",
+        "nameLocation": "-1:-1:-1",
+        "scope": 3103,
+        "sourceUnit": 2580,
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "id": 3095,
+        "nodeType": "ImportDirective",
+        "src": "92:22:3",
+        "absolutePath": "lib/forge-std/src/Cheats.sol",
+        "file": "./Cheats.sol",
+        "nameLocation": "-1:-1:-1",
+        "scope": 3103,
+        "sourceUnit": 3092,
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "id": 3096,
+        "nodeType": "ImportDirective",
+        "src": "115:23:3",
+        "absolutePath": "lib/forge-std/src/console.sol",
+        "file": "./console.sol",
+        "nameLocation": "-1:-1:-1",
+        "scope": 3103,
+        "sourceUnit": 13432,
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "id": 3097,
+        "nodeType": "ImportDirective",
+        "src": "139:24:3",
+        "absolutePath": "lib/forge-std/src/console2.sol",
+        "file": "./console2.sol",
+        "nameLocation": "-1:-1:-1",
+        "scope": 3103,
+        "sourceUnit": 21497,
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "id": 3098,
+        "nodeType": "ImportDirective",
+        "src": "164:22:3",
+        "absolutePath": "lib/forge-std/src/Errors.sol",
+        "file": "./Errors.sol",
+        "nameLocation": "-1:-1:-1",
+        "scope": 3103,
+        "sourceUnit": 3169,
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "id": 3099,
+        "nodeType": "ImportDirective",
+        "src": "187:20:3",
+        "absolutePath": "lib/forge-std/src/Math.sol",
+        "file": "./Math.sol",
+        "nameLocation": "-1:-1:-1",
+        "scope": 3103,
+        "sourceUnit": 3311,
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "id": 3100,
+        "nodeType": "ImportDirective",
+        "src": "208:23:3",
+        "absolutePath": "lib/forge-std/src/Storage.sol",
+        "file": "./Storage.sol",
+        "nameLocation": "-1:-1:-1",
+        "scope": 3103,
+        "sourceUnit": 4480,
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "id": 3101,
+        "nodeType": "ImportDirective",
+        "src": "232:21:3",
+        "absolutePath": "lib/forge-std/src/Utils.sol",
+        "file": "./Utils.sol",
+        "nameLocation": "-1:-1:-1",
+        "scope": 3103,
+        "sourceUnit": 4784,
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "id": 3102,
+        "nodeType": "ImportDirective",
+        "src": "254:18:3",
+        "absolutePath": "lib/forge-std/src/Vm.sol",
+        "file": "./Vm.sol",
+        "nameLocation": "-1:-1:-1",
+        "scope": 3103,
+        "sourceUnit": 5368,
+        "symbolAliases": [],
+        "unitAlias": ""
+      }
+    ],
+    "license": "MIT"
+  },
+  "id": 3
+}
