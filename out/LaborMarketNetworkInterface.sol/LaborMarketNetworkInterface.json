@@ -27,7 +27,7 @@
   "methodIdentifiers": {
     "setCapacityImplementation(address)": "8767c687"
   },
-  "rawMetadata": "{\"compiler\":{\"version\":\"0.8.17+commit.8df45f5f\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_implementation\",\"type\":\"address\"}],\"name\":\"setCapacityImplementation\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"src/Network/interfaces/LaborMarketNetworkInterface.sol\":\"LaborMarketNetworkInterface\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"none\"},\"optimizer\":{\"enabled\":true,\"runs\":10000},\"remappings\":[\":@openzeppelin/=node_modules/@openzeppelin/\",\":@prb/test/=lib/prb-test/src/\",\":ds-test/=lib/forge-std/lib/ds-test/src/\",\":forge-std/=lib/forge-std/src/\",\":prb-test/=lib/prb-test/src/\",\":solmate/=lib/solmate/src/\"],\"viaIR\":true},\"sources\":{\"src/Network/interfaces/LaborMarketNetworkInterface.sol\":{\"keccak256\":\"0xb67741d087cdde904c2e56943518cec20d9437a1721030da2b931d1edd5edba8\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://b07e661bc223c4a423f7016c388e457faf8923429dbd739853e174b28ad1f57e\",\"dweb:/ipfs/QmdtJwK76ibGbCHV7zgSbGiRpLkUhoTCWR4z9kSH79UExr\"]}},\"version\":1}",
+  "rawMetadata": "{\"compiler\":{\"version\":\"0.8.17+commit.8df45f5f\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_implementation\",\"type\":\"address\"}],\"name\":\"setCapacityImplementation\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"src/Network/interfaces/LaborMarketNetworkInterface.sol\":\"LaborMarketNetworkInterface\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"none\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[\":@openzeppelin/=node_modules/@openzeppelin/\",\":@prb/math/=node_modules/@prb/math/\",\":@prb/test/=lib/prb-test/src/\",\":delegatable/=lib/delegatable/\",\":ds-test/=lib/ds-test/src/\",\":forge-std/=lib/forge-std/src/\",\":prb-test/=lib/prb-test/src/\",\":solmate/=lib/solmate/src/\"]},\"sources\":{\"src/Network/interfaces/LaborMarketNetworkInterface.sol\":{\"keccak256\":\"0xb67741d087cdde904c2e56943518cec20d9437a1721030da2b931d1edd5edba8\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://b07e661bc223c4a423f7016c388e457faf8923429dbd739853e174b28ad1f57e\",\"dweb:/ipfs/QmdtJwK76ibGbCHV7zgSbGiRpLkUhoTCWR4z9kSH79UExr\"]}},\"version\":1}",
   "metadata": {
     "compiler": {
       "version": "0.8.17+commit.8df45f5f"
@@ -62,15 +62,17 @@
     "settings": {
       "remappings": [
         ":@openzeppelin/=node_modules/@openzeppelin/",
+        ":@prb/math/=node_modules/@prb/math/",
         ":@prb/test/=lib/prb-test/src/",
-        ":ds-test/=lib/forge-std/lib/ds-test/src/",
+        ":delegatable/=lib/delegatable/",
+        ":ds-test/=lib/ds-test/src/",
         ":forge-std/=lib/forge-std/src/",
         ":prb-test/=lib/prb-test/src/",
         ":solmate/=lib/solmate/src/"
       ],
       "optimizer": {
         "enabled": true,
-        "runs": 10000
+        "runs": 200
       },
       "metadata": {
         "bytecodeHash": "none"
@@ -78,8 +80,7 @@
       "compilationTarget": {
         "src/Network/interfaces/LaborMarketNetworkInterface.sol": "LaborMarketNetworkInterface"
       },
-      "libraries": {},
-      "viaIR": true
+      "libraries": {}
     },
     "sources": {
       "src/Network/interfaces/LaborMarketNetworkInterface.sol": {
@@ -95,19 +96,19 @@
   },
   "ast": {
     "absolutePath": "src/Network/interfaces/LaborMarketNetworkInterface.sol",
-    "id": 32796,
+    "id": 39255,
     "exportedSymbols": {
       "LaborMarketNetworkInterface": [
-        32795
+        39254
       ]
     },
     "nodeType": "SourceUnit",
-    "src": "32:149:57",
+    "src": "32:149:70",
     "nodes": [
       {
-        "id": 32789,
+        "id": 39248,
         "nodeType": "PragmaDirective",
-        "src": "32:23:57",
+        "src": "32:23:70",
         "literals": [
           "solidity",
           "0.8",
@@ -115,33 +116,33 @@
         ]
       },
       {
-        "id": 32795,
+        "id": 39254,
         "nodeType": "ContractDefinition",
-        "src": "57:123:57",
+        "src": "57:123:70",
         "nodes": [
           {
-            "id": 32794,
+            "id": 39253,
             "nodeType": "FunctionDefinition",
-            "src": "101:77:57",
+            "src": "101:77:70",
             "functionSelector": "8767c687",
             "implemented": false,
             "kind": "function",
             "modifiers": [],
             "name": "setCapacityImplementation",
-            "nameLocation": "110:25:57",
+            "nameLocation": "110:25:70",
             "parameters": {
-              "id": 32792,
+              "id": 39251,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 32791,
+                  "id": 39250,
                   "mutability": "mutable",
                   "name": "_implementation",
-                  "nameLocation": "144:15:57",
+                  "nameLocation": "144:15:70",
                   "nodeType": "VariableDeclaration",
-                  "scope": 32794,
-                  "src": "136:23:57",
+                  "scope": 39253,
+                  "src": "136:23:70",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -149,10 +150,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 32790,
+                    "id": 39249,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "136:7:57",
+                    "src": "136:7:70",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -162,15 +163,15 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "135:25:57"
+              "src": "135:25:70"
             },
             "returnParameters": {
-              "id": 32793,
+              "id": 39252,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "177:0:57"
+              "src": "177:0:70"
             },
-            "scope": 32795,
+            "scope": 39254,
             "stateMutability": "nonpayable",
             "virtual": false,
             "visibility": "external"
@@ -183,15 +184,15 @@
         "contractKind": "interface",
         "fullyImplemented": false,
         "linearizedBaseContracts": [
-          32795
+          39254
         ],
         "name": "LaborMarketNetworkInterface",
-        "nameLocation": "67:27:57",
-        "scope": 32796,
+        "nameLocation": "67:27:70",
+        "scope": 39255,
         "usedErrors": []
       }
     ],
     "license": "MIT"
   },
-  "id": 57
+  "id": 70
 }

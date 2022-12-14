@@ -1,0 +1,445 @@
+{
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "terms",
+          "type": "bytes"
+        },
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "to",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gasLimit",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "data",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct Transaction",
+          "name": "tx",
+          "type": "tuple"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "delegationHash",
+          "type": "bytes32"
+        }
+      ],
+      "name": "enforceCaveat",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "deployedBytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "methodIdentifiers": {
+    "enforceCaveat(bytes,(address,uint256,bytes),bytes32)": "5068de4c"
+  },
+  "rawMetadata": "{\"compiler\":{\"version\":\"0.8.17+commit.8df45f5f\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"terms\",\"type\":\"bytes\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"gasLimit\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"internalType\":\"struct Transaction\",\"name\":\"tx\",\"type\":\"tuple\"},{\"internalType\":\"bytes32\",\"name\":\"delegationHash\",\"type\":\"bytes32\"}],\"name\":\"enforceCaveat\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"lib/delegatable/CaveatEnforcer.sol\":\"CaveatEnforcer\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"none\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[\":@openzeppelin/=node_modules/@openzeppelin/\",\":@prb/math/=node_modules/@prb/math/\",\":@prb/test/=lib/prb-test/src/\",\":delegatable/=lib/delegatable/\",\":ds-test/=lib/ds-test/src/\",\":forge-std/=lib/forge-std/src/\",\":prb-test/=lib/prb-test/src/\",\":solmate/=lib/solmate/src/\"]},\"sources\":{\"lib/delegatable/CaveatEnforcer.sol\":{\"keccak256\":\"0x1b45ecb0cbc02f732487c58b1f1b5f08ad9e05e649e06821727adfdcc1b6b972\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://efb6e16141bfbda61a25732271701fcb074275ea2f3218dc405fdaa0081839ae\",\"dweb:/ipfs/QmdvC5VscLXcGPMqLHCr9sp1DqVM974irfWbL9JyQcnJ2U\"]},\"lib/delegatable/TypesAndDecoders.sol\":{\"keccak256\":\"0x503755ef25fc88df5586141f238ae10f422c830d6fd63e47ba970f80d48fd4f8\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://ed80d6642f0b08b312649d8194eacb6d113fc6e44b24c1c24cf6e352249f88ed\",\"dweb:/ipfs/QmRoo8B8n1BnY25gausX9P92Zqojybk5dWZR1W8jG7kxKW\"]},\"lib/delegatable/libraries/ECRecovery.sol\":{\"keccak256\":\"0x203c4ed012c45cbc0c74a7854fc20012d66d808e1518a0e48d6de3f55d20e40d\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://b946f583a512e33b6d16da5e0c2b491f4c30c6dab004377d71e30ae22653d065\",\"dweb:/ipfs/QmXvkAEBUfp7FZE5ygxu6fHF3579AsCwFL649jWQJibc67\"]}},\"version\":1}",
+  "metadata": {
+    "compiler": {
+      "version": "0.8.17+commit.8df45f5f"
+    },
+    "language": "Solidity",
+    "output": {
+      "abi": [
+        {
+          "inputs": [
+            {
+              "internalType": "bytes",
+              "name": "terms",
+              "type": "bytes"
+            },
+            {
+              "internalType": "struct Transaction",
+              "name": "tx",
+              "type": "tuple",
+              "components": [
+                {
+                  "internalType": "address",
+                  "name": "to",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "gasLimit",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "data",
+                  "type": "bytes"
+                }
+              ]
+            },
+            {
+              "internalType": "bytes32",
+              "name": "delegationHash",
+              "type": "bytes32"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function",
+          "name": "enforceCaveat",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ]
+        }
+      ],
+      "devdoc": {
+        "kind": "dev",
+        "methods": {},
+        "version": 1
+      },
+      "userdoc": {
+        "kind": "user",
+        "methods": {},
+        "version": 1
+      }
+    },
+    "settings": {
+      "remappings": [
+        ":@openzeppelin/=node_modules/@openzeppelin/",
+        ":@prb/math/=node_modules/@prb/math/",
+        ":@prb/test/=lib/prb-test/src/",
+        ":delegatable/=lib/delegatable/",
+        ":ds-test/=lib/ds-test/src/",
+        ":forge-std/=lib/forge-std/src/",
+        ":prb-test/=lib/prb-test/src/",
+        ":solmate/=lib/solmate/src/"
+      ],
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "metadata": {
+        "bytecodeHash": "none"
+      },
+      "compilationTarget": {
+        "lib/delegatable/CaveatEnforcer.sol": "CaveatEnforcer"
+      },
+      "libraries": {}
+    },
+    "sources": {
+      "lib/delegatable/CaveatEnforcer.sol": {
+        "keccak256": "0x1b45ecb0cbc02f732487c58b1f1b5f08ad9e05e649e06821727adfdcc1b6b972",
+        "urls": [
+          "bzz-raw://efb6e16141bfbda61a25732271701fcb074275ea2f3218dc405fdaa0081839ae",
+          "dweb:/ipfs/QmdvC5VscLXcGPMqLHCr9sp1DqVM974irfWbL9JyQcnJ2U"
+        ],
+        "license": "MIT"
+      },
+      "lib/delegatable/TypesAndDecoders.sol": {
+        "keccak256": "0x503755ef25fc88df5586141f238ae10f422c830d6fd63e47ba970f80d48fd4f8",
+        "urls": [
+          "bzz-raw://ed80d6642f0b08b312649d8194eacb6d113fc6e44b24c1c24cf6e352249f88ed",
+          "dweb:/ipfs/QmRoo8B8n1BnY25gausX9P92Zqojybk5dWZR1W8jG7kxKW"
+        ],
+        "license": "MIT"
+      },
+      "lib/delegatable/libraries/ECRecovery.sol": {
+        "keccak256": "0x203c4ed012c45cbc0c74a7854fc20012d66d808e1518a0e48d6de3f55d20e40d",
+        "urls": [
+          "bzz-raw://b946f583a512e33b6d16da5e0c2b491f4c30c6dab004377d71e30ae22653d065",
+          "dweb:/ipfs/QmXvkAEBUfp7FZE5ygxu6fHF3579AsCwFL649jWQJibc67"
+        ],
+        "license": "MIT"
+      }
+    },
+    "version": 1
+  },
+  "ast": {
+    "absolutePath": "lib/delegatable/CaveatEnforcer.sol",
+    "id": 16,
+    "exportedSymbols": {
+      "CAVEAT_TYPEHASH": [
+        739
+      ],
+      "Caveat": [
+        734
+      ],
+      "CaveatEnforcer": [
+        15
+      ],
+      "DELEGATION_TYPEHASH": [
+        729
+      ],
+      "Delegation": [
+        724
+      ],
+      "ECRecovery": [
+        1225
+      ],
+      "EIP712DOMAIN_TYPEHASH": [
+        656
+      ],
+      "EIP712Decoder": [
+        1084
+      ],
+      "EIP712Domain": [
+        651
+      ],
+      "INVOCATIONS_TYPEHASH": [
+        682
+      ],
+      "INVOCATION_TYPEHASH": [
+        669
+      ],
+      "Invocation": [
+        664
+      ],
+      "Invocations": [
+        677
+      ],
+      "REPLAYPROTECTION_TYPEHASH": [
+        715
+      ],
+      "ReplayProtection": [
+        710
+      ],
+      "SIGNEDDELEGATION_TYPEHASH": [
+        750
+      ],
+      "SIGNEDINVOCATION_TYPEHASH": [
+        693
+      ],
+      "SignedDelegation": [
+        745
+      ],
+      "SignedInvocation": [
+        688
+      ],
+      "TRANSACTION_TYPEHASH": [
+        705
+      ],
+      "Transaction": [
+        700
+      ]
+    },
+    "nodeType": "SourceUnit",
+    "src": "31:256:0",
+    "nodes": [
+      {
+        "id": 1,
+        "nodeType": "PragmaDirective",
+        "src": "31:24:0",
+        "literals": [
+          "solidity",
+          "^",
+          "0.8",
+          ".15"
+        ]
+      },
+      {
+        "id": 2,
+        "nodeType": "ImportDirective",
+        "src": "57:32:0",
+        "absolutePath": "lib/delegatable/TypesAndDecoders.sol",
+        "file": "./TypesAndDecoders.sol",
+        "nameLocation": "-1:-1:-1",
+        "scope": 16,
+        "sourceUnit": 1085,
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "id": 15,
+        "nodeType": "ContractDefinition",
+        "src": "91:195:0",
+        "nodes": [
+          {
+            "id": 14,
+            "nodeType": "FunctionDefinition",
+            "src": "130:154:0",
+            "functionSelector": "5068de4c",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "enforceCaveat",
+            "nameLocation": "139:13:0",
+            "parameters": {
+              "id": 10,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 4,
+                  "mutability": "mutable",
+                  "name": "terms",
+                  "nameLocation": "177:5:0",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14,
+                  "src": "162:20:0",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_calldata_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 3,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "162:5:0",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 7,
+                  "mutability": "mutable",
+                  "name": "tx",
+                  "nameLocation": "213:2:0",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14,
+                  "src": "192:23:0",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_Transaction_$700_calldata_ptr",
+                    "typeString": "struct Transaction"
+                  },
+                  "typeName": {
+                    "id": 6,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 5,
+                      "name": "Transaction",
+                      "nameLocations": [
+                        "192:11:0"
+                      ],
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 700,
+                      "src": "192:11:0"
+                    },
+                    "referencedDeclaration": 700,
+                    "src": "192:11:0",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_Transaction_$700_storage_ptr",
+                      "typeString": "struct Transaction"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 9,
+                  "mutability": "mutable",
+                  "name": "delegationHash",
+                  "nameLocation": "233:14:0",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14,
+                  "src": "225:22:0",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes32",
+                    "typeString": "bytes32"
+                  },
+                  "typeName": {
+                    "id": 8,
+                    "name": "bytes32",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "225:7:0",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes32",
+                      "typeString": "bytes32"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "152:101:0"
+            },
+            "returnParameters": {
+              "id": 13,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 12,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 14,
+                  "src": "278:4:0",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  },
+                  "typeName": {
+                    "id": 11,
+                    "name": "bool",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "278:4:0",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "277:6:0"
+            },
+            "scope": 15,
+            "stateMutability": "nonpayable",
+            "virtual": true,
+            "visibility": "public"
+          }
+        ],
+        "abstract": true,
+        "baseContracts": [],
+        "canonicalName": "CaveatEnforcer",
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "fullyImplemented": false,
+        "linearizedBaseContracts": [
+          15
+        ],
+        "name": "CaveatEnforcer",
+        "nameLocation": "109:14:0",
+        "scope": 16,
+        "usedErrors": []
+      }
+    ],
+    "license": "MIT"
+  },
+  "id": 0
+}

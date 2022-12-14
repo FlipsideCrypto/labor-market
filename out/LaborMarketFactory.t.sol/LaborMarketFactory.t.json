@@ -10,10 +10,10 @@
   },
   "ast": {
     "absolutePath": "test/LaborMarketFactory.t.sol",
-    "id": 35696,
+    "id": 44019,
     "exportedSymbols": {},
     "nodeType": "SourceUnit",
-    "src": "0:0:61"
+    "src": "0:0:75"
   },
-  "id": 61
+  "id": 75
 }

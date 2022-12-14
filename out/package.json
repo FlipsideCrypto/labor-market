@@ -1,9 +1,10 @@
 {
   "name": "labor-markets-abi",
-  "version": "1.0.5",
+  "version": "1.0.7",
   "description": "Labor markets ABI and deployed contract for the app team to utilize for integration",
   "files": [
-    "**/*.json"
+    "**/*.json",
+    "Deployments/Deployments.ts"
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
