@@ -1,6 +1,5 @@
-@prb/test/=lib/prb-test/src/
-@prb/math/=node_modules/@prb/math/
-@openzeppelin/=node_modules/@openzeppelin/
-forge-std/=lib/forge-std/src/
-solmate/=lib/solmate/src/
 delegatable/=lib/delegatable/
+ds-test/=lib/ds-test/src/
+forge-std/=lib/forge-std/src/
+prb-test/=lib/prb-test/src/
+solmate/=lib/solmate/src/

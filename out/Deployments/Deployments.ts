@@ -1,4 +1,4 @@
-import PaymentTokenABI from "../ERC20.sol/ERC20.json";
+import PaymentTokenABI from "../ERC1155.sol/ERC1155.json";
 import AnyReputationTokenABI from "../ERC1155.sol/ERC1155.json";
 import LaborMarketABI from "../LaborMarket.sol/LaborMarket.json";
 import ReputationEngineABI from "../ReputationEngine.sol/ReputationEngine.json";
