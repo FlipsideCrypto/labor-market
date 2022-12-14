@@ -1,0 +1,1315 @@
+{
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "requestId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getRequest",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "serviceRequester",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "pToken",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "pTokenId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "pTokenQ",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "signalExp",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "submissionExp",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "enforcementExp",
+              "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "uri",
+              "type": "string"
+            }
+          ],
+          "internalType": "struct LaborMarketInterface.ServiceRequest",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "submissionId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getSubmission",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "serviceProvider",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "requestId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            },
+            {
+              "internalType": "string",
+              "name": "uri",
+              "type": "string"
+            },
+            {
+              "internalType": "uint256[]",
+              "name": "scores",
+              "type": "uint256[]"
+            },
+            {
+              "internalType": "bool",
+              "name": "reviewed",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct LaborMarketInterface.ServiceSubmission",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "network",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "enforcementModule",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "paymentModule",
+              "type": "address"
+            },
+            {
+              "internalType": "string",
+              "name": "marketUri",
+              "type": "string"
+            },
+            {
+              "internalType": "address",
+              "name": "delegateBadge",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "delegateTokenId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "maintainerBadge",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "maintainerTokenId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "reputationModule",
+              "type": "address"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "address",
+                  "name": "reputationEngine",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "signalStake",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "providerThreshold",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "maintainerThreshold",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct ReputationModuleInterface.ReputationMarketConfig",
+              "name": "reputationConfig",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct LaborMarketConfigurationInterface.LaborMarketConfiguration",
+          "name": "_configuration",
+          "type": "tuple"
+        }
+      ],
+      "name": "initialize",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "deployedBytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "methodIdentifiers": {
+    "getRequest(uint256)": "c58343ef",
+    "getSubmission(uint256)": "3e8686cc",
+    "initialize((address,address,address,string,address,uint256,address,uint256,address,(address,uint256,uint256,uint256)))": "545a8b1b"
+  },
+  "rawMetadata": "{\"compiler\":{\"version\":\"0.8.17+commit.8df45f5f\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"requestId\",\"type\":\"uint256\"}],\"name\":\"getRequest\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"serviceRequester\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"pToken\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"pTokenId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"pTokenQ\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"signalExp\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"submissionExp\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"enforcementExp\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"uri\",\"type\":\"string\"}],\"internalType\":\"struct LaborMarketInterface.ServiceRequest\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"submissionId\",\"type\":\"uint256\"}],\"name\":\"getSubmission\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"serviceProvider\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"requestId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"uri\",\"type\":\"string\"},{\"internalType\":\"uint256[]\",\"name\":\"scores\",\"type\":\"uint256[]\"},{\"internalType\":\"bool\",\"name\":\"reviewed\",\"type\":\"bool\"}],\"internalType\":\"struct LaborMarketInterface.ServiceSubmission\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"network\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"enforcementModule\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"paymentModule\",\"type\":\"address\"},{\"internalType\":\"string\",\"name\":\"marketUri\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"delegateBadge\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"delegateTokenId\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"maintainerBadge\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"maintainerTokenId\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"reputationModule\",\"type\":\"address\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"reputationEngine\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"signalStake\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"providerThreshold\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maintainerThreshold\",\"type\":\"uint256\"}],\"internalType\":\"struct ReputationModuleInterface.ReputationMarketConfig\",\"name\":\"reputationConfig\",\"type\":\"tuple\"}],\"internalType\":\"struct LaborMarketConfigurationInterface.LaborMarketConfiguration\",\"name\":\"_configuration\",\"type\":\"tuple\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"src/LaborMarket/interfaces/LaborMarketInterface.sol\":\"LaborMarketInterface\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"none\"},\"optimizer\":{\"enabled\":true,\"runs\":10000},\"remappings\":[\":@openzeppelin/=node_modules/@openzeppelin/\",\":@prb/test/=lib/prb-test/src/\",\":ds-test/=lib/forge-std/lib/ds-test/src/\",\":forge-std/=lib/forge-std/src/\",\":prb-test/=lib/prb-test/src/\",\":solmate/=lib/solmate/src/\"],\"viaIR\":true},\"sources\":{\"src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol\":{\"keccak256\":\"0xe430ec0d49cc27c636c2467005b579f6b30e3a62856637c24e38e0e42fe5f34e\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://140243d9e730ee334b899d8bac586d5861ce6a5302363e5266f116a2b0b3474b\",\"dweb:/ipfs/QmXvK21G2QjbDVMz5Gs5cNig9AuJzGkmmfDKYghRfGSDqP\"]},\"src/LaborMarket/interfaces/LaborMarketInterface.sol\":{\"keccak256\":\"0xbc3c24195729ccf40f27944a6f0823e20c6e9cc7a57f19168b99b3588cbed9d8\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://679f25a964087bec4e45b50c9b18fa6d106be1e77b0ba72a9f7582413916530e\",\"dweb:/ipfs/QmbVjbsAYBAGbSkWPLZ4sBsamniYSuviaRsXdjgEzBgamh\"]},\"src/Modules/Reputation/interfaces/ReputationEngineInterface.sol\":{\"keccak256\":\"0x27fe0cf30f911af658dee454e95ba294469d7cec7baec2f02b444cc7abf4cac0\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://d8b9eb7229a0d0b06eed0f0b3b49a14f6c335cffafed10cf7dae6abaaeaecd61\",\"dweb:/ipfs/QmVFybAG2HayPb1hW4SVThWPFhfgtwsvMeu6xXeKsF4gyt\"]},\"src/Modules/Reputation/interfaces/ReputationModuleInterface.sol\":{\"keccak256\":\"0x46214f0c7acaa72bc7ea78d5525f28f3d09910215e3ae49d514d5e6a01ff0333\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://2c76d5179827d0e254a214812748832c9d285e4b5d84f164b07857a2e15734c2\",\"dweb:/ipfs/QmY23kGNrhnKzSCLye442ngnegX4uvoSrFCjbnou7NKwsT\"]}},\"version\":1}",
+  "metadata": {
+    "compiler": {
+      "version": "0.8.17+commit.8df45f5f"
+    },
+    "language": "Solidity",
+    "output": {
+      "abi": [
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "requestId",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function",
+          "name": "getRequest",
+          "outputs": [
+            {
+              "internalType": "struct LaborMarketInterface.ServiceRequest",
+              "name": "",
+              "type": "tuple",
+              "components": [
+                {
+                  "internalType": "address",
+                  "name": "serviceRequester",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "pToken",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "pTokenId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "pTokenQ",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "signalExp",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "submissionExp",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "enforcementExp",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "string",
+                  "name": "uri",
+                  "type": "string"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "uint256",
+              "name": "submissionId",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function",
+          "name": "getSubmission",
+          "outputs": [
+            {
+              "internalType": "struct LaborMarketInterface.ServiceSubmission",
+              "name": "",
+              "type": "tuple",
+              "components": [
+                {
+                  "internalType": "address",
+                  "name": "serviceProvider",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "requestId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "timestamp",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "string",
+                  "name": "uri",
+                  "type": "string"
+                },
+                {
+                  "internalType": "uint256[]",
+                  "name": "scores",
+                  "type": "uint256[]"
+                },
+                {
+                  "internalType": "bool",
+                  "name": "reviewed",
+                  "type": "bool"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "inputs": [
+            {
+              "internalType": "struct LaborMarketConfigurationInterface.LaborMarketConfiguration",
+              "name": "_configuration",
+              "type": "tuple",
+              "components": [
+                {
+                  "internalType": "address",
+                  "name": "network",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "enforcementModule",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "paymentModule",
+                  "type": "address"
+                },
+                {
+                  "internalType": "string",
+                  "name": "marketUri",
+                  "type": "string"
+                },
+                {
+                  "internalType": "address",
+                  "name": "delegateBadge",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "delegateTokenId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "address",
+                  "name": "maintainerBadge",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "maintainerTokenId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "address",
+                  "name": "reputationModule",
+                  "type": "address"
+                },
+                {
+                  "internalType": "struct ReputationModuleInterface.ReputationMarketConfig",
+                  "name": "reputationConfig",
+                  "type": "tuple",
+                  "components": [
+                    {
+                      "internalType": "address",
+                      "name": "reputationEngine",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "signalStake",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "providerThreshold",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "maintainerThreshold",
+                      "type": "uint256"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function",
+          "name": "initialize"
+        }
+      ],
+      "devdoc": {
+        "kind": "dev",
+        "methods": {},
+        "version": 1
+      },
+      "userdoc": {
+        "kind": "user",
+        "methods": {},
+        "version": 1
+      }
+    },
+    "settings": {
+      "remappings": [
+        ":@openzeppelin/=node_modules/@openzeppelin/",
+        ":@prb/test/=lib/prb-test/src/",
+        ":ds-test/=lib/forge-std/lib/ds-test/src/",
+        ":forge-std/=lib/forge-std/src/",
+        ":prb-test/=lib/prb-test/src/",
+        ":solmate/=lib/solmate/src/"
+      ],
+      "optimizer": {
+        "enabled": true,
+        "runs": 10000
+      },
+      "metadata": {
+        "bytecodeHash": "none"
+      },
+      "compilationTarget": {
+        "src/LaborMarket/interfaces/LaborMarketInterface.sol": "LaborMarketInterface"
+      },
+      "libraries": {},
+      "viaIR": true
+    },
+    "sources": {
+      "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol": {
+        "keccak256": "0xe430ec0d49cc27c636c2467005b579f6b30e3a62856637c24e38e0e42fe5f34e",
+        "urls": [
+          "bzz-raw://140243d9e730ee334b899d8bac586d5861ce6a5302363e5266f116a2b0b3474b",
+          "dweb:/ipfs/QmXvK21G2QjbDVMz5Gs5cNig9AuJzGkmmfDKYghRfGSDqP"
+        ],
+        "license": "MIT"
+      },
+      "src/LaborMarket/interfaces/LaborMarketInterface.sol": {
+        "keccak256": "0xbc3c24195729ccf40f27944a6f0823e20c6e9cc7a57f19168b99b3588cbed9d8",
+        "urls": [
+          "bzz-raw://679f25a964087bec4e45b50c9b18fa6d106be1e77b0ba72a9f7582413916530e",
+          "dweb:/ipfs/QmbVjbsAYBAGbSkWPLZ4sBsamniYSuviaRsXdjgEzBgamh"
+        ],
+        "license": "MIT"
+      },
+      "src/Modules/Reputation/interfaces/ReputationEngineInterface.sol": {
+        "keccak256": "0x27fe0cf30f911af658dee454e95ba294469d7cec7baec2f02b444cc7abf4cac0",
+        "urls": [
+          "bzz-raw://d8b9eb7229a0d0b06eed0f0b3b49a14f6c335cffafed10cf7dae6abaaeaecd61",
+          "dweb:/ipfs/QmVFybAG2HayPb1hW4SVThWPFhfgtwsvMeu6xXeKsF4gyt"
+        ],
+        "license": "MIT"
+      },
+      "src/Modules/Reputation/interfaces/ReputationModuleInterface.sol": {
+        "keccak256": "0x46214f0c7acaa72bc7ea78d5525f28f3d09910215e3ae49d514d5e6a01ff0333",
+        "urls": [
+          "bzz-raw://2c76d5179827d0e254a214812748832c9d285e4b5d84f164b07857a2e15734c2",
+          "dweb:/ipfs/QmY23kGNrhnKzSCLye442ngnegX4uvoSrFCjbnou7NKwsT"
+        ],
+        "license": "MIT"
+      }
+    },
+    "version": 1
+  },
+  "ast": {
+    "absolutePath": "src/LaborMarket/interfaces/LaborMarketInterface.sol",
+    "id": 30502,
+    "exportedSymbols": {
+      "LaborMarketConfigurationInterface": [
+        30436
+      ],
+      "LaborMarketInterface": [
+        30501
+      ]
+    },
+    "nodeType": "SourceUnit",
+    "src": "33:1052:43",
+    "nodes": [
+      {
+        "id": 30438,
+        "nodeType": "PragmaDirective",
+        "src": "33:23:43",
+        "literals": [
+          "solidity",
+          "0.8",
+          ".17"
+        ]
+      },
+      {
+        "id": 30440,
+        "nodeType": "ImportDirective",
+        "src": "58:90:43",
+        "absolutePath": "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol",
+        "file": "./LaborMarketConfigurationInterface.sol",
+        "nameLocation": "-1:-1:-1",
+        "scope": 30502,
+        "sourceUnit": 30437,
+        "symbolAliases": [
+          {
+            "foreign": {
+              "id": 30439,
+              "name": "LaborMarketConfigurationInterface",
+              "nodeType": "Identifier",
+              "overloadedDeclarations": [],
+              "referencedDeclaration": 30436,
+              "src": "66:33:43",
+              "typeDescriptions": {}
+            },
+            "nameLocation": "-1:-1:-1"
+          }
+        ],
+        "unitAlias": ""
+      },
+      {
+        "id": 30501,
+        "nodeType": "ContractDefinition",
+        "src": "150:934:43",
+        "nodes": [
+          {
+            "id": 30459,
+            "nodeType": "StructDefinition",
+            "src": "224:248:43",
+            "canonicalName": "LaborMarketInterface.ServiceRequest",
+            "members": [
+              {
+                "constant": false,
+                "id": 30444,
+                "mutability": "mutable",
+                "name": "serviceRequester",
+                "nameLocation": "264:16:43",
+                "nodeType": "VariableDeclaration",
+                "scope": 30459,
+                "src": "256:24:43",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                },
+                "typeName": {
+                  "id": 30443,
+                  "name": "address",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "256:7:43",
+                  "stateMutability": "nonpayable",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 30446,
+                "mutability": "mutable",
+                "name": "pToken",
+                "nameLocation": "298:6:43",
+                "nodeType": "VariableDeclaration",
+                "scope": 30459,
+                "src": "290:14:43",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                },
+                "typeName": {
+                  "id": 30445,
+                  "name": "address",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "290:7:43",
+                  "stateMutability": "nonpayable",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 30448,
+                "mutability": "mutable",
+                "name": "pTokenId",
+                "nameLocation": "322:8:43",
+                "nodeType": "VariableDeclaration",
+                "scope": 30459,
+                "src": "314:16:43",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 30447,
+                  "name": "uint256",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "314:7:43",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 30450,
+                "mutability": "mutable",
+                "name": "pTokenQ",
+                "nameLocation": "348:7:43",
+                "nodeType": "VariableDeclaration",
+                "scope": 30459,
+                "src": "340:15:43",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 30449,
+                  "name": "uint256",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "340:7:43",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 30452,
+                "mutability": "mutable",
+                "name": "signalExp",
+                "nameLocation": "373:9:43",
+                "nodeType": "VariableDeclaration",
+                "scope": 30459,
+                "src": "365:17:43",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 30451,
+                  "name": "uint256",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "365:7:43",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 30454,
+                "mutability": "mutable",
+                "name": "submissionExp",
+                "nameLocation": "400:13:43",
+                "nodeType": "VariableDeclaration",
+                "scope": 30459,
+                "src": "392:21:43",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 30453,
+                  "name": "uint256",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "392:7:43",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 30456,
+                "mutability": "mutable",
+                "name": "enforcementExp",
+                "nameLocation": "431:14:43",
+                "nodeType": "VariableDeclaration",
+                "scope": 30459,
+                "src": "423:22:43",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 30455,
+                  "name": "uint256",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "423:7:43",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 30458,
+                "mutability": "mutable",
+                "name": "uri",
+                "nameLocation": "462:3:43",
+                "nodeType": "VariableDeclaration",
+                "scope": 30459,
+                "src": "455:10:43",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_string_storage_ptr",
+                  "typeString": "string"
+                },
+                "typeName": {
+                  "id": 30457,
+                  "name": "string",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "455:6:43",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_storage_ptr",
+                    "typeString": "string"
+                  }
+                },
+                "visibility": "internal"
+              }
+            ],
+            "name": "ServiceRequest",
+            "nameLocation": "231:14:43",
+            "scope": 30501,
+            "visibility": "public"
+          },
+          {
+            "id": 30473,
+            "nodeType": "StructDefinition",
+            "src": "478:188:43",
+            "canonicalName": "LaborMarketInterface.ServiceSubmission",
+            "members": [
+              {
+                "constant": false,
+                "id": 30461,
+                "mutability": "mutable",
+                "name": "serviceProvider",
+                "nameLocation": "521:15:43",
+                "nodeType": "VariableDeclaration",
+                "scope": 30473,
+                "src": "513:23:43",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                },
+                "typeName": {
+                  "id": 30460,
+                  "name": "address",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "513:7:43",
+                  "stateMutability": "nonpayable",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 30463,
+                "mutability": "mutable",
+                "name": "requestId",
+                "nameLocation": "554:9:43",
+                "nodeType": "VariableDeclaration",
+                "scope": 30473,
+                "src": "546:17:43",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 30462,
+                  "name": "uint256",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "546:7:43",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 30465,
+                "mutability": "mutable",
+                "name": "timestamp",
+                "nameLocation": "581:9:43",
+                "nodeType": "VariableDeclaration",
+                "scope": 30473,
+                "src": "573:17:43",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 30464,
+                  "name": "uint256",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "573:7:43",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 30467,
+                "mutability": "mutable",
+                "name": "uri",
+                "nameLocation": "607:3:43",
+                "nodeType": "VariableDeclaration",
+                "scope": 30473,
+                "src": "600:10:43",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_string_storage_ptr",
+                  "typeString": "string"
+                },
+                "typeName": {
+                  "id": 30466,
+                  "name": "string",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "600:6:43",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_storage_ptr",
+                    "typeString": "string"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 30470,
+                "mutability": "mutable",
+                "name": "scores",
+                "nameLocation": "630:6:43",
+                "nodeType": "VariableDeclaration",
+                "scope": 30473,
+                "src": "620:16:43",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_array$_t_uint256_$dyn_storage_ptr",
+                  "typeString": "uint256[]"
+                },
+                "typeName": {
+                  "baseType": {
+                    "id": 30468,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "620:7:43",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "id": 30469,
+                  "nodeType": "ArrayTypeName",
+                  "src": "620:9:43",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_uint256_$dyn_storage_ptr",
+                    "typeString": "uint256[]"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 30472,
+                "mutability": "mutable",
+                "name": "reviewed",
+                "nameLocation": "651:8:43",
+                "nodeType": "VariableDeclaration",
+                "scope": 30473,
+                "src": "646:13:43",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_bool",
+                  "typeString": "bool"
+                },
+                "typeName": {
+                  "id": 30471,
+                  "name": "bool",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "646:4:43",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  }
+                },
+                "visibility": "internal"
+              }
+            ],
+            "name": "ServiceSubmission",
+            "nameLocation": "485:17:43",
+            "scope": 30501,
+            "visibility": "public"
+          },
+          {
+            "id": 30478,
+            "nodeType": "StructDefinition",
+            "src": "672:78:43",
+            "canonicalName": "LaborMarketInterface.ReviewPromise",
+            "members": [
+              {
+                "constant": false,
+                "id": 30475,
+                "mutability": "mutable",
+                "name": "total",
+                "nameLocation": "711:5:43",
+                "nodeType": "VariableDeclaration",
+                "scope": 30478,
+                "src": "703:13:43",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 30474,
+                  "name": "uint256",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "703:7:43",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              },
+              {
+                "constant": false,
+                "id": 30477,
+                "mutability": "mutable",
+                "name": "remainder",
+                "nameLocation": "734:9:43",
+                "nodeType": "VariableDeclaration",
+                "scope": 30478,
+                "src": "726:17:43",
+                "stateVariable": false,
+                "storageLocation": "default",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                },
+                "typeName": {
+                  "id": 30476,
+                  "name": "uint256",
+                  "nodeType": "ElementaryTypeName",
+                  "src": "726:7:43",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  }
+                },
+                "visibility": "internal"
+              }
+            ],
+            "name": "ReviewPromise",
+            "nameLocation": "679:13:43",
+            "scope": 30501,
+            "visibility": "public"
+          },
+          {
+            "id": 30484,
+            "nodeType": "FunctionDefinition",
+            "src": "756:87:43",
+            "functionSelector": "545a8b1b",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "initialize",
+            "nameLocation": "765:10:43",
+            "parameters": {
+              "id": 30482,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 30481,
+                  "mutability": "mutable",
+                  "name": "_configuration",
+                  "nameLocation": "810:14:43",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 30484,
+                  "src": "776:48:43",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_LaborMarketConfiguration_$30435_calldata_ptr",
+                    "typeString": "struct LaborMarketConfigurationInterface.LaborMarketConfiguration"
+                  },
+                  "typeName": {
+                    "id": 30480,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 30479,
+                      "name": "LaborMarketConfiguration",
+                      "nameLocations": [
+                        "776:24:43"
+                      ],
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 30435,
+                      "src": "776:24:43"
+                    },
+                    "referencedDeclaration": 30435,
+                    "src": "776:24:43",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_LaborMarketConfiguration_$30435_storage_ptr",
+                      "typeString": "struct LaborMarketConfigurationInterface.LaborMarketConfiguration"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "775:50:43"
+            },
+            "returnParameters": {
+              "id": 30483,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "842:0:43"
+            },
+            "scope": 30501,
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "id": 30492,
+            "nodeType": "FunctionDefinition",
+            "src": "849:118:43",
+            "functionSelector": "3e8686cc",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getSubmission",
+            "nameLocation": "858:13:43",
+            "parameters": {
+              "id": 30487,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 30486,
+                  "mutability": "mutable",
+                  "name": "submissionId",
+                  "nameLocation": "880:12:43",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 30492,
+                  "src": "872:20:43",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 30485,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "872:7:43",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "871:22:43"
+            },
+            "returnParameters": {
+              "id": 30491,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 30490,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 30492,
+                  "src": "941:24:43",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_ServiceSubmission_$30473_memory_ptr",
+                    "typeString": "struct LaborMarketInterface.ServiceSubmission"
+                  },
+                  "typeName": {
+                    "id": 30489,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 30488,
+                      "name": "ServiceSubmission",
+                      "nameLocations": [
+                        "941:17:43"
+                      ],
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 30473,
+                      "src": "941:17:43"
+                    },
+                    "referencedDeclaration": 30473,
+                    "src": "941:17:43",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_ServiceSubmission_$30473_storage_ptr",
+                      "typeString": "struct LaborMarketInterface.ServiceSubmission"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "940:26:43"
+            },
+            "scope": 30501,
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "id": 30500,
+            "nodeType": "FunctionDefinition",
+            "src": "973:109:43",
+            "functionSelector": "c58343ef",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getRequest",
+            "nameLocation": "982:10:43",
+            "parameters": {
+              "id": 30495,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 30494,
+                  "mutability": "mutable",
+                  "name": "requestId",
+                  "nameLocation": "1001:9:43",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 30500,
+                  "src": "993:17:43",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 30493,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "993:7:43",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "992:19:43"
+            },
+            "returnParameters": {
+              "id": 30499,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 30498,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 30500,
+                  "src": "1059:21:43",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_struct$_ServiceRequest_$30459_memory_ptr",
+                    "typeString": "struct LaborMarketInterface.ServiceRequest"
+                  },
+                  "typeName": {
+                    "id": 30497,
+                    "nodeType": "UserDefinedTypeName",
+                    "pathNode": {
+                      "id": 30496,
+                      "name": "ServiceRequest",
+                      "nameLocations": [
+                        "1059:14:43"
+                      ],
+                      "nodeType": "IdentifierPath",
+                      "referencedDeclaration": 30459,
+                      "src": "1059:14:43"
+                    },
+                    "referencedDeclaration": 30459,
+                    "src": "1059:14:43",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_struct$_ServiceRequest_$30459_storage_ptr",
+                      "typeString": "struct LaborMarketInterface.ServiceRequest"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1058:23:43"
+            },
+            "scope": 30501,
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          }
+        ],
+        "abstract": false,
+        "baseContracts": [
+          {
+            "baseName": {
+              "id": 30441,
+              "name": "LaborMarketConfigurationInterface",
+              "nameLocations": [
+                "184:33:43"
+              ],
+              "nodeType": "IdentifierPath",
+              "referencedDeclaration": 30436,
+              "src": "184:33:43"
+            },
+            "id": 30442,
+            "nodeType": "InheritanceSpecifier",
+            "src": "184:33:43"
+          }
+        ],
+        "canonicalName": "LaborMarketInterface",
+        "contractDependencies": [],
+        "contractKind": "interface",
+        "fullyImplemented": false,
+        "linearizedBaseContracts": [
+          30501,
+          30436
+        ],
+        "name": "LaborMarketInterface",
+        "nameLocation": "160:20:43",
+        "scope": 30502,
+        "usedErrors": []
+      }
+    ],
+    "license": "MIT"
+  },
+  "id": 43
+}
