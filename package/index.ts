@@ -1,13 +1,13 @@
-import { abi as PaymentTokenABI } from "./abis/ERC1155";
-import { abi as AnyReputationTokenABI } from "./abis/ERC1155";
-import { abi as LaborMarketABI } from "./abis/LaborMarket";
-import { abi as ReputationEngineABI } from "./abis/ReputationEngine";
-import { abi as LaborMarketFactoryABI } from "./abis/LaborMarketFactory";
-import { abi as LaborMarketNetworkABI } from "./abis/LaborMarketNetwork";
-import { abi as ReputationModuleABI } from "./abis/ReputationModule";
-import { abi as LikertEnforcementABI } from "./abis/LikertEnforcementCriteria";
-import { abi as PaymentModuleABI } from "./abis/PaymentModule";
-import { abi as PayCurveABI } from "./abis/PayCurve";
+import { abi as PaymentTokenABI } from "./dist/abis/ERC1155";
+import { abi as AnyReputationTokenABI } from "./dist/abis/ERC1155";
+import { abi as LaborMarketABI } from "./dist/abis/LaborMarket";
+import { abi as ReputationEngineABI } from "./dist/abis/ReputationEngine";
+import { abi as LaborMarketFactoryABI } from "./dist/abis/LaborMarketFactory";
+import { abi as LaborMarketNetworkABI } from "./dist/abis/LaborMarketNetwork";
+import { abi as ReputationModuleABI } from "./dist/abis/ReputationModule";
+import { abi as LikertEnforcementABI } from "./dist/abis/LikertEnforcementCriteria";
+import { abi as PaymentModuleABI } from "./dist/abis/PaymentModule";
+import { abi as PayCurveABI } from "./dist/abis/PayCurve";
 
 export const PaymentToken = {
     "address": "0xc932d7b29390bdbd94057457392731fb7b1f856c",
