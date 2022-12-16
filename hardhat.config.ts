@@ -9,7 +9,7 @@ function getRemappings() {
   return fs
     .readFileSync("remappings.txt", "utf8")
     .split("\n")
-    .filter(Boolean)
+    .filter(Boolean) // remove empty lines
     .map((line) => line.trim().split("="));
 }
 
@@ -24,16 +24,20 @@ const config: HardhatUserConfig = {
     },
   },
   abiExporter: {
-    path: 'abis/',
+    path: 'package/abis',
     runOnCompile: true,
     clear: true,
     flat: true,
     spacing: 2,
-    format: "minimal"
+    format: "json"
   },
   paths: {
     sources: "./src", // Use ./src rather than ./contracts as Hardhat expects
     cache: "./cache_hardhat", // Use a different cache for Hardhat than Foundry
+
+  },
+  typechain: {
+    outDir: 'package/types'
   },
   // This fully resolves paths for imports in the ./lib directory for Hardhat
   preprocess: {

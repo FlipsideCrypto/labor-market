@@ -1,5 +1,4 @@
-delegatable/=lib/delegatable/
-ds-test/=lib/ds-test/src/
+@prb/test/=lib/prb-test/src/
 forge-std/=lib/forge-std/src/
-prb-test/=lib/prb-test/src/
 solmate/=lib/solmate/src/
+@openzeppelin/=node_modules/@openzeppelin/
