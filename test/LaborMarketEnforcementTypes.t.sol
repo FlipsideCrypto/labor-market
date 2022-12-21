@@ -31,7 +31,7 @@ import {PayCurve} from "src/Modules/Payment/PayCurve.sol";
 import {LaborMarketConfigurationInterface} from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
 import {LaborMarketNetworkInterface} from "src/Network/interfaces/LaborMarketNetworkInterface.sol";
 
-contract ContractTest is PRBTest, StdCheats {
+contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
     AnyReputationToken public repToken;
     PaymentToken public payToken;
 
