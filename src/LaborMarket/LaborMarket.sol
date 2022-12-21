@@ -167,7 +167,7 @@ contract LaborMarket is
                 _msgSender(),
                 configuration.delegateTokenId
             ) >= 1),
-            "LaborMarket::permittedParticipant: Not a delegate."
+            "LaborMarket::onlyDelegate: Not a delegate."
         );
         _;
     }

@@ -23,7 +23,6 @@ import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/Reput
 
 import {LikertEnforcementCriteria} from "src/Modules/Enforcement/LikertEnforcementCriteria.sol";
 
-import {PaymentModule} from "src/Modules/Payment/PaymentModule.sol";
 import {PayCurve} from "src/Modules/Payment/PayCurve.sol";
 
 import {LaborMarketConfigurationInterface} from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
@@ -46,7 +45,6 @@ contract ContractTest is PRBTest, StdCheats {
     LaborMarketNetwork public network;
 
     LikertEnforcementCriteria public enforcementCriteria;
-    PaymentModule public paymentModule;
     PayCurve public payCurve;
 
     // Define the tokenIds for ERC1155
@@ -172,9 +170,6 @@ contract ContractTest is PRBTest, StdCheats {
 
         // Create enforcement criteria
         enforcementCriteria = new LikertEnforcementCriteria();
-
-        // Create a payment module
-        paymentModule = new PaymentModule();
 
         // Create a new pay curve
         payCurve = new PayCurve();
