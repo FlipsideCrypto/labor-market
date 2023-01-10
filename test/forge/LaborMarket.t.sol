@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 // Testing imports
 import {StdCheats} from "forge-std/StdCheats.sol";
 import {console} from "forge-std/console.sol";
-import {PRBTest} from "@prb/test/PRBTest.sol";
+import {PRBTest} from "prb-test/PRBTest.sol";
 
 // Contracts
 import {AnyReputationToken, PaymentToken} from "./Helpers/HelperTokens.sol";

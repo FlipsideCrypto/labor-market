@@ -34,7 +34,8 @@ const config: HardhatUserConfig = {
   paths: {
     sources: "./src", // Use ./src rather than ./contracts as Hardhat expects
     cache: "./cache_hardhat", // Use a different cache for Hardhat than Foundry
-
+    tests: "./test/hardhat",
+    
   },
   typechain: {
     outDir: 'package/types'
@@ -44,11 +45,12 @@ const config: HardhatUserConfig = {
     eachLine: (hre) => ({
       transform: (line: string) => {
         if (line.match(/^\s*import /i)) {
-          getRemappings().forEach(([find, replace]) => {
-            if (line.match(find)) {
-              line = line.replace(find, replace);
+          for (const [from, to] of getRemappings()) {
+            if (line.includes(from)) {
+              line = line.replace(from, to);
+              break;
             }
-          });
+          }
         }
         return line;
       },

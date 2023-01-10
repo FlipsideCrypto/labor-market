@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import {Script} from "forge-std/Script.sol";
 
-import {AnyReputationToken, PaymentToken} from "test/Helpers/HelperTokens.sol";
+import {AnyReputationToken, PaymentToken} from "test/forge/Helpers/HelperTokens.sol";
 
 import {ReputationEngineInterface} from "src/Modules/Reputation/interfaces/ReputationEngineInterface.sol";
 import {ReputationEngine} from "src/Modules/Reputation/ReputationEngine.sol";
