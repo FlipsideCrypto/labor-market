@@ -106,7 +106,6 @@ contract ContractTest is PRBTest, StdCheats {
         uint256 indexed requestId,
         string indexed uri,
         address pToken,
-        uint256 pTokenId,
         uint256 pTokenQ,
         uint256 signalExp,
         uint256 submissionExp,
@@ -363,7 +362,6 @@ contract ContractTest is PRBTest, StdCheats {
     {
         uint256 rid = simpleMarket.submitRequest({
             pToken: address(payToken),
-            pTokenId: PAYMENT_TOKEN_ID,
             pTokenQ: 1000e18,
             signalExp: block.timestamp + 1 hours,
             submissionExp: block.timestamp + 1 days,

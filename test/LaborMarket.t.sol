@@ -95,7 +95,6 @@ contract ContractTest is PRBTest, StdCheats {
         uint256 indexed requestId,
         string indexed uri,
         address pToken,
-        uint256 pTokenId,
         uint256 pTokenQ,
         uint256 signalExp,
         uint256 submissionExp,
@@ -262,7 +261,6 @@ contract ContractTest is PRBTest, StdCheats {
     {
         uint256 rid = simpleMarket.submitRequest({
             pToken: address(payToken),
-            pTokenId: PAYMENT_TOKEN_ID,
             pTokenQ: 1000e18,
             signalExp: block.timestamp + 1 hours,
             submissionExp: block.timestamp + 1 days,
@@ -302,7 +300,6 @@ contract ContractTest is PRBTest, StdCheats {
         // Create a request
         uint256 requestId = market.submitRequest({
             pToken: address(payToken),
-            pTokenId: PAYMENT_TOKEN_ID,
             pTokenQ: 100e18,
             signalExp: block.timestamp + 1 hours,
             submissionExp: block.timestamp + 1 days,
@@ -525,7 +522,6 @@ contract ContractTest is PRBTest, StdCheats {
 
         // Verify service request creation event
         address pToken = address(payToken);
-        uint256 pTokenId = PAYMENT_TOKEN_ID;
         uint256 pTokenQ = 1000e18;
         uint256 signalExp = block.timestamp + 1 hours;
         uint256 submissionExp = block.timestamp + 1 days;
@@ -539,7 +535,6 @@ contract ContractTest is PRBTest, StdCheats {
             serviceRequestId,
             requestUri,
             pToken,
-            pTokenId,
             pTokenQ,
             signalExp,
             submissionExp,

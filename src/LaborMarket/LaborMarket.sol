@@ -84,8 +84,11 @@ contract LaborMarket is
     /// @notice emitted when a new labor market is created.
     event LaborMarketCreated(
         uint256 indexed marketId,
+        address indexed owner,
         address delegateBadge,
+        uint256 delegateBadgeId,
         address maintainerBadge,
+        uint256 maintainerBadgeId,
         address payCurve,
         address enforcementCriteria,
         uint256 repParticipantMultiplier,
@@ -104,7 +107,6 @@ contract LaborMarket is
         uint256 indexed requestId,
         string indexed uri,
         address pToken,
-        uint256 pTokenId,
         uint256 pTokenQ,
         uint256 signalExp,
         uint256 submissionExp,
@@ -212,7 +214,6 @@ contract LaborMarket is
     /**
      * @notice Creates a service request.
      * @param pToken The address of the payment token.
-     * @param pTokenId The id of the payment token.
      * @param pTokenQ The quantity of the payment token.
      * @param signalExp The signal deadline expiration.
      * @param submissionExp The submission deadline expiration.
@@ -223,7 +224,6 @@ contract LaborMarket is
      */
     function submitRequest(
         address pToken,
-        uint256 pTokenId,
         uint256 pTokenQ,
         uint256 signalExp,
         uint256 submissionExp,
@@ -244,7 +244,6 @@ contract LaborMarket is
         ServiceRequest memory serviceRequest = ServiceRequest({
             serviceRequester: _msgSender(),
             pToken: pToken,
-            pTokenId: pTokenId,
             pTokenQ: (pTokenAfter - pTokenBefore),
             signalExp: signalExp,
             submissionExp: submissionExp,
@@ -259,7 +258,6 @@ contract LaborMarket is
             serviceRequestId,
             requestUri,
             pToken,
-            pTokenId,
             pTokenQ,
             signalExp,
             submissionExp,

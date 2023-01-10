@@ -8,7 +8,6 @@ interface LaborMarketInterface is LaborMarketConfigurationInterface {
     struct ServiceRequest {
         address serviceRequester;
         address pToken;
-        uint256 pTokenId;
         uint256 pTokenQ;
         uint256 signalExp;
         uint256 submissionExp;
