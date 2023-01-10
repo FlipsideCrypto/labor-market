@@ -113,8 +113,8 @@ contract X is Script {
                 .ReputationMarketConfig({
                     reputationEngine: address(reputationEngine),
                     signalStake: 1e18,
-                    providerThreshold: 1e18,
-                    maintainerThreshold: 100e18
+                    submitMin: 1e18,
+                    submitMax: 100e18
                 });
 
         // Create a new labor market configuration

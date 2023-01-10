@@ -89,14 +89,14 @@ contract ContractTest is PRBTest, StdCheats {
         address(uint160(uint256(keccak256("DELEGATOOOR"))));
 
     // Events
-    event MarketParametersUpdated(
+    event LaborMarketConfigured(
         LaborMarketConfigurationInterface.LaborMarketConfiguration indexed configuration
     );
 
     event RequestWithdrawn(uint256 indexed requestId);
 
     event LaborMarketCreated(
-        address indexed organization,
+        address indexed marketAddress,
         address indexed owner,
         address indexed implementation
     );
@@ -209,8 +209,8 @@ contract ContractTest is PRBTest, StdCheats {
                 .ReputationMarketConfig({
                     reputationEngine: address(reputationEngine),
                     signalStake: 1e18,
-                    providerThreshold: 1e18,
-                    maintainerThreshold: 100e18
+                    submitMin: 1e18,
+                    submitMax: 100e18
                 });
 
         // Create a new labor market configuration for likert

@@ -81,23 +81,8 @@ contract LaborMarket is
     /// @dev The service submission id counter.
     uint256 public serviceSubmissionId;
 
-    /// @notice emitted when a new labor market is created.
-    event LaborMarketCreated(
-        uint256 indexed marketId,
-        address indexed owner,
-        address delegateBadge,
-        uint256 delegateBadgeId,
-        address maintainerBadge,
-        uint256 maintainerBadgeId,
-        address payCurve,
-        address enforcementCriteria,
-        uint256 repParticipantMultiplier,
-        uint256 repMaintainerMultiplier,
-        string marketUri
-    );
-
     /// @notice emitted when labor market parameters are updated.
-    event MarketParametersUpdated(
+    event LaborMarketConfigured(
         LaborMarketConfiguration indexed configuration
     );
 
@@ -182,7 +167,7 @@ contract LaborMarket is
             (_getAvailableReputation() >=
                 reputationModule
                     .getMarketReputationConfig(address(this))
-                    .providerThreshold),
+                    .submitMin),
             "LaborMarket::permittedParticipant: Not a permitted participant"
         );
         _;
@@ -610,7 +595,7 @@ contract LaborMarket is
         /// @dev Configure the Labor Market parameters.
         configuration = _configuration;
 
-        emit MarketParametersUpdated(_configuration);
+        emit LaborMarketConfigured(_configuration);
     }
 
     /*//////////////////////////////////////////////////////////////

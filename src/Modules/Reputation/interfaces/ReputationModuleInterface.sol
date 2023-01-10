@@ -7,8 +7,8 @@ interface ReputationModuleInterface {
     struct ReputationMarketConfig {
         address reputationEngine;
         uint256 signalStake;
-        uint256 providerThreshold;
-        uint256 maintainerThreshold;
+        uint256 submitMin;
+        uint256 submitMax;
     }
 
     function createReputationEngine(

@@ -25,8 +25,8 @@ contract ReputationModule is ReputationModuleInterface {
           address indexed market
         , address indexed reputationEngine
         , uint256 signalStake
-        , uint256 providerThreshold
-        , uint256 maintainerThreshold
+        , uint256 submitMin
+        , uint256 submitMax
     );
 
     constructor(
@@ -106,8 +106,8 @@ contract ReputationModule is ReputationModuleInterface {
               _laborMarket
             , _repConfig.reputationEngine
             , _repConfig.signalStake
-            , _repConfig.providerThreshold
-            , _repConfig.maintainerThreshold
+            , _repConfig.submitMin
+            , _repConfig.submitMax
         );
     }
 
@@ -133,8 +133,8 @@ contract ReputationModule is ReputationModuleInterface {
               msg.sender
             , _repConfig.reputationEngine
             , _repConfig.signalStake
-            , _repConfig.providerThreshold
-            , _repConfig.maintainerThreshold
+            , _repConfig.submitMin
+            , _repConfig.submitMax
         );
     }
 

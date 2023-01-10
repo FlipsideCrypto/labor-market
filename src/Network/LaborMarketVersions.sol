@@ -45,7 +45,7 @@ contract LaborMarketVersions is
 
     /// @dev Announces when a new Labor Market is created through the protocol Factory.
     event LaborMarketCreated(
-        address indexed organization,
+        address indexed marketAddress,
         address indexed owner,
         address indexed implementation
     );
