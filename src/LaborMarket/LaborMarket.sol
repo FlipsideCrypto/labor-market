@@ -163,12 +163,11 @@ contract LaborMarket is
      * @notice Make sure that only addresses conforming to the reputational barrier can call the function.
      */
     modifier permittedParticipant() {
-        require(
-            (_getAvailableReputation() >=
-                reputationModule
-                    .getMarketReputationConfig(address(this))
-                    .submitMin),
-            "LaborMarket::permittedParticipant: Not a permitted participant"
+        uint256 availableRep = _getAvailableReputation();
+        require((
+                availableRep >= configuration.reputationConfig.submitMin &&
+                availableRep < configuration.reputationConfig.submitMax
+            ), "LaborMarket::permittedParticipant: Not a permitted participant"
         );
         _;
     }

@@ -196,7 +196,7 @@ contract ContractTest is PRBTest, StdCheats {
                     reputationEngine: address(reputationEngine),
                     signalStake: 1e18,
                     submitMin: 1e18,
-                    submitMax: 100e18
+                    submitMax: 10000e18
                 });
 
         // Create a new labor market configuration
@@ -354,7 +354,7 @@ contract ContractTest is PRBTest, StdCheats {
                     reputationEngine: address(reputationEngine),
                     signalStake: 1e18,
                     submitMin: 1e18,
-                    submitMax: 100e18
+                    submitMax: 10000e18
                 });
 
         // Example configuration
@@ -483,7 +483,7 @@ contract ContractTest is PRBTest, StdCheats {
                     reputationEngine: address(reputationEngine),
                     signalStake: 1e18,
                     submitMin: 1e18,
-                    submitMax: 100e18
+                    submitMax: 10000e18
                 });
 
         LaborMarketConfigurationInterface.LaborMarketConfiguration
@@ -647,7 +647,7 @@ contract ContractTest is PRBTest, StdCheats {
                     reputationEngine: address(reputationEngine),
                     signalStake: 1e18,
                     submitMin: 1e18,
-                    submitMax: 100e18
+                    submitMax: 10000e18
                 });
 
         LaborMarketConfigurationInterface.LaborMarketConfiguration

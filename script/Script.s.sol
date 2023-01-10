@@ -114,7 +114,7 @@ contract X is Script {
                     reputationEngine: address(reputationEngine),
                     signalStake: 1e18,
                     submitMin: 1e18,
-                    submitMax: 100e18
+                    submitMax: 100000e18
                 });
 
         // Create a new labor market configuration
