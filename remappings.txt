@@ -1,3 +1,4 @@
+@openzeppelin/=node_modules/@openzeppelin/
 @prb/test/=lib/prb-test/src/
 delegatable/=lib/delegatable/
 ds-test/=lib/ds-test/src/
