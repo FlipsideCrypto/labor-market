@@ -1,9 +1,15 @@
 import fs from "fs";
+import "hardhat-gas-reporter";
+import 'hardhat-deploy';
+import "hardhat-watcher";
+import "hardhat-abi-exporter";
 import "@nomiclabs/hardhat-waffle";
+import "@nomiclabs/hardhat-etherscan";
 import "@typechain/hardhat";
 import "hardhat-preprocessor";
 import "hardhat-abi-exporter";
 import { HardhatUserConfig } from "hardhat/config";
+require("dotenv").config();
 
 function getRemappings() {
   return fs
@@ -15,13 +21,38 @@ function getRemappings() {
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.17",
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 200,
-      },
+    compilers: [
+        {
+            version: "0.8.17",
+            settings: {
+                optimizer: { // Keeps the amount of gas used in check
+                    enabled: true,
+                    runs: 1000000
+                }
+            }
+        }
+    ],
+  },
+  gasReporter: {
+    currency: 'USD',
+    gasPrice: 60,
+    coinmarketcap: process.env.COINMARKETCAP_API_KEY,
+    showMethodSig: true,
+    showTimeSpent: true,
+  },
+  watcher: {
+    compilation: {
+        tasks: ["compile"],
+        files: ["./contracts"],
+        verbose: true,
     },
+    ci: {
+        tasks: [
+            "clean",
+            { command: "compile", params: { quiet: true } },
+            { command: "test", params: { noCompile: true, testFiles: ["testfile.ts"] } }
+        ],
+    }
   },
   abiExporter: {
     path: 'package/abis',
@@ -31,11 +62,39 @@ const config: HardhatUserConfig = {
     spacing: 2,
     format: "json"
   },
+  etherscan: {
+    apiKey: {
+        sepolia: process.env.ETHERSCAN_API_KEY ?? "",
+        mainnet: process.env.ETHERSCAN_API_KEY ?? "",
+    }
+  },
+  defaultNetwork: "hardhat",
+  networks: {
+    hardhat: {
+      chainId: 1337,
+      gas: "auto",
+      gasPrice: "auto",
+      saveDeployments: false,
+      mining: {
+          auto: false,
+          interval: 1500,
+      }
+    },
+    sepolia: {
+        url: `https://rpc.sepolia.org/`,
+        accounts: [`0x${process.env.PRIVATE_KEY}`],
+        gasPrice: 50000000000, // 50 gwei
+    },
+    mainnet: {
+        url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
+        accounts: [`0x${process.env.PRIVATE_KEY}`],
+        gasPrice: 50000000000, // 50 gwei
+    },
+  },
   paths: {
     sources: "./src", // Use ./src rather than ./contracts as Hardhat expects
     cache: "./cache_hardhat", // Use a different cache for Hardhat than Foundry
     tests: "./test/hardhat",
-    
   },
   typechain: {
     outDir: 'package/types'
