@@ -82,7 +82,7 @@ const config: HardhatUserConfig = {
     apiKey: {
         sepolia: `${process.env.ETHERSCAN_API_KEY}`,
         mainnet: `${process.env.ETHERSCAN_API_KEY}`,
-        matic: `${process.env.POLYGONSCAN_API_KEY}`,
+        polygon: `${process.env.POLYGONSCAN_API_KEY}`,
     }
   },
   defaultNetwork: "hardhat",
@@ -98,17 +98,19 @@ const config: HardhatUserConfig = {
       }
     },
     sepolia: {
-        url: `https://rpc.sepolia.org/`,
-        accounts: [`0x${process.env.PRIVATE_KEY}`],
-        gasPrice: 50000000000, // 50 gwei
+      url: `https://rpc.sepolia.org/`,
+      accounts: [`0x${process.env.PRIVATE_KEY}`],
+      gasPrice: 50000000000, // 50 gwei
     },
     mainnet: {
-        url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
-        accounts: [`0x${process.env.PRIVATE_KEY}`],
-        gasPrice: 50000000000, // 50 gwei
+      chainId: 1,
+      url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
+      accounts: [`0x${process.env.PRIVATE_KEY}`],
+      gasPrice: 50000000000, // 50 gwei
     },
     polygon: {
-      url: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`,
+      chainId: 137,
+      url: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.POLYGON_ALCHEMY_KEY}`,
       accounts: [`0x${process.env.PRIVATE_KEY}`],
       gasPrice: 'auto'
     },

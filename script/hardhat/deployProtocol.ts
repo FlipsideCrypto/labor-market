@@ -3,14 +3,13 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
 async function main(verify) {
-    await hre.run("compile");
     const [deployer] = await ethers.getSigners();
-    const balance = await deployer.getBalance();
+    const balance = ethers.utils.formatEther(await deployer.getBalance());
     const chainId = hre.network.config.chainId;
     
     console.table({
         "Deployer Address": deployer.address,
-        "Deployer Balance": balance.toString(),
+        "Deployer Balance": balance,
         "Chain ID": chainId
     })
 
