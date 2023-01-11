@@ -76,10 +76,7 @@ contract LaborMarket is
         public hasPerformed;
 
     /// @dev The service request id counter.
-    uint256 public serviceRequestId;
-
-    /// @dev The service submission id counter.
-    uint256 public serviceSubmissionId;
+    uint256 public serviceId;
 
     /// @notice emitted when labor market parameters are updated.
     event LaborMarketConfigured(
@@ -215,7 +212,7 @@ contract LaborMarket is
         string calldata requestUri
     ) external onlyDelegate returns (uint256 requestId) {
         unchecked {
-            ++serviceRequestId;
+            ++serviceId;
         }
 
         // Keep accounting in mind for ERC20s with transfer fees.
@@ -235,11 +232,11 @@ contract LaborMarket is
             uri: requestUri
         });
 
-        serviceRequests[serviceRequestId] = serviceRequest;
+        serviceRequests[serviceId] = serviceRequest;
 
         emit RequestCreated(
             _msgSender(),
-            serviceRequestId,
+            serviceId,
             requestUri,
             pToken,
             pTokenQ,
@@ -248,7 +245,7 @@ contract LaborMarket is
             enforcementExp
         );
 
-        return serviceRequestId;
+        return serviceId;
     }
 
     /**
@@ -321,7 +318,7 @@ contract LaborMarket is
         );
 
         unchecked {
-            ++serviceSubmissionId;
+            ++serviceId;
         }
 
         ServiceSubmission memory serviceSubmission = ServiceSubmission({
@@ -333,15 +330,15 @@ contract LaborMarket is
             reviewed: false
         });
 
-        serviceSubmissions[serviceSubmissionId] = serviceSubmission;
+        serviceSubmissions[serviceId] = serviceSubmission;
 
         hasPerformed[requestId][_msgSender()][HAS_SUBMITTED] = true;
 
         _unlockReputation(_msgSender(), _baseStake());
 
-        emit RequestFulfilled(_msgSender(), requestId, serviceSubmissionId);
+        emit RequestFulfilled(_msgSender(), requestId, serviceId);
 
-        return serviceSubmissionId;
+        return serviceId;
     }
 
     /**
@@ -356,7 +353,7 @@ contract LaborMarket is
         uint256 score
     ) external {
         require(
-            submissionId <= serviceSubmissionId,
+            submissionId <= serviceId,
             "LaborMarket::review: Submission does not exist."
         );
         require(
@@ -408,7 +405,7 @@ contract LaborMarket is
         bytes calldata data
     ) external returns (uint256) {
         require(
-            submissionId <= serviceSubmissionId,
+            submissionId <= serviceId,
             "LaborMarket::claim: Submission does not exist."
         );
         require(

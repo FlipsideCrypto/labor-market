@@ -308,7 +308,7 @@ contract ContractTest is PRBTest, StdCheats {
         });
 
         // Verify the request was created
-        assertEq(market.serviceRequestId(), 1);
+        assertEq(market.serviceId(), 1);
         assertEq(market.getRequest(requestId).serviceRequester, bob);
         assertEq(market.getRequest(requestId).pToken, address(payToken));
 
@@ -400,7 +400,8 @@ contract ContractTest is PRBTest, StdCheats {
 
             changePrank(bob);
             market.signalReview(8);
-            market.review(submissionId, 1, 2);
+            
+            market.review(requestId, submissionId, 2);
 
             changePrank(alice);
             vm.warp(block.timestamp + 5 weeks);
@@ -558,7 +559,7 @@ contract ContractTest is PRBTest, StdCheats {
 
         // Verify submission events
         vm.expectEmit(true, true, true, true);
-        emit RequestFulfilled(address(alice), requestId, 1);
+        emit RequestFulfilled(address(alice), requestId, requestId + 1);
 
         changePrank(alice);
         uint256 submissionId = market.provide(requestId, "IPFS://333");
@@ -570,7 +571,7 @@ contract ContractTest is PRBTest, StdCheats {
         changePrank(bob);
         market.review(requestId, submissionId, 2);
 
-        // Verify claiming events
+        // // Verify claiming events
         vm.expectEmit(true, true, true, true);
         emit RequestPayClaimed(
             address(alice),
@@ -583,7 +584,7 @@ contract ContractTest is PRBTest, StdCheats {
         vm.warp(block.timestamp + 5 weeks);
         market.claim(submissionId, address(alice), "");
 
-        // Verify withdrawing request event
+        // // Verify withdrawing request event
         changePrank(bob);
 
         payToken.approve(address(market), 1_000e18);
