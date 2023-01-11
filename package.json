@@ -27,6 +27,7 @@
     "dotenv": "^16.0.3",
     "ethers": "^5.4.7",
     "hardhat": "^2.11.1",
+    "hardhat-contract-sizer": "^2.6.1",
     "hardhat-deploy": "^0.11.22",
     "hardhat-gas-reporter": "^1.0.8",
     "hardhat-watcher": "^2.5.0",

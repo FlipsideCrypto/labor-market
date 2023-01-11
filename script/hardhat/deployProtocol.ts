@@ -5,11 +5,12 @@ const { ethers } = require("hardhat");
 async function main(verify) {
     await hre.run("compile");
     const [deployer] = await ethers.getSigners();
+    const balance = await deployer.getBalance();
     const chainId = hre.network.config.chainId;
     
     console.table({
         "Deployer Address": deployer.address,
-        "Deployer Balance": (await deployer.getBalance()).toString(),
+        "Deployer Balance": balance.toString(),
         "Chain ID": chainId
     })
 
@@ -96,7 +97,7 @@ async function main(verify) {
     })
 
     
-    if (verify === true && (chainId != 31337 || chainId != 1337)) {
+    if (verify === true && chainId !== 31337 && chainId !== 1337) {
       const contracts = [
         {
           contract: laborMarket, args: [], name: "LaborMarket"
@@ -127,6 +128,7 @@ async function main(verify) {
         },
       ]
 
+      await new Promise(r => setTimeout(r, 30000));
       for (const contract of contracts) {
         await hre.run("verify:verify", {
           address: contract.contract.address,

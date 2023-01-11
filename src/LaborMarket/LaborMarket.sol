@@ -110,7 +110,9 @@ contract LaborMarket is
     );
 
     /// @notice emitted when a service request is withdrawn.
-    event RequestWithdrawn(uint256 indexed requestId);
+    event RequestWithdrawn(
+        uint256 indexed requestId
+    );
 
     /// @notice emitted when a service request is fulfilled.
     event RequestFulfilled(

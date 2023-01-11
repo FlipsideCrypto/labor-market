@@ -8,7 +8,10 @@ import "@nomiclabs/hardhat-etherscan";
 import "@typechain/hardhat";
 import "hardhat-preprocessor";
 import "hardhat-abi-exporter";
+import "hardhat-contract-sizer";
 import { HardhatUserConfig } from "hardhat/config";
+import { task } from "hardhat/config";
+
 require("dotenv").config();
 
 function getRemappings() {
@@ -19,6 +22,14 @@ function getRemappings() {
     .map((line) => line.trim().split("="));
 }
 
+task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
+  const accounts = await hre.ethers.getSigners();
+
+  for (const account of accounts) {
+      console.log(account.address);
+  }
+});
+
 const config: HardhatUserConfig = {
   solidity: {
     compilers: [
@@ -27,7 +38,7 @@ const config: HardhatUserConfig = {
             settings: {
                 optimizer: { // Keeps the amount of gas used in check
                     enabled: true,
-                    runs: 1000000
+                    runs: 3000
                 }
             }
         }
@@ -62,10 +73,16 @@ const config: HardhatUserConfig = {
     spacing: 2,
     format: "json"
   },
+  contractSizer: {
+    alphaSort: false,
+    disambiguatePaths: false,
+    runOnCompile: false,
+  },
   etherscan: {
     apiKey: {
-        sepolia: process.env.ETHERSCAN_API_KEY ?? "",
-        mainnet: process.env.ETHERSCAN_API_KEY ?? "",
+        sepolia: `${process.env.ETHERSCAN_API_KEY}`,
+        mainnet: `${process.env.ETHERSCAN_API_KEY}`,
+        matic: `${process.env.POLYGONSCAN_API_KEY}`,
     }
   },
   defaultNetwork: "hardhat",
@@ -89,6 +106,11 @@ const config: HardhatUserConfig = {
         url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
         accounts: [`0x${process.env.PRIVATE_KEY}`],
         gasPrice: 50000000000, // 50 gwei
+    },
+    polygon: {
+      url: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`,
+      accounts: [`0x${process.env.PRIVATE_KEY}`],
+      gasPrice: 'auto'
     },
   },
   paths: {
