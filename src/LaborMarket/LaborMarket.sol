@@ -312,6 +312,7 @@ contract LaborMarket is
 
         reviewSignals[_msgSender()].total = quantity;
         reviewSignals[_msgSender()].remainder = quantity;
+        reviewSignals[_msgSender()].height = serviceSubmissionId;
 
         emit ReviewSignal(_msgSender(), quantity, signalStake);
     }
@@ -492,6 +493,40 @@ contract LaborMarket is
         );
 
         emit RemainderClaimed(_msgSender(), requestId, totalClaimable);
+    }
+
+    /**
+     * @notice Allows a maintainer to retrieve reputation that is stuck in review signals.
+     */
+    function retrieveReputation() public onlyMaintainer {
+        require(
+            reviewSignals[_msgSender()].remainder > 0,
+            "LaborMarket::retrieveReputation: No reputation to retrieve."
+        );
+
+        require(
+            block.timestamp >
+                serviceRequests[
+                    serviceSubmissions[serviceSubmissionId].requestId
+                ].enforcementExp,
+            "LaborMarket::retrieveReputation: Enforcement deadline not passed."
+        );
+
+        require(
+            reviewSignals[_msgSender()].total >=
+                (serviceSubmissionId - reviewSignals[_msgSender()].height),
+            "LaborMarket::retrieveReputation: Insufficient reviews."
+        );
+
+        _unlockReputation(
+            _msgSender(),
+            (_baseStake() / reviewSignals[_msgSender()].total) *
+                reviewSignals[_msgSender()].remainder
+        );
+
+        reviewSignals[_msgSender()].total = 0;
+        reviewSignals[_msgSender()].remainder = 0;
+        reviewSignals[_msgSender()].height = 0;
     }
 
     /**

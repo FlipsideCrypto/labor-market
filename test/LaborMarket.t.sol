@@ -992,4 +992,157 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         vm.stopPrank();
     }
+
+    function test_NotEnoughSubmissionsToReview() public {
+        vm.startPrank(bob);
+
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
+
+        // A valid user signals
+        changePrank(alice);
+        market.signal(requestId);
+
+        // User fulfills the request
+        uint256 submissionId = market.provide(requestId, "IPFS://333");
+
+        // Check maintainers (bob) reputation
+        assertEq(
+            reputationModule.getAvailableReputation(address(market), bob),
+            1000e18
+        );
+
+        // A valid maintainer signals for review (4 of them)
+        changePrank(bob);
+        market.signalReview(4);
+
+        // 1e18 of rep should be locked
+        assertEq(
+            reputationModule.getAvailableReputation(address(market), bob),
+            999e18
+        );
+
+        // A valid maintainer reviews the request
+        market.review(requestId, submissionId, 2);
+
+        // Should unlock 1e18/4 of rep
+        assertEq(
+            reputationModule.getAvailableReputation(address(market), bob),
+            999.25e18
+        );
+
+        // Skip forward in time
+        vm.warp(123 weeks);
+
+        // Reviewer reclaims their signal stake
+        market.retrieveReputation();
+
+        // Should have full rep again
+        assertEq(
+            reputationModule.getAvailableReputation(address(market), bob),
+            1000e18
+        );
+
+        vm.stopPrank();
+    }
+
+    function test_CannotRetrieveReputationIfThereWasOpportunityToReview()
+        public
+    {
+        vm.startPrank(bob);
+        uint256 submissionId;
+
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
+
+        // A valid maintainer signals for review (4 of them)
+        changePrank(bob);
+        market.signalReview(4);
+
+        for (uint256 i; i < 25; i++) {
+            changePrank(deployer);
+            address user = address(uint160(i + 123));
+            repToken.freeMint(user, REPUTATION_TOKEN_ID, 100e18);
+            // A valid user signals
+            changePrank(user);
+            market.signal(requestId);
+
+            // User fulfills the request
+            submissionId = market.provide(requestId, "IPFS://333");
+        }
+
+        // A valid maintainer reviews the request
+        changePrank(bob);
+        market.review(requestId, submissionId, 2);
+
+        // Skip forward in time
+        vm.warp(123 weeks);
+
+        // Reviewer reclaims their signal stake
+        vm.expectRevert(
+            "LaborMarket::retrieveReputation: Insufficient reviews."
+        );
+        market.retrieveReputation();
+
+        vm.stopPrank();
+    }
+
+    function test_CannotRetrieveReputationTwice() public {
+        vm.startPrank(bob);
+
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
+
+        // A valid user signals
+        changePrank(alice);
+        market.signal(requestId);
+
+        // User fulfills the request
+        uint256 submissionId = market.provide(requestId, "IPFS://333");
+
+        // Check maintainers (bob) reputation
+        assertEq(
+            reputationModule.getAvailableReputation(address(market), bob),
+            1000e18
+        );
+
+        // A valid maintainer signals for review (4 of them)
+        changePrank(bob);
+        market.signalReview(4);
+
+        // 1e18 of rep should be locked
+        assertEq(
+            reputationModule.getAvailableReputation(address(market), bob),
+            999e18
+        );
+
+        // A valid maintainer reviews the request
+        market.review(requestId, submissionId, 2);
+
+        // Should unlock 1e18/4 of rep
+        assertEq(
+            reputationModule.getAvailableReputation(address(market), bob),
+            999.25e18
+        );
+
+        // Skip forward in time
+        vm.warp(123 weeks);
+
+        // Reviewer reclaims their signal stake
+        market.retrieveReputation();
+
+        // Should have full rep again
+        assertEq(
+            reputationModule.getAvailableReputation(address(market), bob),
+            1000e18
+        );
+
+        // Reviewer reclaims their signal stake again
+        vm.expectRevert(
+            "LaborMarket::retrieveReputation: No reputation to retrieve."
+        );
+        market.retrieveReputation();
+
+        vm.stopPrank();
+    }
 }
