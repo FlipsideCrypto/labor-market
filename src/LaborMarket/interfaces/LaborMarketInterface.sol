@@ -28,6 +28,7 @@ interface LaborMarketInterface is LaborMarketConfigurationInterface {
     struct ReviewPromise {
         uint256 total;
         uint256 remainder;
+        uint256 height;
     }
 
     function initialize(LaborMarketConfiguration calldata _configuration)
@@ -42,4 +43,9 @@ interface LaborMarketInterface is LaborMarketConfigurationInterface {
         external
         view
         returns (ServiceRequest memory);
+
+    function getConfiguration()
+        external
+        view
+        returns (LaborMarketConfiguration memory);
 }

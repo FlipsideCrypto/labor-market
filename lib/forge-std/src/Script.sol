@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.6.0 <0.9.0;
+pragma solidity >=0.6.2 <0.9.0;
 
-import {Cheats, console, console2, stdMath, stdStorage, StdStorage, Utils, Vm} from "./Components.sol";
+import {CommonBase} from "./Common.sol";
+// forgefmt: disable-next-line
+import {console, console2, StdChains, StdCheatsSafe, stdJson, stdMath, StdStorage, stdStorageSafe, StdUtils, VmSafe} from "./Components.sol";
 
-abstract contract ScriptBase {
-    address internal constant VM_ADDRESS = address(uint160(uint256(keccak256("hevm cheat code"))));
-    Vm internal constant vm = Vm(VM_ADDRESS);
+abstract contract ScriptBase is CommonBase {
+    VmSafe internal constant vmSafe = VmSafe(VM_ADDRESS);
 }
 
-abstract contract Script is ScriptBase, Cheats, Utils {
+abstract contract Script is StdChains, StdCheatsSafe, StdUtils, ScriptBase {
     bool public IS_SCRIPT = true;
 }

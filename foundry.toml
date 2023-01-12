@@ -7,13 +7,21 @@ fuzz_runs = 256
 gas_reports = ["*"]
 libs = ["lib"]
 optimizer = true
-via-ir = true
-optimizer_runs = 10_000
+via-ir = false
+optimizer_runs = 200
 out = "out"
 solc = "0.8.17"
 src = "src"
 test = "test"
 
+[rpc_endpoints]
+goerli = "${GOERLI_RPC_URL}"
+
+[etherscan]
+goerli = { key = "${ETHERSCAN_API_KEY}" }
+
 [profile.ci]
 fuzz_runs = 1_000
 verbosity = 4
+
+

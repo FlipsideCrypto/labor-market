@@ -3,9 +3,10 @@ pragma solidity 0.8.17;
 
 /// @dev Core dependencies.
 import {LaborMarketInterface} from "./interfaces/LaborMarketInterface.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {OwnableUpgradeable, ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ERC1155HolderUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC1155/utils/ERC1155HolderUpgradeable.sol";
 import {ERC721HolderUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
+import {Delegatable, DelegatableCore} from "delegatable/Delegatable.sol";
 
 /// @dev Helpers.
 import {StringsUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
@@ -26,8 +27,17 @@ contract LaborMarket is
     LaborMarketInterface,
     OwnableUpgradeable,
     ERC1155HolderUpgradeable,
-    ERC721HolderUpgradeable
+    ERC721HolderUpgradeable,
+    Delegatable("LaborMarket", "v1.0.0")
 {
+    /// @dev Performable actions.
+    bytes32 public constant HAS_SUBMITTED = keccak256("hasSubmitted");
+    bytes32 public constant HAS_CLAIMED = keccak256("hasClaimed");
+    bytes32 public constant HAS_CLAIMED_REMAINDER =
+        keccak256("hasClaimedRemainder");
+    bytes32 public constant HAS_REVIEWED = keccak256("hasReviewed");
+    bytes32 public constant HAS_SIGNALED = keccak256("hasSignaled");
+
     /// @dev The network contract.
     LaborMarketNetwork public network;
 
@@ -58,23 +68,12 @@ contract LaborMarket is
     /// @dev Tracking the service submissions.
     mapping(uint256 => ServiceSubmission) public serviceSubmissions;
 
-    /// @dev Tracking the service submission signals.
-    mapping(uint256 => mapping(address => bool)) public submissionSignals;
-
     /// @dev Tracking the review signals.
     mapping(address => ReviewPromise) public reviewSignals;
 
-    /// @dev Tracking whether a submission has been submitted.
-    mapping(uint256 => mapping(address => bool)) public hasSubmitted;
-
-    /// @dev Tracking whether a submission has been claimed.
-    mapping(uint256 => mapping(address => bool)) public hasClaimed;
-
-    /// @dev Tracking whether a remainder has been claimed.
-    mapping(uint256 => mapping(address => bool)) public hasClaimedRemainder;
-
-    /// @dev Tracking whether a submission has been reviewed.
-    mapping(uint256 => mapping(address => bool)) public hasReviewed;
+    /// @dev Tracking whether an action has been performed.
+    mapping(uint256 => mapping(address => mapping(bytes32 => bool)))
+        public hasPerformed;
 
     /// @dev The service request id counter.
     uint256 public serviceRequestId;
@@ -165,10 +164,10 @@ contract LaborMarket is
     modifier onlyDelegate() {
         require(
             (delegateBadge.balanceOf(
-                msg.sender,
+                _msgSender(),
                 configuration.delegateTokenId
             ) >= 1),
-            "LaborMarket::permittedParticipant: Not a delegate."
+            "LaborMarket::onlyDelegate: Not a delegate."
         );
         _;
     }
@@ -193,7 +192,7 @@ contract LaborMarket is
     modifier onlyMaintainer() {
         require(
             (maintainerBadge.balanceOf(
-                msg.sender,
+                _msgSender(),
                 configuration.maintainerTokenId
             ) >= 1),
             "LaborMarket::onlyMaintainer: Not a maintainer"
@@ -235,11 +234,18 @@ contract LaborMarket is
             ++serviceRequestId;
         }
 
+        // Keep accounting in mind for ERC20s with transfer fees.
+        uint256 pTokenBefore = IERC20(pToken).balanceOf(address(this));
+
+        IERC20(pToken).transferFrom(_msgSender(), address(this), pTokenQ);
+
+        uint256 pTokenAfter = IERC20(pToken).balanceOf(address(this));
+
         ServiceRequest memory serviceRequest = ServiceRequest({
-            serviceRequester: msg.sender,
+            serviceRequester: _msgSender(),
             pToken: pToken,
             pTokenId: pTokenId,
-            pTokenQ: pTokenQ,
+            pTokenQ: (pTokenAfter - pTokenBefore),
             signalExp: signalExp,
             submissionExp: submissionExp,
             enforcementExp: enforcementExp,
@@ -248,10 +254,8 @@ contract LaborMarket is
 
         serviceRequests[serviceRequestId] = serviceRequest;
 
-        IERC20(pToken).transferFrom(msg.sender, address(this), pTokenQ);
-
         emit RequestCreated(
-            msg.sender,
+            _msgSender(),
             serviceRequestId,
             requestUri,
             pToken,
@@ -275,21 +279,21 @@ contract LaborMarket is
             "LaborMarket::signal: Signal deadline passed."
         );
         require(
-            !submissionSignals[requestId][msg.sender],
+            !hasPerformed[requestId][_msgSender()][HAS_SIGNALED],
             "LaborMarket::signal: Already signaled."
         );
 
         uint256 signalStake = _baseStake();
 
-        _lockReputation(msg.sender, signalStake);
+        _lockReputation(_msgSender(), signalStake);
 
-        submissionSignals[requestId][msg.sender] = true;
+        hasPerformed[requestId][_msgSender()][HAS_SIGNALED] = true;
 
         unchecked {
             ++signalCount[requestId];
         }
 
-        emit RequestSignal(msg.sender, requestId, signalStake);
+        emit RequestSignal(_msgSender(), requestId, signalStake);
     }
 
     /**
@@ -298,18 +302,19 @@ contract LaborMarket is
      */
     function signalReview(uint256 quantity) external onlyMaintainer {
         require(
-            reviewSignals[msg.sender].remainder == 0,
+            reviewSignals[_msgSender()].remainder == 0,
             "LaborMarket::signalReview: Already signaled."
         );
 
         uint256 signalStake = _baseStake();
 
-        _lockReputation(msg.sender, signalStake);
+        _lockReputation(_msgSender(), signalStake);
 
-        reviewSignals[msg.sender].total = quantity;
-        reviewSignals[msg.sender].remainder = quantity;
+        reviewSignals[_msgSender()].total = quantity;
+        reviewSignals[_msgSender()].remainder = quantity;
+        reviewSignals[_msgSender()].height = serviceSubmissionId;
 
-        emit ReviewSignal(msg.sender, quantity, signalStake);
+        emit ReviewSignal(_msgSender(), quantity, signalStake);
     }
 
     /**
@@ -326,11 +331,11 @@ contract LaborMarket is
             "LaborMarket::provide: Submission deadline passed."
         );
         require(
-            submissionSignals[requestId][msg.sender],
+            hasPerformed[requestId][_msgSender()][HAS_SIGNALED],
             "LaborMarket::provide: Not signaled."
         );
         require(
-            !hasSubmitted[requestId][msg.sender],
+            !hasPerformed[requestId][_msgSender()][HAS_SUBMITTED],
             "LaborMarket::provide: Already submitted."
         );
 
@@ -339,7 +344,7 @@ contract LaborMarket is
         }
 
         ServiceSubmission memory serviceSubmission = ServiceSubmission({
-            serviceProvider: msg.sender,
+            serviceProvider: _msgSender(),
             requestId: requestId,
             timestamp: block.timestamp,
             uri: uri,
@@ -349,11 +354,11 @@ contract LaborMarket is
 
         serviceSubmissions[serviceSubmissionId] = serviceSubmission;
 
-        hasSubmitted[requestId][msg.sender] = true;
+        hasPerformed[requestId][_msgSender()][HAS_SUBMITTED] = true;
 
-        _unlockReputation(msg.sender, _baseStake());
+        _unlockReputation(_msgSender(), _baseStake());
 
-        emit RequestFulfilled(msg.sender, requestId, serviceSubmissionId);
+        emit RequestFulfilled(_msgSender(), requestId, serviceSubmissionId);
 
         return serviceSubmissionId;
     }
@@ -379,15 +384,15 @@ contract LaborMarket is
         );
 
         require(
-            reviewSignals[msg.sender].remainder > 0,
+            reviewSignals[_msgSender()].remainder > 0,
             "LaborMarket::review: Not signaled."
         );
         require(
-            !hasReviewed[submissionId][msg.sender],
+            !hasPerformed[submissionId][_msgSender()][HAS_REVIEWED],
             "LaborMarket::review: Already reviewed."
         );
         require(
-            serviceSubmissions[submissionId].serviceProvider != msg.sender,
+            serviceSubmissions[submissionId].serviceProvider != _msgSender(),
             "LaborMarket::review: Cannot review own submission."
         );
 
@@ -398,18 +403,18 @@ contract LaborMarket is
         if (!serviceSubmissions[submissionId].reviewed)
             serviceSubmissions[submissionId].reviewed = true;
 
-        hasReviewed[submissionId][msg.sender] = true;
+        hasPerformed[submissionId][_msgSender()][HAS_REVIEWED] = true;
 
         unchecked {
-            --reviewSignals[msg.sender].remainder;
+            --reviewSignals[_msgSender()].remainder;
         }
 
         _unlockReputation(
-            msg.sender,
-            (_baseStake()) / reviewSignals[msg.sender].total
+            _msgSender(),
+            (_baseStake()) / reviewSignals[_msgSender()].total
         );
 
-        emit RequestReviewed(msg.sender, requestId, submissionId, score);
+        emit RequestReviewed(_msgSender(), requestId, submissionId, score);
     }
 
     /**
@@ -426,7 +431,7 @@ contract LaborMarket is
             "LaborMarket::claim: Submission does not exist."
         );
         require(
-            !hasClaimed[submissionId][msg.sender],
+            !hasPerformed[submissionId][_msgSender()][HAS_CLAIMED],
             "LaborMarket::claim: Already claimed."
         );
         require(
@@ -434,7 +439,7 @@ contract LaborMarket is
             "LaborMarket::claim: Not reviewed."
         );
         require(
-            serviceSubmissions[submissionId].serviceProvider == msg.sender,
+            serviceSubmissions[submissionId].serviceProvider == _msgSender(),
             "LaborMarket::claim: Not service provider."
         );
         require(
@@ -444,17 +449,19 @@ contract LaborMarket is
             "LaborMarket::claim: Enforcement deadline not passed."
         );
 
-        uint256 curveIndex = enforcementCriteria.verify(submissionId);
+        uint256 curveIndex = (data.length > 0)
+            ? enforcementCriteria.verifyWithData(submissionId, data)
+            : enforcementCriteria.verify(submissionId);
 
         uint256 amount = paymentCurve.curvePoint(curveIndex);
 
-        hasClaimed[submissionId][msg.sender] = true;
+        hasPerformed[submissionId][_msgSender()][HAS_CLAIMED] = true;
 
         IERC20(
             serviceRequests[serviceSubmissions[submissionId].requestId].pToken
         ).transfer(to, amount);
 
-        emit RequestPayClaimed(msg.sender, submissionId, amount, to);
+        emit RequestPayClaimed(_msgSender(), submissionId, amount, to);
 
         return amount;
     }
@@ -465,7 +472,7 @@ contract LaborMarket is
      */
     function claimRemainder(uint256 requestId) public {
         require(
-            serviceRequests[requestId].serviceRequester == msg.sender,
+            serviceRequests[requestId].serviceRequester == _msgSender(),
             "LaborMarket::claimRemainder: Not service requester."
         );
         require(
@@ -473,20 +480,53 @@ contract LaborMarket is
             "LaborMarket::claimRemainder: Enforcement deadline not passed."
         );
         require(
-            !hasClaimedRemainder[requestId][msg.sender],
+            !hasPerformed[requestId][_msgSender()][HAS_CLAIMED_REMAINDER],
             "LaborMarket::claimRemainder: Already claimed."
         );
-        uint256 totalClaimable = serviceRequests[requestId].pTokenQ -
-            enforcementCriteria.getClaimableAllocation(requestId);
+        uint256 totalClaimable = enforcementCriteria.getRemainder(requestId);
 
-        hasClaimedRemainder[requestId][msg.sender] = true;
+        hasPerformed[requestId][_msgSender()][HAS_CLAIMED_REMAINDER] = true;
 
         IERC20(serviceRequests[requestId].pToken).transfer(
-            msg.sender,
+            _msgSender(),
             totalClaimable
         );
 
-        emit RemainderClaimed(msg.sender, requestId, totalClaimable);
+        emit RemainderClaimed(_msgSender(), requestId, totalClaimable);
+    }
+
+    /**
+     * @notice Allows a maintainer to retrieve reputation that is stuck in review signals.
+     */
+    function retrieveReputation() public onlyMaintainer {
+        require(
+            reviewSignals[_msgSender()].remainder > 0,
+            "LaborMarket::retrieveReputation: No reputation to retrieve."
+        );
+
+        require(
+            block.timestamp >
+                serviceRequests[
+                    serviceSubmissions[serviceSubmissionId].requestId
+                ].enforcementExp,
+            "LaborMarket::retrieveReputation: Enforcement deadline not passed."
+        );
+
+        require(
+            reviewSignals[_msgSender()].total >=
+                (serviceSubmissionId - reviewSignals[_msgSender()].height),
+            "LaborMarket::retrieveReputation: Insufficient reviews."
+        );
+
+        _unlockReputation(
+            _msgSender(),
+            (_baseStake() / reviewSignals[_msgSender()].total) *
+                reviewSignals[_msgSender()].remainder
+        );
+
+        reviewSignals[_msgSender()].total = 0;
+        reviewSignals[_msgSender()].remainder = 0;
+        reviewSignals[_msgSender()].height = 0;
     }
 
     /**
@@ -497,7 +537,7 @@ contract LaborMarket is
      */
     function withdrawRequest(uint256 requestId) external onlyDelegate {
         require(
-            serviceRequests[requestId].serviceRequester == msg.sender,
+            serviceRequests[requestId].serviceRequester == _msgSender(),
             "LaborMarket::withdrawRequest: Not service requester."
         );
         require(
@@ -509,7 +549,7 @@ contract LaborMarket is
 
         delete serviceRequests[requestId];
 
-        IERC20(pToken).transfer(msg.sender, amount);
+        IERC20(pToken).transfer(_msgSender(), amount);
 
         emit RequestWithdrawn(requestId);
     }
@@ -540,6 +580,17 @@ contract LaborMarket is
         returns (ServiceSubmission memory)
     {
         return serviceSubmissions[_submissionId];
+    }
+
+    /**
+     * @notice Returns the market configuration.
+     */
+    function getConfiguration()
+        external
+        view
+        returns (LaborMarketConfiguration memory)
+    {
+        return configuration;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -609,7 +660,10 @@ contract LaborMarket is
 
     function _getAvailableReputation() internal view returns (uint256) {
         return
-            reputationModule.getAvailableReputation(address(this), msg.sender);
+            reputationModule.getAvailableReputation(
+                address(this),
+                _msgSender()
+            );
     }
 
     /**
@@ -621,5 +675,30 @@ contract LaborMarket is
             reputationModule
                 .getMarketReputationConfig(address(this))
                 .signalStake;
+    }
+
+    /**
+     * @dev Delegatable ETH support
+     */
+    function _msgSender()
+        internal
+        view
+        virtual
+        override(DelegatableCore, ContextUpgradeable)
+        returns (address sender)
+    {
+        if (msg.sender == address(this)) {
+            bytes memory array = msg.data;
+            uint256 index = msg.data.length;
+            assembly {
+                sender := and(
+                    mload(add(array, index)),
+                    0xffffffffffffffffffffffffffffffffffffffff
+                )
+            }
+        } else {
+            sender = msg.sender;
+        }
+        return sender;
     }
 }
