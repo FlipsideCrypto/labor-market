@@ -10,6 +10,12 @@
       "resolveJsonModule": true,
       "moduleResolution": "node"
     },
+    "include": [
+      "abis/",
+      "abis/*.json",
+      "types/",
+      "index.ts"
+    ],
     "exclude": [
       "node_modules",
       "dist/"
