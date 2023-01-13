@@ -26,13 +26,12 @@ import {FCFSEnforcementCriteria} from "src/Modules/Enforcement/FCFSEnforcementCr
 import {Best5EnforcementCriteria} from "src/Modules/Enforcement/Best5EnforcementCriteria.sol";
 import {MerkleEnforcementCriteria} from "src/Modules/Enforcement/MerkleEnforcementCriteria.sol";
 
-import {PaymentModule} from "src/Modules/Payment/PaymentModule.sol";
 import {PayCurve} from "src/Modules/Payment/PayCurve.sol";
 
 import {LaborMarketConfigurationInterface} from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
 import {LaborMarketNetworkInterface} from "src/Network/interfaces/LaborMarketNetworkInterface.sol";
 
-contract ContractTest is PRBTest, StdCheats {
+contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
     AnyReputationToken public repToken;
     PaymentToken public payToken;
 
@@ -56,7 +55,6 @@ contract ContractTest is PRBTest, StdCheats {
     Best5EnforcementCriteria public best5Enforcement;
     MerkleEnforcementCriteria public merkleEnforcement;
 
-    PaymentModule public paymentModule;
     PayCurve public payCurve;
 
     // Define the tokenIds for ERC1155
@@ -185,9 +183,6 @@ contract ContractTest is PRBTest, StdCheats {
         fcfsEnforcement = new FCFSEnforcementCriteria();
         best5Enforcement = new Best5EnforcementCriteria();
         merkleEnforcement = new MerkleEnforcementCriteria();
-
-        // Create a payment module
-        paymentModule = new PaymentModule();
 
         // Create a new pay curve
         payCurve = new PayCurve();

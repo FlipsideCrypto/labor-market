@@ -20,7 +20,6 @@ import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/Reput
 
 import {LikertEnforcementCriteria} from "src/Modules/Enforcement/LikertEnforcementCriteria.sol";
 
-import {PaymentModule} from "src/Modules/Payment/PaymentModule.sol";
 import {PayCurve} from "src/Modules/Payment/PayCurve.sol";
 
 import {LaborMarketConfigurationInterface} from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
@@ -48,14 +47,13 @@ contract X is Script {
     LaborMarketNetwork public network;
 
     LikertEnforcementCriteria public enforcementCriteria;
-    PaymentModule public paymentModule;
     PayCurve public payCurve;
 
     // Define the tokenIds for ERC1155
     uint256 private constant DELEGATE_TOKEN_ID = 0;
-    uint256 private constant REPUTATION_TOKEN_ID = 0;
-    uint256 private constant PAYMENT_TOKEN_ID = 0;
-    uint256 private constant MAINTAINER_TOKEN_ID = 0;
+    uint256 private constant REPUTATION_TOKEN_ID = 1;
+    uint256 private constant PAYMENT_TOKEN_ID = 2;
+    uint256 private constant MAINTAINER_TOKEN_ID = 3;
     uint256 private constant REPUTATION_DECAY_RATE = 0;
     uint256 private constant REPUTATION_DECAY_INTERVAL = 0;
 
@@ -64,10 +62,13 @@ contract X is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // Create a p token
-        payToken = new PaymentToken(address(0xEd));
+        payToken = new PaymentToken(0x0F7494eE0831529fD676ADbc234f858e280AeAF0);
 
         // Generic reputation token
-        repToken = new AnyReputationToken("Mock reputation", address(0xEd));
+        repToken = new AnyReputationToken(
+            "Mock reputation",
+            0x0F7494eE0831529fD676ADbc234f858e280AeAF0
+        );
 
         // Deploy an empty labor market for implementation
         marketImplementation = new LaborMarket();
@@ -89,9 +90,6 @@ contract X is Script {
 
         // Create enforcement criteria
         enforcementCriteria = new LikertEnforcementCriteria();
-
-        // Create a payment module
-        paymentModule = new PaymentModule();
 
         // Create a new pay curve
         payCurve = new PayCurve();

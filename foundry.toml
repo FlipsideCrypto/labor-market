@@ -16,6 +16,14 @@ test = "test/forge"
 cache_path = 'cache'
 script='script/forge'
 
+[rpc_endpoints]
+goerli = "${GOERLI_RPC_URL}"
+
+[etherscan]
+goerli = { key = "${ETHERSCAN_API_KEY}" }
+
 [profile.ci]
 fuzz_runs = 1_000
 verbosity = 4
+
+

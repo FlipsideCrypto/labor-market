@@ -23,13 +23,12 @@ import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/Reput
 
 import {LikertEnforcementCriteria} from "src/Modules/Enforcement/LikertEnforcementCriteria.sol";
 
-import {PaymentModule} from "src/Modules/Payment/PaymentModule.sol";
 import {PayCurve} from "src/Modules/Payment/PayCurve.sol";
 
 import {LaborMarketConfigurationInterface} from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
 import {LaborMarketNetworkInterface} from "src/Network/interfaces/LaborMarketNetworkInterface.sol";
 
-contract ContractTest is PRBTest, StdCheats {
+contract LaborMarketTest is PRBTest, StdCheats {
     AnyReputationToken public repToken;
     PaymentToken public payToken;
 
@@ -46,7 +45,6 @@ contract ContractTest is PRBTest, StdCheats {
     LaborMarketNetwork public network;
 
     LikertEnforcementCriteria public enforcementCriteria;
-    PaymentModule public paymentModule;
     PayCurve public payCurve;
 
     // Define the tokenIds for ERC1155
@@ -171,9 +169,6 @@ contract ContractTest is PRBTest, StdCheats {
 
         // Create enforcement criteria
         enforcementCriteria = new LikertEnforcementCriteria();
-
-        // Create a payment module
-        paymentModule = new PaymentModule();
 
         // Create a new pay curve
         payCurve = new PayCurve();
@@ -990,6 +985,159 @@ contract ContractTest is PRBTest, StdCheats {
         // Score should average to 1 meaning it falls in the 20% bucket and should receive 20% of the reward
         uint256 qClaimed = market.claim(submissionId, alice, "");
         assertAlmostEq(qClaimed, 200e18, 0.000001e18);
+
+        vm.stopPrank();
+    }
+
+    function test_NotEnoughSubmissionsToReview() public {
+        vm.startPrank(bob);
+
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
+
+        // A valid user signals
+        changePrank(alice);
+        market.signal(requestId);
+
+        // User fulfills the request
+        uint256 submissionId = market.provide(requestId, "IPFS://333");
+
+        // Check maintainers (bob) reputation
+        assertEq(
+            reputationModule.getAvailableReputation(address(market), bob),
+            1000e18
+        );
+
+        // A valid maintainer signals for review (4 of them)
+        changePrank(bob);
+        market.signalReview(4);
+
+        // 1e18 of rep should be locked
+        assertEq(
+            reputationModule.getAvailableReputation(address(market), bob),
+            999e18
+        );
+
+        // A valid maintainer reviews the request
+        market.review(requestId, submissionId, 2);
+
+        // Should unlock 1e18/4 of rep
+        assertEq(
+            reputationModule.getAvailableReputation(address(market), bob),
+            999.25e18
+        );
+
+        // Skip forward in time
+        vm.warp(123 weeks);
+
+        // Reviewer reclaims their signal stake
+        market.retrieveReputation();
+
+        // Should have full rep again
+        assertEq(
+            reputationModule.getAvailableReputation(address(market), bob),
+            1000e18
+        );
+
+        vm.stopPrank();
+    }
+
+    function test_CannotRetrieveReputationIfThereWasOpportunityToReview()
+        public
+    {
+        vm.startPrank(bob);
+        uint256 submissionId;
+
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
+
+        // A valid maintainer signals for review (4 of them)
+        changePrank(bob);
+        market.signalReview(4);
+
+        for (uint256 i; i < 25; i++) {
+            changePrank(deployer);
+            address user = address(uint160(i + 123));
+            repToken.freeMint(user, REPUTATION_TOKEN_ID, 100e18);
+            // A valid user signals
+            changePrank(user);
+            market.signal(requestId);
+
+            // User fulfills the request
+            submissionId = market.provide(requestId, "IPFS://333");
+        }
+
+        // A valid maintainer reviews the request
+        changePrank(bob);
+        market.review(requestId, submissionId, 2);
+
+        // Skip forward in time
+        vm.warp(123 weeks);
+
+        // Reviewer reclaims their signal stake
+        vm.expectRevert(
+            "LaborMarket::retrieveReputation: Insufficient reviews."
+        );
+        market.retrieveReputation();
+
+        vm.stopPrank();
+    }
+
+    function test_CannotRetrieveReputationTwice() public {
+        vm.startPrank(bob);
+
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
+
+        // A valid user signals
+        changePrank(alice);
+        market.signal(requestId);
+
+        // User fulfills the request
+        uint256 submissionId = market.provide(requestId, "IPFS://333");
+
+        // Check maintainers (bob) reputation
+        assertEq(
+            reputationModule.getAvailableReputation(address(market), bob),
+            1000e18
+        );
+
+        // A valid maintainer signals for review (4 of them)
+        changePrank(bob);
+        market.signalReview(4);
+
+        // 1e18 of rep should be locked
+        assertEq(
+            reputationModule.getAvailableReputation(address(market), bob),
+            999e18
+        );
+
+        // A valid maintainer reviews the request
+        market.review(requestId, submissionId, 2);
+
+        // Should unlock 1e18/4 of rep
+        assertEq(
+            reputationModule.getAvailableReputation(address(market), bob),
+            999.25e18
+        );
+
+        // Skip forward in time
+        vm.warp(123 weeks);
+
+        // Reviewer reclaims their signal stake
+        market.retrieveReputation();
+
+        // Should have full rep again
+        assertEq(
+            reputationModule.getAvailableReputation(address(market), bob),
+            1000e18
+        );
+
+        // Reviewer reclaims their signal stake again
+        vm.expectRevert(
+            "LaborMarket::retrieveReputation: No reputation to retrieve."
+        );
+        market.retrieveReputation();
 
         vm.stopPrank();
     }
