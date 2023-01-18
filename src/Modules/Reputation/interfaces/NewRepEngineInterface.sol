@@ -4,7 +4,6 @@ pragma solidity ^0.8.17;
 
 interface ReputationEngineInterface {
     struct ReputationAccountInfo {
-        uint256 locked;
         uint256 lastDecayEpoch;
         uint256 frozenUntilEpoch;
     }

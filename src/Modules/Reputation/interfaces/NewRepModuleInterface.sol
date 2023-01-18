@@ -5,7 +5,7 @@ pragma solidity ^0.8.17;
 import { ReputationEngineInterface } from "./ReputationEngineInterface.sol";
 
 interface ReputationModuleInterface {
-    struct ReputationMarketConfig {
+    struct MarketReputationConfig {
         address reputationEngine;
         uint256 signalStake;
         uint256 submitMin;
@@ -26,12 +26,12 @@ interface ReputationModuleInterface {
 
     function useReputationModule(
           address _laborMarket
-        , ReputationMarketConfig calldata _repConfig
+        , MarketReputationConfig calldata _repConfig
     )
         external;
 
     function setMarketRepConfig(
-        ReputationMarketConfig calldata _repConfig
+        MarketReputationConfig calldata _repConfig
     )
         external;
 
@@ -88,7 +88,7 @@ interface ReputationModuleInterface {
         external
         view
         returns (
-            ReputationMarketConfig memory
+            MarketReputationConfig memory
         );
 
     function getReputationEngine(address _laborMarket) 

@@ -1,5 +1,6 @@
-// SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity ^0.8.17;
 
 import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";

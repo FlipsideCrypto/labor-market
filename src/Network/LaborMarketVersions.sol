@@ -1,19 +1,20 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.17;
 
 /// @dev Core dependencies.
-import {LaborMarketVersionsInterface} from "./interfaces/LaborMarketVersionsInterface.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ERC1155Holder} from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+import { LaborMarketVersionsInterface } from "./interfaces/LaborMarketVersionsInterface.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 
 /// @dev Helpers.
-import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
-import {LaborMarketInterface} from "../LaborMarket/interfaces/LaborMarketInterface.sol";
-import {ReputationModuleInterface} from "../Modules/Reputation/interfaces/ReputationModuleInterface.sol";
+import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
+import { LaborMarketInterface } from "../LaborMarket/interfaces/LaborMarketInterface.sol";
 
 /// @dev Supported interfaces.
-import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract LaborMarketVersions is
     LaborMarketVersionsInterface,
@@ -25,6 +26,15 @@ contract LaborMarketVersions is
     /*//////////////////////////////////////////////////////////////
                             PROTOCOL STATE
     //////////////////////////////////////////////////////////////*/
+    
+    /// @dev The address interface of the Capacity Token.
+    IERC20 public capacityToken;
+
+    /// @dev The address interface of the Governor Badge.
+    IERC1155 public governorBadge;
+
+    /// @dev The token ID of the Governor Badge.
+    uint256 public governorTokenId;
 
     /// @dev All of the versions that are actively running.
     ///      This also enables the ability to self-fork ones product.
@@ -39,22 +49,26 @@ contract LaborMarketVersions is
 
     /// @dev Announces when a Version configuration is updated through the protocol Factory.
     event VersionUpdated(
-        address indexed implementation,
-        Version indexed version
+          address indexed implementation
+        , Version indexed version
     );
 
     /// @dev Announces when a new Labor Market is created through the protocol Factory.
     event LaborMarketCreated(
-        address indexed marketAddress,
-        address indexed owner,
-        address indexed implementation
+          address indexed marketAddress
+        , address indexed owner
+        , address indexed implementation
     );
 
     /*//////////////////////////////////////////////////////////////
                                CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address _implementation) {
+    constructor(
+          address _implementation
+        , address _governorBadge
+        , uint256 _governorTokenId
+    ) {
         /// @dev Initialize the foundational version of the Labor Market primitive.
         _setVersion(
             _implementation,
@@ -63,6 +77,10 @@ contract LaborMarketVersions is
             0,
             false
         );
+
+        /// @dev Set the Governor Badge.
+        governorBadge = IERC1155(_governorBadge);
+        governorTokenId = _governorTokenId;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -77,13 +95,17 @@ contract LaborMarketVersions is
      * - If the caller is not the owner, cannot set a Payment Token as they cannot withdraw.
      */
     function setVersion(
-        address _implementation,
-        address _owner,
-        address _tokenAddress,
-        uint256 _tokenId,
-        uint256 _amount,
-        bool _locked
-    ) public virtual override {
+          address _implementation
+        , address _owner
+        , address _tokenAddress
+        , uint256 _tokenId
+        , uint256 _amount
+        , bool _locked
+    ) 
+        public 
+        virtual 
+        override 
+    {
         /// @dev Load the existing Version object.
         Version memory version = versions[_implementation];
 
@@ -138,13 +160,32 @@ contract LaborMarketVersions is
     /**
      * See {LaborMarketsVersionInterface.getLicenseKey}
      */
-    function getLicenseKey(bytes32 _versionKey, address _sender)
+    function getLicenseKey(
+          bytes32 _versionKey
+        , address _sender
+    )
         public
         pure
         override
         returns (bytes32)
     {
         return keccak256(abi.encodePacked(_versionKey, _sender));
+    }
+
+    /**
+     * @notice Gates permissions behind the Governor Badge.
+     * @dev This is an internal function to allow gating Governor permissions
+     *      within the entire network and factory contract stack.
+     * @param _sender The address to verify against.
+     */
+    function _validateGovernor(address _sender)
+        internal
+        view
+    {
+        require(
+            governorBadge.balanceOf(_sender, governorTokenId) > 0,
+            "LaborMarketVersions::_validateGovernor: Not governor."
+        );
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -201,13 +242,6 @@ contract LaborMarketVersions is
         /// @dev Interface with the newly created contract to initialize it.
         LaborMarketInterface laborMarket = LaborMarketInterface(marketAddress);
 
-        /// @dev Initialize the Reputation for the Labor Market.
-        ReputationModuleInterface(_configuration.reputationModule)
-            .useReputationModule(
-                marketAddress,
-                _configuration.reputationConfig
-            );
-
         /// @dev Deploy the clone contract to serve as the Labor Market.
         laborMarket.initialize(_configuration);
 
@@ -215,6 +249,23 @@ contract LaborMarketVersions is
         emit LaborMarketCreated(marketAddress, _deployer, _implementation);
 
         return marketAddress;
+    }
+
+    /**
+     * @notice Sets the governor badge of the network.
+     * @param _governorBadge The address of the Governor Badge.
+     * @param _governorTokenId The token ID of the Governor Badge.
+     * @dev This is an internal function to allow setting the Governor Badge
+     *      utilizing the LaborMarketNetwork interface.
+     */
+    function _setGovernorBadge(
+          address _governorBadge
+        , uint256 _governorTokenId
+    ) 
+        internal
+    {
+        governorBadge = IERC1155(_governorBadge);
+        governorTokenId = _governorTokenId;
     }
 
     /**

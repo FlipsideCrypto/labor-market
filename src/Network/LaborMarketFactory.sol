@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 
-pragma solidity 0.8.17;
+pragma solidity ^0.8.17;
 
 /// @dev Core dependencies.
 import { LaborMarketFactoryInterface } from "./interfaces/LaborMarketFactoryInterface.sol";
@@ -11,8 +11,16 @@ contract LaborMarketFactory is
       LaborMarketFactoryInterface
     , LaborMarketVersions
 {
-    constructor(address _implementation)
-        LaborMarketVersions(_implementation)
+    constructor(
+          address _implementation
+        , address _governorBadge
+        , uint256 _governorTokenId
+        ) 
+        LaborMarketVersions(
+              _implementation
+            , _governorBadge
+            , _governorTokenId
+        )
     {}
 
     /**
@@ -33,6 +41,9 @@ contract LaborMarketFactory is
             address laborMarketAddress
         )
     {
+        /// @dev MVP only allows governors to deploy new Labor Markets.
+        _validateGovernor(_msgSender());
+
         /// @dev Load the version.
         Version memory version = versions[_implementation];
 

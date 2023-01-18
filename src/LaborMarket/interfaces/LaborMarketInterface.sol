@@ -1,8 +1,8 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 
-pragma solidity 0.8.17;
+pragma solidity ^0.8.17;
 
-import {LaborMarketConfigurationInterface} from "./LaborMarketConfigurationInterface.sol";
+import { LaborMarketConfigurationInterface } from "./LaborMarketConfigurationInterface.sol";
 
 interface LaborMarketInterface is LaborMarketConfigurationInterface {
     struct ServiceRequest {
@@ -12,6 +12,7 @@ interface LaborMarketInterface is LaborMarketConfigurationInterface {
         uint256 signalExp;
         uint256 submissionExp;
         uint256 enforcementExp;
+        uint256 submissionCount;
         string uri;
     }
 
@@ -27,7 +28,6 @@ interface LaborMarketInterface is LaborMarketConfigurationInterface {
     struct ReviewPromise {
         uint256 total;
         uint256 remainder;
-        uint256 height;
     }
 
     function initialize(LaborMarketConfiguration calldata _configuration)

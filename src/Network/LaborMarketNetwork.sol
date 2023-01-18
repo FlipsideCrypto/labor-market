@@ -1,26 +1,45 @@
-// SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity ^0.8.17;
 
 import { LaborMarketNetworkInterface } from "./interfaces/LaborMarketNetworkInterface.sol";
 import { LaborMarketFactory } from "./LaborMarketFactory.sol";
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract LaborMarketNetwork is LaborMarketFactory {
-    IERC20 public capacityToken;
-
+contract LaborMarketNetwork is 
+    LaborMarketNetworkInterface,
+    LaborMarketFactory
+{
     constructor(
-        address _factoryImplementation,
-        address _capacityImplementation
-    ) LaborMarketFactory(_factoryImplementation) {
+          address _factoryImplementation
+        , address _capacityImplementation
+        , address _governorBadge
+        , uint256 _governorTokenId
+    ) 
+        LaborMarketFactory(
+              _factoryImplementation
+            , _governorBadge
+            , _governorTokenId
+        ) 
+    {
         capacityToken = IERC20(_capacityImplementation);
     }
 
+    function setGovernorBadge(
+          address _governorBadge
+        , uint256 _governorTokenId
+    ) 
+        external
+        virtual
+        override
+        onlyOwner
+    {
+        _setGovernorBadge(_governorBadge, _governorTokenId);
+    }
+
     /**
-     * @notice Allows the owner to set the capacity token implementation.
-     * @param _implementation The address of the reputation token.
-     * Requirements:
-     * - Only the owner can call this function.
+     * See {LaborMarketNetworkInterface.setCapacityImplementation}
      */
     function setCapacityImplementation(address _implementation)
         external
@@ -28,5 +47,17 @@ contract LaborMarketNetwork is LaborMarketFactory {
         onlyOwner
     {
         capacityToken = IERC20(_implementation);
+    }
+
+    /**
+     * See {LaborMarketNetworkInterface.validateGovernor}
+     */
+    function validateGovernor(address _sender) 
+        external
+        view
+        virtual
+        override
+    {
+        _validateGovernor(_sender);
     }
 }

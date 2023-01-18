@@ -1,5 +1,6 @@
-// SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity ^0.8.17;
 
 interface EnforcementCriteriaInterface {
     function review(uint256 submissionId, uint256 score)
