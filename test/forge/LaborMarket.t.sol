@@ -252,7 +252,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
             network.createLaborMarket({
                 _implementation: address(marketImplementation),
                 _deployer: deployer,
-                _marketConfiguration: config
+                _configuration: config
             })
         );
 
@@ -422,7 +422,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
                 network.createLaborMarket({
                     _implementation: address(marketImplementation),
                     _deployer: deployer,
-                    _marketConfiguration: config
+                    _configuration: config
                 })
             );
 
@@ -550,7 +550,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
             network.createLaborMarket({
                 _implementation: address(marketImplementation),
                 _deployer: deployer,
-                _marketConfiguration: config
+                _configuration: config
             })
         );
 

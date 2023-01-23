@@ -154,7 +154,7 @@ contract X is Script {
             network.createLaborMarket({
                 _implementation: address(marketImplementation),
                 _deployer: msg.sender,
-                _marketConfiguration: config
+                _configuration: config
             })
         );
 

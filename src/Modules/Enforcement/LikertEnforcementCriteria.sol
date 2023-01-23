@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.17;
 
-// TODO: look into https://github.com/paulrberg/prb-math
 import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
 
 contract LikertEnforcementCriteria {

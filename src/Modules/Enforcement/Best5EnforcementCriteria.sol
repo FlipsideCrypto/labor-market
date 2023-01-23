@@ -5,9 +5,6 @@ pragma solidity ^0.8.17;
 import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
 import {PayCurveInterface} from "../Payment/interfaces/PayCurveInterface.sol";
 
-// TODO: Add multiple reviewers (get average)
-// TODO: Find good averaging function
-// TODO: Find good sorting function
 
 contract Best5EnforcementCriteria {
     /// @notice Best 5 submissions on a curve get paid
@@ -16,7 +13,7 @@ contract Best5EnforcementCriteria {
 
     /// @dev Submission format
     struct Submission {
-        uint256 submissionId;
+        uint256 submissionId;   
         uint256 score;
     }
 
