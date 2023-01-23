@@ -31,9 +31,6 @@ contract ReputationModule is
           address indexed market
         , address indexed reputationToken
         , uint256 indexed reputationTokenId
-        , uint256 signalStake
-        , uint256 submitMin
-        , uint256 submitMax
     );
 
     /// @dev When the decay configuration of a reputation token is changed.
@@ -53,70 +50,53 @@ contract ReputationModule is
     /**
      * @notice Initialize a new Labor Market as using Reputation.
      * @param _laborMarket The address of the new Labor Market.
-     * @param _repConfig The Labor Market configuration of Reputation.
+     * @param _reputationToken The address of the reputation token.
+     * @param _reputationTokenId The ID of the reputation token.
      * Requirements:
      * - Only the network can call this function when creating a new market.
      */
     function useReputationModule(
           address _laborMarket
-        , MarketReputationConfig calldata _repConfig
+        , address _reputationToken
+        , uint256 _reputationTokenId
     )
         override
-        public
+        external
     {
         require(_msgSender() == network, "ReputationModule: Only network can call this.");
 
-        marketRepConfig[_laborMarket] = _repConfig;
+        marketRepConfig[_laborMarket] = MarketReputationConfig({
+              reputationToken: _reputationToken
+            , reputationTokenId: _reputationTokenId
+        });
 
         emit MarketReputationConfigured(
               _laborMarket
-            , _repConfig.reputationToken
-            , _repConfig.reputationTokenId
-            , _repConfig.signalStake
-            , _repConfig.submitMin
-            , _repConfig.submitMax
+            , _reputationToken
+            , _reputationTokenId
         );
     }
 
-    /**
-     * @notice Change the parameters of the Labor Market Reputation config.
-     * @param _signalStake The amount of reputation required to signal.
-     * @param _submitMin The minimum amount of reputation required to submit.
-     * @param _submitMax The maximum amount of reputation able to submit.
-     * @dev This function only changes the parameters of a reputation token.
-     *      It does not change the implementation of the reputation token.
-     *      A LaborMarket should not change the base token and instead, a new
-     *      LaborMarket should be instantiated.
-     * Requirements:
-     * - The Labor Market must already have been initialized.
-     * - The Labor Market has to be the caller.
-     */
-    function setMarketRepConfig(
-          uint256 _signalStake
-        , uint256 _submitMin
-        , uint256 _submitMax
+    // TODO: Permissioning
+    function setDecayConfig(
+          address _reputationToken
+        , uint256 _reputationTokenId
+        , uint256 _decayRate
+        , uint256 _decayInterval
     )
-        public
+        external
         override
     {
-        MarketReputationConfig storage config = marketRepConfig[_msgSender()];
+        decayConfig[_reputationToken][_reputationTokenId] = DecayConfig({
+              decayRate: _decayRate
+            , decayInterval: _decayInterval
+        });
 
-        require(
-            config.reputationToken != address(0), 
-            "ReputationModule: This Labor Market has not been initialized."
-        );
-
-        config.signalStake = _signalStake;
-        config.submitMin = _submitMin;
-        config.submitMax = _submitMax;
-
-        emit MarketReputationConfigured(
-              _msgSender()
-            , config.reputationToken
-            , config.reputationTokenId
-            , _signalStake
-            , _submitMin
-            , _submitMax
+        emit ReputationDecayConfigured(
+            _reputationToken
+            , _reputationTokenId
+            , _decayRate
+            , _decayInterval
         );
     }
 
@@ -134,12 +114,10 @@ contract ReputationModule is
             "ReputationModule: This Labor Market has not been initialized."
         );
 
-        IERC1155(config.reputationToken).safeTransferFrom(
+        BadgerOrganizationInterface(config.reputationToken).revoke(
             _account,
-            config.reputationToken,
             config.reputationTokenId,
-            _amount,
-            ""
+            _amount
         );
     }
 
@@ -163,6 +141,12 @@ contract ReputationModule is
 
         info.frozenUntilEpoch = _frozenUntilEpoch;
         info.lastDecayEpoch = block.timestamp;
+
+        BadgerOrganizationInterface(_reputationToken).revoke(
+            _account,
+            _reputationTokenId,
+            decay
+        );
     }
 
     function mintReputation(

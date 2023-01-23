@@ -7,16 +7,24 @@ pragma solidity ^0.8.17;
 interface LaborMarketConfigurationInterface {
     struct LaborMarketConfiguration {
         string marketUri;
-        address network;
-        address enforcementModule;
-        address paymentModule;
-        address reputationModule;
-        address delegateBadge;
-        uint256 delegateTokenId;
-        address maintainerBadge;
-        uint256 maintainerTokenId;
+        Modules modules;
+        BadgePair delegate;
+        BadgePair maintainer;
+        BadgePair reputation;
         uint256 signalStake;
         uint256 submitMin;
         uint256 submitMax;
+    }
+
+    struct BadgePair {
+        address token;
+        uint256 tokenId;
+    }
+
+    struct Modules {
+        address network;
+        address enforcement;
+        address payment;
+        address reputation;
     }
 }

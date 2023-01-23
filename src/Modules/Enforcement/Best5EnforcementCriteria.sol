@@ -143,7 +143,7 @@ contract Best5EnforcementCriteria {
 
             LaborMarketInterface market = LaborMarketInterface(msg.sender);
             PayCurveInterface curve = PayCurveInterface(
-                market.getConfiguration().paymentModule
+                market.getConfiguration().modules.payment
             );
             uint256 submissions = marketSubmissions[msg.sender][requestId]
                 .length;

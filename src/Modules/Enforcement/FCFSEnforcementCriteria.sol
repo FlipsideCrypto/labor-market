@@ -62,7 +62,7 @@ contract FCFSEnforcementCriteria {
             uint256 claimable;
             LaborMarketInterface market = LaborMarketInterface(msg.sender);
             PayCurveInterface curve = PayCurveInterface(
-                market.getConfiguration().paymentModule
+                market.getConfiguration().modules.payment
             );
             for (uint256 i; i < (MAX_SCORE - payCount[requestId]); i++) {
                 uint256 index = (payCount[requestId] + i);

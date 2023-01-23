@@ -17,7 +17,6 @@ interface LaborMarketFactoryInterface is LaborMarketVersionsInterface {
           address _implementation
         , address _deployer
         , LaborMarketConfiguration calldata _configuration
-        , ReputationModuleInterface.MarketReputationConfig calldata _repConfiguration
     ) 
         external 
         returns (

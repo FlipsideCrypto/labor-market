@@ -109,6 +109,7 @@ contract LaborMarketManager is
     /// @notice emitted when a maintainer signals a review.
     event ReviewSignal(
           address indexed signaler
+        , uint256 indexed requestId
         , uint256 indexed quantity
         , uint256 signalAmount
     );
@@ -136,8 +137,9 @@ contract LaborMarketManager is
     /// @notice emitted when a service submission is claimed.
     event RequestPayClaimed(
           address indexed claimer
+        , uint256 indexed requestId
         , uint256 indexed submissionId
-        , uint256 indexed payAmount
+        , uint256 payAmount
         , address to
     );
 
@@ -153,7 +155,7 @@ contract LaborMarketManager is
         require(
             delegateBadge.balanceOf(
                 _msgSender(),
-                configuration.delegateTokenId
+                configuration.delegate.tokenId
             ) > 0,
             "LaborMarket::onlyDelegate: Not a delegate."
         );
@@ -165,7 +167,7 @@ contract LaborMarketManager is
         require(
             maintainerBadge.balanceOf(
                 _msgSender(),
-                configuration.maintainerTokenId
+                configuration.maintainer.tokenId
             ) > 0,
             "LaborMarket::onlyMaintainer: Not a maintainer"
         );
@@ -250,24 +252,24 @@ contract LaborMarketManager is
         internal
     {
         /// @dev Connect to the higher level network to pull the active states.
-        network = LaborMarketNetworkInterface(_configuration.network);
+        network = LaborMarketNetworkInterface(_configuration.modules.network);
 
         /// @dev Configure the Labor Market state control.
         enforcementCriteria = EnforcementCriteriaInterface(
-            _configuration.enforcementModule
+            _configuration.modules.enforcement
         );
 
         /// @dev Configure the Labor Market pay curve.
-        paymentCurve = PayCurveInterface(_configuration.paymentModule);
+        paymentCurve = PayCurveInterface(_configuration.modules.payment);
 
         /// @dev Configure the Labor Market reputation module.
         reputationModule = ReputationModuleInterface(
-            _configuration.reputationModule
+            _configuration.modules.reputation
         );
 
         /// @dev Configure the Labor Market access control.
-        delegateBadge = IERC1155(_configuration.delegateBadge);
-        maintainerBadge = IERC1155(_configuration.maintainerBadge);
+        delegateBadge = IERC1155(_configuration.delegate.token);
+        maintainerBadge = IERC1155(_configuration.maintainer.token);
 
         /// @dev Configure the Labor Market parameters.
         configuration = _configuration;

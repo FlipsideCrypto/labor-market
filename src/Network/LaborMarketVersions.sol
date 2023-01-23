@@ -231,7 +231,6 @@ contract LaborMarketVersions is
         , uint256 _versionCost
         , address _deployer
         , LaborMarketConfiguration calldata _configuration
-        , ReputationModuleInterface.MarketReputationConfig calldata _repConfiguration
     )
         internal 
         returns (
@@ -255,10 +254,12 @@ contract LaborMarketVersions is
         laborMarket.initialize(_configuration);
 
         /// @dev Register the Labor Market with the Reputation Module.
-        ReputationModuleInterface(_configuration.reputationModule).useReputationModule(
+        ReputationModuleInterface(_configuration.modules.reputation).useReputationModule(
             marketAddress,
-            _repConfiguration
+            _configuration.reputation.token,
+            _configuration.reputation.tokenId
         );
+
 
         /// @dev Announce the creation of the Labor Market.
         emit LaborMarketCreated(marketAddress, _deployer, _implementation);

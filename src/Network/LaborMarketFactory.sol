@@ -31,13 +31,11 @@ contract LaborMarketFactory is
      * @param _implementation The address of the implementation to be used.
      * @param _deployer The address that will be the deployer of the Labor Market contract.
      * @param _marketConfiguration The struct containing the config of the Market being created.
-     * @param _repConfiguration The struct containing the config of the Reputation Market being created.
      */
     function createLaborMarket( 
           address _implementation
         , address _deployer
         , LaborMarketConfiguration calldata _marketConfiguration
-        , ReputationModuleInterface.MarketReputationConfig calldata _repConfiguration
     )
         override
         public
@@ -66,7 +64,6 @@ contract LaborMarketFactory is
             , version.amount
             , _deployer
             , _marketConfiguration
-            , _repConfiguration
         );
     }
 

@@ -6,9 +6,6 @@ interface ReputationModuleInterface {
     struct MarketReputationConfig {
         address reputationToken;
         uint256 reputationTokenId;
-        uint256 signalStake;
-        uint256 submitMin;
-        uint256 submitMax;
     }
 
     struct DecayConfig {
@@ -23,14 +20,23 @@ interface ReputationModuleInterface {
 
     function useReputationModule(
           address _laborMarket
-        , MarketReputationConfig calldata _repConfig
+        , address _reputationToken
+        , uint256 _reputationTokenId
     )
         external;
 
-    function setMarketRepConfig(
-          uint256 _signalStake
-        , uint256 _submitMin
-        , uint256 _submitMax
+    // function setMarketRepConfig(
+    //       uint256 _signalStake
+    //     , uint256 _submitMin
+    //     , uint256 _submitMax
+    // )
+    //     external;
+
+    function setDecayConfig(
+          address _reputationToken
+        , uint256 _reputationTokenId
+        , uint256 _decayRate
+        , uint256 _decayInterval
     )
         external;
 

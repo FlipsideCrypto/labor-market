@@ -135,14 +135,15 @@ contract X is Script {
             memory config = LaborMarketConfigurationInterface
                 .LaborMarketConfiguration({
                     marketUri: "ipfs://000",
-                    network: address(network),
-                    enforcementModule: address(enforcementCriteria),
-                    paymentModule: address(payCurve),
-                    reputationModule: address(reputationModule),
-                    delegateBadge: address(repToken),
-                    delegateTokenId: DELEGATE_TOKEN_ID,
-                    maintainerBadge: address(repToken),
-                    maintainerTokenId: MAINTAINER_TOKEN_ID,
+                    modules: LaborMarketConfigurationInterface.Modules({
+                        network: address(network),
+                        reputation: address(reputationModule),
+                        enforcement: address(enforcementCriteria),
+                        payment: address(payCurve)
+                    }),
+                    delegate: LaborMarketConfigurationInterface.BadgePair(address(repToken), DELEGATE_TOKEN_ID),
+                    maintainer: LaborMarketConfigurationInterface.BadgePair(address(repToken), MAINTAINER_TOKEN_ID),
+                    reputation: LaborMarketConfigurationInterface.BadgePair(address(repToken), REPUTATION_TOKEN_ID),
                     signalStake: 1e18,
                     submitMin: 1e18,
                     submitMax: 100000e18
@@ -153,8 +154,7 @@ contract X is Script {
             network.createLaborMarket({
                 _implementation: address(marketImplementation),
                 _deployer: msg.sender,
-                _marketConfiguration: config,
-                _repConfiguration: repConfig
+                _marketConfiguration: config
             })
         );
 

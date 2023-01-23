@@ -128,7 +128,7 @@ contract LaborMarket is LaborMarketManager {
         reviewPromise.total = _quantity;
         reviewPromise.remainder = _quantity;
 
-        emit ReviewSignal(_msgSender(), _quantity, signalStake);
+        emit ReviewSignal(_msgSender(), _requestId, _quantity, signalStake);
     }
 
     /**
@@ -231,7 +231,7 @@ contract LaborMarket is LaborMarketManager {
 
         reputationModule.mintReputation(
             _msgSender(),
-            (configuration.signalStake) / reviewSignals[_requestId][_msgSender()].total
+            configuration.signalStake
         );
 
         emit RequestReviewed(_msgSender(), _requestId, _submissionId, _score);
@@ -266,9 +266,11 @@ contract LaborMarket is LaborMarketManager {
             "LaborMarket::claim: Not service provider."
         );
 
+        uint256 requestId = serviceSubmissions[_submissionId].requestId;
+
         require(
             block.timestamp >=
-                serviceRequests[serviceSubmissions[_submissionId].requestId]
+                serviceRequests[requestId]
                     .enforcementExp,
             "LaborMarket::claim: Enforcement deadline not passed."
         );
@@ -285,7 +287,7 @@ contract LaborMarket is LaborMarketManager {
             serviceRequests[serviceSubmissions[_submissionId].requestId].pToken
         ).transfer(_to, amount);
 
-        emit RequestPayClaimed(_msgSender(), _submissionId, amount, _to);
+        emit RequestPayClaimed(_msgSender(), requestId, _submissionId, amount, _to);
 
         return amount;
     }
