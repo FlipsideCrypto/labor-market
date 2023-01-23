@@ -3,15 +3,15 @@ pragma solidity 0.8.17;
 
 import {Script} from "forge-std/Script.sol";
 
-import {AnyReputationToken, PaymentToken} from "test/forge/Helpers/HelperTokens.sol";
+import {PaymentToken} from "test/forge/Helpers/HelperTokens.sol";
 
-import {ReputationEngineInterface} from "src/Modules/Reputation/interfaces/ReputationEngineInterface.sol";
-import {ReputationEngine} from "src/Modules/Reputation/ReputationEngine.sol";
+import { BadgerOrganization } from "src/Modules/Badger/BadgerOrganization.sol";
+import { Badger } from "src/Modules/Badger/Badger.sol";
+import { BadgerScoutInterface } from "src/Modules/Badger/interfaces/BadgerScoutInterface.sol";
 
 import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
 import {LaborMarket} from "src/LaborMarket/LaborMarket.sol";
 
-import {LaborMarketFactory} from "src/Network/LaborMarketFactory.sol";
 import {LaborMarketNetwork} from "src/Network/LaborMarketNetwork.sol";
 import {LaborMarketVersions} from "src/Network/LaborMarketVersions.sol";
 
@@ -30,19 +30,22 @@ import {LaborMarketNetworkInterface} from "src/Network/interfaces/LaborMarketNet
 // PRIVATE_KEY= DEF
 // ETHERSCAN_API_KEY= GHI
 
+struct PaymentTokenInt { 
+    bytes32 paymentKey;
+    uint256 amount;
+}
+
 contract X is Script {
-    AnyReputationToken public repToken;
     PaymentToken public payToken;
+    
+    BadgerOrganization public repToken;
+    Badger public badger;
+    BadgerOrganization public badgerMaster;
 
     LaborMarket public marketImplementation;
     LaborMarket public market;
 
-    ReputationEngine public reputationEngineMaster;
-    ReputationEngine public reputationEngine;
-
     ReputationModule public reputationModule;
-
-    LaborMarketFactory public factory;
 
     LaborMarketNetwork public network;
 
@@ -54,6 +57,7 @@ contract X is Script {
     uint256 private constant REPUTATION_TOKEN_ID = 1;
     uint256 private constant PAYMENT_TOKEN_ID = 2;
     uint256 private constant MAINTAINER_TOKEN_ID = 3;
+    uint256 private constant GOVERNOR_TOKEN_ID = 4;
     uint256 private constant REPUTATION_DECAY_RATE = 0;
     uint256 private constant REPUTATION_DECAY_INTERVAL = 0;
 
@@ -64,25 +68,49 @@ contract X is Script {
         // Create a p token
         payToken = new PaymentToken(0x0F7494eE0831529fD676ADbc234f858e280AeAF0);
 
-        // Generic reputation token
-        repToken = new AnyReputationToken(
-            "Mock reputation",
-            0x0F7494eE0831529fD676ADbc234f858e280AeAF0
-        );
+        // Create badger factory
+        badgerMaster = new BadgerOrganization();
+        badger = new Badger(address(badgerMaster));
+
+        // Create reputation and role token contract
+        repToken = BadgerOrganization(
+            payable(badger.createOrganization(
+                address(badgerMaster),
+                address(this),
+                "ipfs://000",
+                "ipfs://000",
+                "MDAO",
+                "MDAO"
+            )
+        ));
+
+        // Initialize reputation and roles
+        address[] memory delegates;
+        delegates[0] = address(this);
+        for (uint256 i=0; i < GOVERNOR_TOKEN_ID; i++) {
+            repToken.setBadge(
+                i,
+                false,
+                true,
+                address(this),
+                "ipfs/",
+                BadgerScoutInterface.PaymentToken({
+                    paymentKey: bytes32(0),
+                    amount: 0
+                }),
+                delegates
+            );
+        }
 
         // Deploy an empty labor market for implementation
         marketImplementation = new LaborMarket();
 
-        // Deploy reputation token implementation
-        reputationEngineMaster = new ReputationEngine();
-
-        // Deploy a labor market factory
-        factory = new LaborMarketFactory(address(marketImplementation));
-
         // Deploy a labor market network
         network = new LaborMarketNetwork({
             _factoryImplementation: address(marketImplementation),
-            _capacityImplementation: address(address(0))
+            _capacityImplementation: address(payToken),
+            _governorBadge: address(repToken),
+            _governorTokenId: GOVERNOR_TOKEN_ID
         });
 
         // Deploy a new reputation module
@@ -94,41 +122,30 @@ contract X is Script {
         // Create a new pay curve
         payCurve = new PayCurve();
 
-        // Create a reputation token
-        reputationEngine = ReputationEngine(
-            reputationModule.createReputationEngine(
-                address(reputationEngineMaster),
-                address(repToken),
-                REPUTATION_TOKEN_ID,
-                REPUTATION_DECAY_RATE,
-                REPUTATION_DECAY_INTERVAL
-            )
-        );
-
         // Reputation config
-        ReputationModuleInterface.ReputationMarketConfig
+        ReputationModuleInterface.MarketReputationConfig
             memory repConfig = ReputationModuleInterface
-                .ReputationMarketConfig({
-                    reputationEngine: address(reputationEngine),
-                    signalStake: 1e18,
-                    submitMin: 1e18,
-                    submitMax: 100000e18
+                .MarketReputationConfig({
+                    reputationToken: address(repToken),
+                    reputationTokenId: REPUTATION_TOKEN_ID
                 });
 
         // Create a new labor market configuration
         LaborMarketConfigurationInterface.LaborMarketConfiguration
             memory config = LaborMarketConfigurationInterface
                 .LaborMarketConfiguration({
+                    marketUri: "ipfs://000",
                     network: address(network),
                     enforcementModule: address(enforcementCriteria),
                     paymentModule: address(payCurve),
-                    marketUri: "ipfs://000",
+                    reputationModule: address(reputationModule),
                     delegateBadge: address(repToken),
                     delegateTokenId: DELEGATE_TOKEN_ID,
                     maintainerBadge: address(repToken),
                     maintainerTokenId: MAINTAINER_TOKEN_ID,
-                    reputationModule: address(reputationModule),
-                    reputationConfig: repConfig
+                    signalStake: 1e18,
+                    submitMin: 1e18,
+                    submitMax: 100000e18
                 });
 
         // Create a new labor market
@@ -136,7 +153,8 @@ contract X is Script {
             network.createLaborMarket({
                 _implementation: address(marketImplementation),
                 _deployer: msg.sender,
-                _configuration: config
+                _marketConfiguration: config,
+                _repConfiguration: repConfig
             })
         );
 

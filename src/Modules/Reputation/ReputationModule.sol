@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 
 /// @dev Core dependencies.
 import { ReputationModuleInterface } from "./interfaces/ReputationModuleInterface.sol";
-import { BadgerOrganizationInterface } from "./interfaces/BadgerOrganizationInterface.sol";
+import { BadgerOrganizationInterface } from "../Badger/interfaces/BadgerOrganizationInterface.sol";
 
 /// @dev Helper interfaces.
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
@@ -194,6 +194,7 @@ contract ReputationModule is
      * @return The amount of reputation that is available to use.
      */
     function getAvailableReputation(
+        address _laborMarket,
         address _account
     )
         external
@@ -203,7 +204,7 @@ contract ReputationModule is
             uint256
         )
     {
-        MarketReputationConfig memory config = marketRepConfig[_msgSender()];
+        MarketReputationConfig memory config = marketRepConfig[_laborMarket];
         ReputationAccountInfo memory info = accountInfo[config.reputationToken][config.reputationTokenId][_account];
 
         if (info.frozenUntilEpoch > block.timestamp) return 0;
@@ -242,6 +243,19 @@ contract ReputationModule is
             accountInfo[config.reputationToken][config.reputationTokenId][_account].frozenUntilEpoch,
             accountInfo[config.reputationToken][config.reputationTokenId][_account].lastDecayEpoch
         );
+    }
+
+    function getMarketReputationConfig(
+        address _laborMarket
+    )
+        external
+        view
+        override
+        returns (
+            MarketReputationConfig memory
+        )
+    {
+        return marketRepConfig[_laborMarket];
     }
 
     /**

@@ -55,7 +55,8 @@ interface ReputationModuleInterface {
         external;
 
     function getAvailableReputation(
-        address _account
+          address _laborMarket
+        , address _account
     )
         external
         view
@@ -71,5 +72,14 @@ interface ReputationModuleInterface {
         view
         returns (
             uint256
+        );
+
+    function getMarketReputationConfig(
+        address _laborMarket
+    )
+        external
+        view
+        returns (
+            MarketReputationConfig memory
         );
 }

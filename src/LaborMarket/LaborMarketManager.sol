@@ -284,6 +284,7 @@ contract LaborMarketManager is
     function _getAvailableReputation() internal view returns (uint256) {
         return
             reputationModule.getAvailableReputation(
+                address(this),
                 _msgSender()
             );
     }
