@@ -2,7 +2,9 @@
 
 pragma solidity ^0.8.17;
 
-import {LaborMarketVersionsInterface} from "./LaborMarketVersionsInterface.sol";
+import { LaborMarketVersionsInterface } from "./LaborMarketVersionsInterface.sol";
+import { ReputationModuleInterface } from "../../Modules/Reputation/interfaces/ReputationModuleInterface.sol";
+
 
 interface LaborMarketFactoryInterface is LaborMarketVersionsInterface {
     /**
@@ -12,8 +14,13 @@ interface LaborMarketFactoryInterface is LaborMarketVersionsInterface {
      * @param _configuration The struct containing the config of the Market being created.
      */
     function createLaborMarket(
-        address _implementation,
-        address _deployer,
-        LaborMarketConfiguration calldata _configuration
-    ) external returns (address);
+          address _implementation
+        , address _deployer
+        , LaborMarketConfiguration calldata _configuration
+        , ReputationModuleInterface.MarketReputationConfig calldata _repConfiguration
+    ) 
+        external 
+        returns (
+            address
+        );
 }

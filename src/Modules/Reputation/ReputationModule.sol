@@ -1,32 +1,47 @@
-// SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+// SPDX-License-Identifier: Apache-2.0
 
-import { ReputationEngineInterface } from "./interfaces/ReputationEngineInterface.sol";
+pragma solidity ^0.8.17;
+
+/// @dev Core dependencies.
 import { ReputationModuleInterface } from "./interfaces/ReputationModuleInterface.sol";
-import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
+import { BadgerOrganizationInterface } from "./interfaces/BadgerOrganizationInterface.sol";
 
-contract ReputationModule is ReputationModuleInterface {
-    using Clones for address;
+/// @dev Helper interfaces.
+import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import { ContextUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
+contract ReputationModule is 
+    ReputationModuleInterface,
+    ContextUpgradeable
+{
+    /// @dev The Labor Market Network permissioned to make actions.
     address public network;
 
-    mapping(address => ReputationMarketConfig) public laborMarketRepConfig;
+    /// @dev The decay configuration of a given reputation token.
+    mapping(address => mapping(uint256 => DecayConfig)) public decayConfig;
 
-    event ReputationEngineCreated (
-          address indexed reputationEngine
-        , address indexed baseToken
-        , uint256 indexed baseTokenId
-        , address owner
-        , uint256 decayRate
-        , uint256 decayInterval
-    );
+    /// @dev The configuration for a given Labor Market.
+    mapping(address => MarketReputationConfig) public marketRepConfig;
 
+    /// @dev The decay and freezing state for an account for a given reputation token.
+    mapping(address => mapping(uint256 => mapping(address => ReputationAccountInfo))) public accountInfo;
+
+    /// @dev When the reputation implementation of a market is changed.
     event MarketReputationConfigured (
           address indexed market
-        , address indexed reputationEngine
+        , address indexed reputationToken
+        , uint256 indexed reputationTokenId
         , uint256 signalStake
         , uint256 submitMin
         , uint256 submitMax
+    );
+
+    /// @dev When the decay configuration of a reputation token is changed.
+    event ReputationDecayConfigured (
+          address indexed reputationToken
+        , uint256 indexed reputationTokenId
+        , uint256 decayRate
+        , uint256 decayInterval
     );
 
     constructor(
@@ -36,75 +51,27 @@ contract ReputationModule is ReputationModuleInterface {
     }
 
     /**
-     * @notice Create a new Reputation Token.
-     * @param _implementation The address of ReputationEngine implementation.
-     * @param _baseToken The address of the base ERC1155.
-     * @param _baseTokenId The tokenId of the base ERC1155.
-     * @param _decayRate The amount of reputation decay per epoch.
-     * @param _decayInterval The block length of an epoch.
-     * Requirements:
-     * - Only the network can call this function in the factory.
-     */
-    function createReputationEngine(
-          address _implementation
-        , address _baseToken
-        , uint256 _baseTokenId
-        , uint256 _decayRate
-        , uint256 _decayInterval
-    )
-        override
-        external
-        returns (
-            address
-        )
-    {
-        address reputationEngineAddress = _implementation.clone();
-
-        ReputationEngineInterface reputationEngine = ReputationEngineInterface(
-            reputationEngineAddress
-        );
-
-        reputationEngine.initialize(
-              address(this)
-            , _baseToken
-            , _baseTokenId
-            , _decayRate
-            , _decayInterval
-        );
-
-        emit ReputationEngineCreated(
-              reputationEngineAddress
-            , _baseToken
-            , _baseTokenId
-            , msg.sender
-            , _decayRate
-            , _decayInterval
-        );
-
-        return reputationEngineAddress;
-    }
-
-    /**
      * @notice Initialize a new Labor Market as using Reputation.
      * @param _laborMarket The address of the new Labor Market.
-     * @param _repConfig The Labor Market level config of Reputation.
+     * @param _repConfig The Labor Market configuration of Reputation.
      * Requirements:
-     * - Only the network can call this function in the factory.
+     * - Only the network can call this function when creating a new market.
      */
     function useReputationModule(
           address _laborMarket
-        , ReputationMarketConfig calldata _repConfig
+        , MarketReputationConfig calldata _repConfig
     )
         override
         public
     {
-        require(msg.sender == network, "ReputationModule: Only network can call this.");
+        require(_msgSender() == network, "ReputationModule: Only network can call this.");
 
-        laborMarketRepConfig[_laborMarket] = _repConfig;
+        marketRepConfig[_laborMarket] = _repConfig;
 
         emit MarketReputationConfigured(
               _laborMarket
-            , _repConfig.reputationEngine
+            , _repConfig.reputationToken
+            , _repConfig.reputationTokenId
             , _repConfig.signalStake
             , _repConfig.submitMin
             , _repConfig.submitMax
@@ -113,223 +80,200 @@ contract ReputationModule is ReputationModuleInterface {
 
     /**
      * @notice Change the parameters of the Labor Market Reputation config.
-     * @param _repConfig The Labor Market level config of Reputation.
-     * @dev This function is only callable by Labor Markets that have already been
-     *      initialized with the Reputation module by the Network.
+     * @param _signalStake The amount of reputation required to signal.
+     * @param _submitMin The minimum amount of reputation required to submit.
+     * @param _submitMax The maximum amount of reputation able to submit.
+     * @dev This function only changes the parameters of a reputation token.
+     *      It does not change the implementation of the reputation token.
+     *      A LaborMarket should not change the base token and instead, a new
+     *      LaborMarket should be instantiated.
      * Requirements:
-     * - The Labor Market must already have a configuration.
+     * - The Labor Market must already have been initialized.
+     * - The Labor Market has to be the caller.
      */
     function setMarketRepConfig(
-        ReputationMarketConfig calldata _repConfig
+          uint256 _signalStake
+        , uint256 _submitMin
+        , uint256 _submitMax
     )
+        public
         override
-        public 
     {
-        require(_callerReputationEngine() != address(0), "ReputationModule: This Labor Market does not exist.");
+        MarketReputationConfig storage config = marketRepConfig[_msgSender()];
 
-        laborMarketRepConfig[msg.sender] = _repConfig;
+        require(
+            config.reputationToken != address(0), 
+            "ReputationModule: This Labor Market has not been initialized."
+        );
+
+        config.signalStake = _signalStake;
+        config.submitMin = _submitMin;
+        config.submitMax = _submitMax;
 
         emit MarketReputationConfigured(
-              msg.sender
-            , _repConfig.reputationEngine
-            , _repConfig.signalStake
-            , _repConfig.submitMin
-            , _repConfig.submitMax
+              _msgSender()
+            , config.reputationToken
+            , config.reputationTokenId
+            , _signalStake
+            , _submitMin
+            , _submitMax
         );
     }
 
-    /**
-     * @dev See {reputationEngine-freezeReputation}.
-     */
+    function useReputation(
+          address _account
+        , uint256 _amount
+    )
+        external
+        override
+    {
+        MarketReputationConfig memory config = marketRepConfig[_msgSender()];
+
+        require(
+            config.reputationToken != address(0), 
+            "ReputationModule: This Labor Market has not been initialized."
+        );
+
+        IERC1155(config.reputationToken).safeTransferFrom(
+            _account,
+            config.reputationToken,
+            config.reputationTokenId,
+            _amount,
+            ""
+        );
+    }
+
     function freezeReputation(
           address _account
-        , uint256 _frozenUntilEpoch
-    ) 
-        override
-        public
-    {
-        _freezeReputation(_callerReputationEngine(), _account, _frozenUntilEpoch);
-    }
-
-    /**
-     * @dev See {ReputationEngine-lockReputation}.
-     * @dev The internal call makes the module the msg.sender which is permissioned
-     *      to make balance changes within the ReputationEngine.
-     */
-    function _freezeReputation(
-          address _reputationEngine
-        , address _account
+        , address _reputationToken
+        , uint256 _reputationTokenId
         , uint256 _frozenUntilEpoch
     )
-        internal
+        external
+        override
     {
-        ReputationEngineInterface(_reputationEngine).freezeReputation(
-              _account
-            , _frozenUntilEpoch
+        ReputationAccountInfo storage info = accountInfo[_reputationToken][_reputationTokenId][_account];
+
+        uint256 decay = _getReputationDecay(
+            _reputationToken, 
+            _reputationTokenId,
+            info.frozenUntilEpoch,
+            info.lastDecayEpoch
         );
+
+        info.frozenUntilEpoch = _frozenUntilEpoch;
+        info.lastDecayEpoch = block.timestamp;
     }
 
-    /**
-     * @dev See {ReputationEngine-lockReputation}.
-     */
-    function lockReputation(
+    function mintReputation(
           address _account
         , uint256 _amount
-    ) 
+    )
+        external
         override
-        public
     {
-        _lockReputation(_callerReputationEngine(), _account, _amount);
-    }
+        MarketReputationConfig memory config = marketRepConfig[_msgSender()];
 
-    /**
-     * @dev See {ReputationEngine-lockReputation}.
-     * @dev The internal call makes the module the msg.sender which is permissioned
-     *      to make balance changes within the ReputationEngine.
-     */
-    function _lockReputation(
-          address _reputationEngine
-        , address _account
-        , uint256 _amount
-    ) 
-        internal
-    {
-        ReputationEngineInterface(_reputationEngine).lockReputation(
-              _account
-            , _amount
+        require(
+            config.reputationToken != address(0), 
+            "ReputationModule: This Labor Market has not been initialized."
+        );
+
+        BadgerOrganizationInterface(config.reputationToken).leaderMint(
+            _account,
+            config.reputationTokenId,
+            _amount,
+            ""
         );
     }
 
     /**
-     * @dev See {ReputationEngine-unlockReputation}.
-     */
-    function unlockReputation(
-          address _account
-        , uint256 _amount
-    ) 
-        override
-        public
-    {
-        _unlockReputation(_callerReputationEngine(), _account, _amount);
-    }
-    
-    /**
-     * @dev The internal call makes the module the msg.sender which is permissioned
-     *      to make balance changes within the ReputationEngine.
-     */
-    function _unlockReputation(
-          address _reputationEngine
-        , address _account
-        , uint256 _amount
-    ) 
-        internal
-    {
-        ReputationEngineInterface(_reputationEngine).unlockReputation(
-              _account
-            , _amount
-        );
-    }
-
-    /**
-     * @dev See {ReputationEngine-getAvailableReputation}.
+     * @notice Get the amount of reputation that is available to use.
+     * @dev This function takes into account non-applied decay and the frozen state.
+     * @param _account The account to check.
+     * @return The amount of reputation that is available to use.
      */
     function getAvailableReputation(
-          address _laborMarket
-        , address _account
+        address _account
     )
-        override
-        public
+        external
         view
+        override
         returns (
             uint256
         )
     {
-        return ReputationEngineInterface(
-            getReputationEngine(_laborMarket)
-        ).getAvailableReputation(_account);
+        MarketReputationConfig memory config = marketRepConfig[_msgSender()];
+        ReputationAccountInfo memory info = accountInfo[config.reputationToken][config.reputationTokenId][_account];
+
+        if (info.frozenUntilEpoch > block.timestamp) return 0;
+
+        uint256 decayed = _getReputationDecay(
+            config.reputationToken,
+            config.reputationTokenId,
+            info.frozenUntilEpoch,
+            info.lastDecayEpoch
+        );
+
+        return (
+            IERC1155(config.reputationToken).balanceOf(
+                _account,
+                config.reputationTokenId
+            ) - decayed
+        );
     }
 
-    /**
-     * @dev See {ReputationEngine-getPendingDecay}.
-     */
     function getPendingDecay(
           address _laborMarket
         , address _account
     )
+        external
+        view
         override
-        public
+        returns (
+            uint256
+        )
+    {
+        MarketReputationConfig memory config = marketRepConfig[_laborMarket];
+
+        return _getReputationDecay(
+            config.reputationToken,
+            config.reputationTokenId,
+            accountInfo[config.reputationToken][config.reputationTokenId][_account].frozenUntilEpoch,
+            accountInfo[config.reputationToken][config.reputationTokenId][_account].lastDecayEpoch
+        );
+    }
+
+    /**
+     * @notice Get the amount of reputation that has decayed.
+     * @param _reputationToken The reputation token to check.
+     * @param _reputationTokenId The reputation token ID to check.
+     * @param _frozenUntilEpoch The epoch that the reputation is frozen until.
+     * @param _lastDecayEpoch The epoch that the reputation was last decayed.
+     * @return The amount of reputation that has decayed.
+     */
+    function _getReputationDecay(
+          address _reputationToken
+        , uint256 _reputationTokenId
+        , uint256 _frozenUntilEpoch
+        , uint256 _lastDecayEpoch
+    )
+        internal
         view
         returns (
             uint256
         )
     {
-        return ReputationEngineInterface(
-            getReputationEngine(_laborMarket)
-        ).getPendingDecay(_account);
-    }
+        DecayConfig memory decay = decayConfig[_reputationToken][_reputationTokenId];
 
-    /**
-     * @dev See {ReputationEngine-getReputationAccountInfo}.
-     */
-    function getReputationAccountInfo(
-          address _laborMarket
-        , address _account
-    )
-        override
-        public
-        view
-        returns (
-            ReputationEngineInterface.ReputationAccountInfo memory
-        )
-    {
-        return ReputationEngineInterface(
-            getReputationEngine(_laborMarket)
-        ).getReputationAccountInfo(_account);
-    }
+        if (
+            _frozenUntilEpoch > block.timestamp || 
+            decay.decayRate == 0
+        ) {
+            return 0;
+        }
 
-    /**
-     * @notice Retreive the reputation configuration parameters for the Labor Market.
-     * @param _laborMarket The address of the Labor Market.
-     */
-    function getMarketReputationConfig(address _laborMarket)
-        override
-        public
-        view
-        returns (
-            ReputationMarketConfig memory
-        )
-    {
-        return laborMarketRepConfig[_laborMarket];
-    }
-
-    /**
-     * @notice Retreive the ReputationEngine implementation for the Labor Market.
-     * @param _laborMarket The address of the Labor Market.
-     */
-    function getReputationEngine(address _laborMarket)
-        override
-        public
-        view
-        returns (
-            address
-        )
-    {
-        return laborMarketRepConfig[_laborMarket].reputationEngine;
-    }
-
-    /**
-     * @dev Helper function to get the ReputationEngine address for the caller.
-     * @dev By limiting the caller to a Labor Market, we can ensure that the
-     *      caller is a valid Labor Market and can only interact with its own
-     *      ReputationEngine.
-     */
-    function _callerReputationEngine()
-        internal
-        view
-        returns (
-            address
-        )
-    {
-        return laborMarketRepConfig[msg.sender].reputationEngine;
+        return (((block.timestamp - _lastDecayEpoch - _frozenUntilEpoch) /
+            decay.decayInterval) * decay.decayRate);
     }
 }

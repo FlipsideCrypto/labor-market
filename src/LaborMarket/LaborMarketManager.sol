@@ -27,7 +27,8 @@ contract LaborMarketManager is
     LaborMarketInterface,
     ERC1155HolderUpgradeable,
     ERC721HolderUpgradeable,
-    Delegatable("LaborMarket", "v1.0.0")
+    Delegatable("LaborMarket", "v1.0.0"),
+    ContextUpgradeable
 {
     /// @dev Performable actions.
     bytes32 public constant HAS_SUBMITTED = keccak256("hasSubmitted");
@@ -56,6 +57,12 @@ contract LaborMarketManager is
     /// @dev The configuration of the labor market.
     LaborMarketConfiguration public configuration;
 
+    /// @dev The delegate badge.
+    IERC1155 public delegateBadge;
+
+    /// @dev The maintainer badge.
+    IERC1155 public maintainerBadge;
+
     /// @dev Tracking the signals per service request.
     mapping(uint256 => uint256) public signalCount;
 
@@ -81,7 +88,7 @@ contract LaborMarketManager is
     );
 
     /// @notice emitted when a new service request is made.
-    event RequestCreated(
+    event RequestConfigured(
           address indexed requester
         , uint256 indexed requestId
         , string indexed uri
@@ -144,9 +151,9 @@ contract LaborMarketManager is
     /// @notice Gates the permissions to create new requests.
     modifier onlyDelegate() {
         require(
-            IERC1155(configuration.delegate.tokenAddress).balanceOf(
+            delegateBadge.balanceOf(
                 _msgSender(),
-                configuration.delegate.tokenId
+                configuration.delegateTokenId
             ) > 0,
             "LaborMarket::onlyDelegate: Not a delegate."
         );
@@ -156,9 +163,9 @@ contract LaborMarketManager is
     /// @notice Gates the permissions to review submissions.
     modifier onlyMaintainer() {
         require(
-            IERC1155(configuration.maintainer.tokenAddress).balanceOf(
+            maintainerBadge.balanceOf(
                 _msgSender(),
-                configuration.maintainer.tokenId
+                configuration.maintainerTokenId
             ) > 0,
             "LaborMarket::onlyMaintainer: Not a maintainer"
         );
@@ -169,8 +176,8 @@ contract LaborMarketManager is
     modifier permittedParticipant() {
         uint256 availableRep = _getAvailableReputation();
         require((
-                availableRep >= configuration.reputationConfig.submitMin &&
-                availableRep < configuration.reputationConfig.submitMax
+                availableRep >= configuration.submitMin &&
+                availableRep < configuration.submitMax
             ), "LaborMarket::permittedParticipant: Not a permitted participant"
         );
         _;
@@ -235,43 +242,7 @@ contract LaborMarketManager is
     //////////////////////////////////////////////////////////////*/
 
     /**
-     * @dev See {ReputationModule-lockReputation}.
-     */
-    function _lockReputation(
-          address _account
-        , uint256 _amount
-    ) 
-        internal 
-    {
-        reputationModule.lockReputation(_account, _amount);
-    }
-
-    /**
-     * @dev See {ReputationModule-unlockReputation}.
-     */
-    function _unlockReputation(
-          address _account
-        , uint256 _amount
-    ) 
-        internal 
-    {
-        reputationModule.unlockReputation(_account, _amount);
-    }
-
-    /**
-     * @dev See {ReputationModule-freezeReputation}.
-     */
-    function _freezeReputation(
-          address _account
-        , uint256 _amount
-    ) 
-        internal 
-    {
-        reputationModule.freezeReputation(_account, _amount);
-    }
-
-    /**
-     * @dev Handle all the logic for configuration on deployment of a new LaborMarket.
+     * @dev Handle all the logic for configuration of a LaborMarket.
      */
     function _setConfiguration(
         LaborMarketConfiguration calldata _configuration
@@ -279,7 +250,7 @@ contract LaborMarketManager is
         internal
     {
         /// @dev Connect to the higher level network to pull the active states.
-        network = LaborMarketNetwork(_configuration.network);
+        network = LaborMarketNetworkInterface(_configuration.network);
 
         /// @dev Configure the Labor Market state control.
         enforcementCriteria = EnforcementCriteriaInterface(
@@ -294,12 +265,6 @@ contract LaborMarketManager is
             _configuration.reputationModule
         );
 
-        /// @dev Register the Labor Market as using the reputation module.
-        reputationModule.useReputationModule(
-            address(this),
-            _configuration.reputationConfig
-        );
-
         /// @dev Configure the Labor Market access control.
         delegateBadge = IERC1155(_configuration.delegateBadge);
         maintainerBadge = IERC1155(_configuration.maintainerBadge);
@@ -309,7 +274,6 @@ contract LaborMarketManager is
 
         emit LaborMarketConfigured(_configuration);
     }
-
     /*//////////////////////////////////////////////////////////////
                             INTERNAL GETTERS
     //////////////////////////////////////////////////////////////*/
@@ -320,19 +284,8 @@ contract LaborMarketManager is
     function _getAvailableReputation() internal view returns (uint256) {
         return
             reputationModule.getAvailableReputation(
-                address(this),
                 _msgSender()
             );
-    }
-
-    /**
-     * @dev See {ReputationModule-getMarketReputationConfig}
-     */
-    function _baseStake() internal view returns (uint256) {
-        return
-            reputationModule
-                .getMarketReputationConfig(address(this))
-                .signalStake;
     }
 
     /**

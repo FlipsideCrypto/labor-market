@@ -2,61 +2,60 @@
 
 pragma solidity ^0.8.17;
 
-import { ReputationEngineInterface } from "./ReputationEngineInterface.sol";
-
 interface ReputationModuleInterface {
-    struct ReputationMarketConfig {
-        address reputationEngine;
+    struct MarketReputationConfig {
+        address reputationToken;
+        uint256 reputationTokenId;
         uint256 signalStake;
         uint256 submitMin;
         uint256 submitMax;
     }
 
-    function createReputationEngine(
-          address _implementation
-        , address _baseToken
-        , uint256 _baseTokenId
-        , uint256 _decayRate
-        , uint256 _decayInterval
-    )
-        external
-        returns (
-            address
-        );
+    struct DecayConfig {
+        uint256 decayRate;
+        uint256 decayInterval;
+    }
+
+    struct ReputationAccountInfo {
+        uint256 lastDecayEpoch;
+        uint256 frozenUntilEpoch;
+    }
 
     function useReputationModule(
           address _laborMarket
-        , ReputationMarketConfig calldata _repConfig
+        , MarketReputationConfig calldata _repConfig
     )
         external;
 
     function setMarketRepConfig(
-        ReputationMarketConfig calldata _repConfig
+          uint256 _signalStake
+        , uint256 _submitMin
+        , uint256 _submitMax
     )
         external;
 
     function freezeReputation(
           address _account
+        , address _reputationToken
+        , uint256 _reputationTokenId
         , uint256 _frozenUntilEpoch
+    )
+        external; 
+
+    function useReputation(
+          address _account
+        , uint256 _amount
     )
         external;
 
-
-    function lockReputation(
+    function mintReputation(
           address _account
         , uint256 _amount
-    ) 
-        external;
-
-    function unlockReputation(
-          address _account
-        , uint256 _amount
-    ) 
+    )
         external;
 
     function getAvailableReputation(
-          address _laborMarket
-        , address _account
+        address _account
     )
         external
         view
@@ -72,29 +71,5 @@ interface ReputationModuleInterface {
         view
         returns (
             uint256
-        );
-
-    function getReputationAccountInfo(
-          address _laborMarket
-        , address _account
-    )
-        external
-        view
-        returns (
-            ReputationEngineInterface.ReputationAccountInfo memory
-        );
-
-    function getMarketReputationConfig(address _laborMarket)
-        external
-        view
-        returns (
-            ReputationMarketConfig memory
-        );
-
-    function getReputationEngine(address _laborMarket) 
-        external
-        view
-        returns (
-            address
         );
 }

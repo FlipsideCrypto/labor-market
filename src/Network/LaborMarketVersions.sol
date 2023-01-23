@@ -10,6 +10,7 @@ import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC11
 /// @dev Helpers.
 import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
 import { LaborMarketInterface } from "../LaborMarket/interfaces/LaborMarketInterface.sol";
+import { ReputationModuleInterface } from "../Modules/Reputation/interfaces/ReputationModuleInterface.sol";
 
 /// @dev Supported interfaces.
 import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
@@ -196,12 +197,14 @@ contract LaborMarketVersions is
      * See {LaborMarketVersionsInterface.setVersion}
      */
     function _setVersion(
-        address _implementation,
-        address _owner,
-        bytes32 _licenseKey,
-        uint256 _amount,
-        bool _locked
-    ) internal {
+          address _implementation
+        , address _owner
+        , bytes32 _licenseKey
+        , uint256 _amount
+        , bool _locked
+    ) 
+        internal 
+    {
         /// @dev Set the version configuration.
         versions[_implementation] = Version({
             owner: _owner,
@@ -223,12 +226,18 @@ contract LaborMarketVersions is
      * @param _configuration The configuration of the Labor Market.
      */
     function _createLaborMarket(
-        address _implementation,
-        bytes32 _licenseKey,
-        uint256 _versionCost,
-        address _deployer,
-        LaborMarketConfiguration calldata _configuration
-    ) internal returns (address) {
+          address _implementation
+        , bytes32 _licenseKey
+        , uint256 _versionCost
+        , address _deployer
+        , LaborMarketConfiguration calldata _configuration
+        , ReputationModuleInterface.MarketReputationConfig calldata _repConfiguration
+    )
+        internal 
+        returns (
+            address
+        ) 
+    {
         /// @dev Deduct the amount of payment that is needed to cover deployment of this version.
         /// @notice This will revert if an individual has not funded it with at least the needed amount
         ///         to cover the cost of the version.
@@ -244,6 +253,12 @@ contract LaborMarketVersions is
 
         /// @dev Deploy the clone contract to serve as the Labor Market.
         laborMarket.initialize(_configuration);
+
+        /// @dev Register the Labor Market with the Reputation Module.
+        ReputationModuleInterface(_configuration.reputationModule).useReputationModule(
+            marketAddress,
+            _repConfiguration
+        );
 
         /// @dev Announce the creation of the Labor Market.
         emit LaborMarketCreated(marketAddress, _deployer, _implementation);

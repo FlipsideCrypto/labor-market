@@ -7,7 +7,7 @@ import { LaborMarketFactory } from "./LaborMarketFactory.sol";
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract LaborMarketNetwork is 
+contract LaborMarketNetwork is
     LaborMarketNetworkInterface,
     LaborMarketFactory
 {
@@ -26,6 +26,9 @@ contract LaborMarketNetwork is
         capacityToken = IERC20(_capacityImplementation);
     }
 
+    /**
+     * See {LaborMarketNetworkInterface.setGovernorBadge}
+     */
     function setGovernorBadge(
           address _governorBadge
         , uint256 _governorTokenId

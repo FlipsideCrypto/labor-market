@@ -58,7 +58,7 @@ contract LaborMarket is LaborMarketManager {
 
         serviceRequests[serviceId] = serviceRequest;
 
-        emit RequestCreated(
+        emit RequestConfigured(
             _msgSender(),
             serviceId,
             _requestUri,
@@ -91,9 +91,7 @@ contract LaborMarket is LaborMarketManager {
             "LaborMarket::signal: Already signaled."
         );
 
-        uint256 signalStake = _baseStake();
-
-        _lockReputation(_msgSender(), signalStake);
+        reputationModule.useReputation(_msgSender(), configuration.signalStake);
 
         hasPerformed[_requestId][_msgSender()][HAS_SIGNALED] = true;
 
@@ -101,7 +99,7 @@ contract LaborMarket is LaborMarketManager {
             ++signalCount[_requestId];
         }
 
-        emit RequestSignal(_msgSender(), _requestId, signalStake);
+        emit RequestSignal(_msgSender(), _requestId, configuration.signalStake);
     }
 
     /**
@@ -123,9 +121,9 @@ contract LaborMarket is LaborMarketManager {
             "LaborMarket::signalReview: Already signaled."
         );
 
-        uint256 signalStake = _quantity * _baseStake();
+        uint256 signalStake = _quantity * configuration.signalStake;
 
-        _lockReputation(_msgSender(), signalStake);
+        reputationModule.useReputation(_msgSender(), signalStake);
 
         reviewPromise.total = _quantity;
         reviewPromise.remainder = _quantity;
@@ -178,7 +176,7 @@ contract LaborMarket is LaborMarketManager {
 
         hasPerformed[_requestId][_msgSender()][HAS_SUBMITTED] = true;
 
-        _unlockReputation(_msgSender(), _baseStake());
+        reputationModule.mintReputation(_msgSender(), configuration.signalStake);
 
         emit RequestFulfilled(_msgSender(), _requestId, serviceId);
 
@@ -231,9 +229,9 @@ contract LaborMarket is LaborMarketManager {
             --reviewSignals[_requestId][_msgSender()].remainder;
         }
 
-        _unlockReputation(
+        reputationModule.mintReputation(
             _msgSender(),
-            (_baseStake()) / reviewSignals[_requestId][_msgSender()].total
+            (configuration.signalStake) / reviewSignals[_requestId][_msgSender()].total
         );
 
         emit RequestReviewed(_msgSender(), _requestId, _submissionId, _score);
@@ -333,7 +331,7 @@ contract LaborMarket is LaborMarketManager {
         public 
     {
         require(
-            reviewSignals[_msgSender()].remainder > 0,
+            reviewSignals[_requestId][_msgSender()].remainder > 0,
             "LaborMarket::retrieveReputation: No reputation to retrieve."
         );
 
@@ -343,19 +341,21 @@ contract LaborMarket is LaborMarketManager {
             "LaborMarket::retrieveReputation: Enforcement deadline not passed."
         );
 
-        require(
-            reviewSignals[_requestId][_msgSender()].total >=
-            serviceSubmissions[_requestId].totalSubmissions,
-            "LaborMarket::retrieveReputation: Insufficient reviews."
-        )
+        ReviewPromise storage reviewPromise = reviewSignals[_requestId][_msgSender()];
 
-        _unlockReputation(
-            _msgSender(),
-            _baseStake() * reviewSignals[_requestId][_msgSender()].remainder
+        require(
+            reviewPromise.total >=
+            serviceRequests[_requestId].submissionCount,
+            "LaborMarket::retrieveReputation: Insufficient reviews."
         );
 
-        reviewSignals[_msgSender()].total = 0;
-        reviewSignals[_msgSender()].remainder = 0;
+        reputationModule.mintReputation(
+            _msgSender(),
+            configuration.signalStake * reviewPromise.remainder
+        );
+
+        reviewPromise.total = 0;
+        reviewPromise.remainder = 0;
     }
 
     /**
@@ -388,17 +388,89 @@ contract LaborMarket is LaborMarketManager {
     }
 
     /**
+     * @notice Allows a service requester to edit a request.
+     * @param _requestId The id of the service requesters request.
+     * @param _pToken The address of the payment token.
+     * @param _pTokenQ The quantity of payment tokens.
+     * @param _signalExp The expiration of the signal period.
+     * @param _submissionExp The expiration of the submission period.
+     * @param _enforcementExp The expiration of the enforcement period.
+     * @param _requestUri The uri of the request.
+     * Requirements:
+     * - The request must not have been signaled.
+     */
+    function editRequest(
+          uint256 _requestId
+        , address _pToken
+        , uint256 _pTokenQ
+        , uint256 _signalExp
+        , uint256 _submissionExp
+        , uint256 _enforcementExp
+        , string calldata _requestUri
+    )
+        external
+    {
+        require(
+            serviceRequests[_requestId].serviceRequester == _msgSender(),
+            "LaborMarket::withdrawRequest: Not service requester."
+        );
+        require(
+            signalCount[_requestId] < 1,
+            "LaborMarket::withdrawRequest: Already active."
+        );
+
+        // Refund the prior payment token.
+        IERC20(serviceRequests[_requestId].pToken).transfer(
+            _msgSender(),
+            serviceRequests[_requestId].pTokenQ
+        );
+    
+        // Keep accounting in mind for ERC20s with transfer fees.
+        uint256 pTokenBefore = IERC20(_pToken).balanceOf(address(this));
+
+        IERC20(_pToken).transferFrom(_msgSender(), address(this), _pTokenQ);
+
+        uint256 pTokenAfter = IERC20(_pToken).balanceOf(address(this));
+
+        ServiceRequest memory serviceRequest = ServiceRequest({
+            serviceRequester: _msgSender(),
+            pToken: _pToken,
+            pTokenQ: (pTokenAfter - pTokenBefore),
+            signalExp: _signalExp,
+            submissionExp: _submissionExp,
+            enforcementExp: _enforcementExp,
+            submissionCount: 0,
+            uri: _requestUri
+        });
+
+        serviceRequests[serviceId] = serviceRequest;
+
+        emit RequestConfigured(
+            _msgSender(),
+            serviceId,
+            _requestUri,
+            _pToken,
+            _pTokenQ,
+            _signalExp,
+            _submissionExp,
+            _enforcementExp
+        );
+    }
+
+    /**
      * @notice Allows a network governor to set the configuration.
      * @param _configuration The new configuration.
      * Requirements:
      * - The caller must be a governor at the network level.
      */
     function setConfiguration(
-        LaborMarketConfiguration _configuration
+        LaborMarketConfiguration calldata _configuration
     )
         external
     {
+        /// @dev Requires the caller to be a governor in the current network.
         network.validateGovernor(_msgSender());
+        
         _setConfiguration(_configuration);
     }
 }

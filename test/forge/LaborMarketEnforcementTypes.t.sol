@@ -8,8 +8,6 @@ import {PRBTest} from "prb-test/PRBTest.sol";
 
 // Contracts
 import {AnyReputationToken, PaymentToken} from "./Helpers/HelperTokens.sol";
-import {ReputationEngineInterface} from "src/Modules/Reputation/interfaces/ReputationEngineInterface.sol";
-import {ReputationEngine} from "src/Modules/Reputation/ReputationEngine.sol";
 
 import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
 import {LaborMarket} from "src/LaborMarket/LaborMarket.sol";
@@ -40,9 +38,6 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
     LaborMarket public fcfsMarket;
     LaborMarket public best5Market;
     LaborMarket public merkleMarket;
-
-    ReputationEngine public reputationEngineMaster;
-    ReputationEngine public reputationEngine;
 
     ReputationModule public reputationModule;
 
@@ -163,9 +158,6 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
         // Deploy an empty labor market for implementation
         marketImplementation = new LaborMarket();
 
-        // Deploy reputation token implementation
-        reputationEngineMaster = new ReputationEngine();
-
         // Deploy a labor market factory
         factory = new LaborMarketFactory(address(marketImplementation));
 
@@ -186,17 +178,6 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
 
         // Create a new pay curve
         payCurve = new PayCurve();
-
-        // Create a reputation token
-        reputationEngine = ReputationEngine(
-            reputationModule.createReputationEngine(
-                address(reputationEngineMaster),
-                address(repToken),
-                REPUTATION_TOKEN_ID,
-                REPUTATION_DECAY_RATE,
-                REPUTATION_DECAY_INTERVAL
-            )
-        );
 
         // Reputation config
         ReputationModuleInterface.ReputationMarketConfig

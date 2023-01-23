@@ -7,6 +7,9 @@ import { LaborMarketFactoryInterface } from "./interfaces/LaborMarketFactoryInte
 import { LaborMarketVersions } from "./LaborMarketVersions.sol";
 import { LaborMarketNetworkInterface } from "./interfaces/LaborMarketNetworkInterface.sol";
 
+/// @dev Helpers.
+import { ReputationModuleInterface } from "../Modules/Reputation/interfaces/ReputationModuleInterface.sol";
+
 contract LaborMarketFactory is
       LaborMarketFactoryInterface
     , LaborMarketVersions
@@ -15,7 +18,7 @@ contract LaborMarketFactory is
           address _implementation
         , address _governorBadge
         , uint256 _governorTokenId
-        ) 
+    ) 
         LaborMarketVersions(
               _implementation
             , _governorBadge
@@ -27,12 +30,14 @@ contract LaborMarketFactory is
      * @notice Allows an individual to deploy a new Labor Market given they meet the version funding requirements.
      * @param _implementation The address of the implementation to be used.
      * @param _deployer The address that will be the deployer of the Labor Market contract.
-     * @param _configuration The struct containing the config of the Market being created.
+     * @param _marketConfiguration The struct containing the config of the Market being created.
+     * @param _repConfiguration The struct containing the config of the Reputation Market being created.
      */
     function createLaborMarket( 
           address _implementation
         , address _deployer
-        , LaborMarketConfiguration calldata _configuration
+        , LaborMarketConfiguration calldata _marketConfiguration
+        , ReputationModuleInterface.MarketReputationConfig calldata _repConfiguration
     )
         override
         public
@@ -60,7 +65,8 @@ contract LaborMarketFactory is
             , licenseKey
             , version.amount
             , _deployer
-            , _configuration
+            , _marketConfiguration
+            , _repConfiguration
         );
     }
 
