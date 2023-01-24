@@ -47,9 +47,35 @@ contract LaborMarketNetwork is
     function setCapacityImplementation(address _implementation)
         external
         virtual
+        override
         onlyOwner
     {
         capacityToken = IERC20(_implementation);
+    }
+
+    /**
+     * See {LaborMarketNetworkInterface.setReputationDecay}
+     */
+    function setReputationDecay(
+          address _reputationModule
+        , address _reputationToken
+        , uint256 _reputationTokenId
+        , uint256 _decayRate
+        , uint256 _decayInterval
+    )
+        external
+        virtual
+        override
+    {
+        _validateGovernor(_msgSender());
+
+        _setReputationDecay(
+              _reputationModule
+            , _reputationToken
+            , _reputationTokenId
+            , _decayRate
+            , _decayInterval
+        );
     }
 
     /**

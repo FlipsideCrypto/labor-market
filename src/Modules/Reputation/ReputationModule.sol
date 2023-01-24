@@ -77,29 +77,11 @@ contract ReputationModule is
         );
     }
 
-    // TODO: Permissioning
-    function setDecayConfig(
-          address _reputationToken
-        , uint256 _reputationTokenId
-        , uint256 _decayRate
-        , uint256 _decayInterval
-    )
-        external
-        override
-    {
-        decayConfig[_reputationToken][_reputationTokenId] = DecayConfig({
-              decayRate: _decayRate
-            , decayInterval: _decayInterval
-        });
-
-        emit ReputationDecayConfigured(
-            _reputationToken
-            , _reputationTokenId
-            , _decayRate
-            , _decayInterval
-        );
-    }
-
+     /**
+     * @notice Utilize and burn reputation.
+     * @param _account The account to burn reputation from.
+     * @param _amount The amount of reputation to burn.
+     */
     function useReputation(
           address _account
         , uint256 _amount
@@ -109,11 +91,6 @@ contract ReputationModule is
     {
         MarketReputationConfig memory config = marketRepConfig[_msgSender()];
 
-        require(
-            config.reputationToken != address(0), 
-            "ReputationModule: This Labor Market has not been initialized."
-        );
-
         BadgerOrganizationInterface(config.reputationToken).revoke(
             _account,
             config.reputationTokenId,
@@ -121,6 +98,13 @@ contract ReputationModule is
         );
     }
 
+    /**
+     * @notice Lock and freeze reputation for an account, avoiding decay.
+     * @param _account The account to freeze reputation for.
+     * @param _reputationToken The address of the reputation token.
+     * @param _reputationTokenId The ID of the reputation token.
+     * @param _frozenUntilEpoch The epoch until which the reputation is frozen.
+     */
     function freezeReputation(
           address _account
         , address _reputationToken
@@ -149,6 +133,14 @@ contract ReputationModule is
         );
     }
 
+    /**
+     * @notice Mint reputation for a given account.
+     * @param _account The account to mint reputation for.
+     * @param _amount The amount of reputation to mint.
+     * Requirements:
+     * - The sender must be a Labor Market.
+     * - The Labor Market must have been initialized with the Reputation Module.
+     */
     function mintReputation(
           address _account
         , uint256 _amount
@@ -172,8 +164,42 @@ contract ReputationModule is
     }
 
     /**
+     * @notice Set the decay configuration for a reputation token.
+     * @param _reputationToken The address of the reputation token.
+     * @param _reputationTokenId The ID of the reputation token.
+     * @param _decayRate The rate of decay.
+     * @param _decayInterval The interval of decay.
+     * Requirements:
+     * - Only the network can call this function.
+     */
+    function setDecayConfig(
+          address _reputationToken
+        , uint256 _reputationTokenId
+        , uint256 _decayRate
+        , uint256 _decayInterval
+    )
+        external
+        override
+    {
+        require(_msgSender() == network, "ReputationModule: Only network can call this.");
+
+        decayConfig[_reputationToken][_reputationTokenId] = DecayConfig({
+              decayRate: _decayRate
+            , decayInterval: _decayInterval
+        });
+
+        emit ReputationDecayConfigured(
+            _reputationToken
+            , _reputationTokenId
+            , _decayRate
+            , _decayInterval
+        );
+    }
+
+    /**
      * @notice Get the amount of reputation that is available to use.
      * @dev This function takes into account non-applied decay and the frozen state.
+     * @param _laborMarket The Labor Market context.
      * @param _account The account to check.
      * @return The amount of reputation that is available to use.
      */
@@ -208,6 +234,12 @@ contract ReputationModule is
         );
     }
 
+    /**
+     * @notice Get the amount of reputation that is pending decay.
+     * @param _laborMarket The Labor Market context.
+     * @param _account The account to check.
+     * @return The amount of reputation that is pending decay.
+     */
     function getPendingDecay(
           address _laborMarket
         , address _account
@@ -229,6 +261,11 @@ contract ReputationModule is
         );
     }
 
+    /**
+     * @notice Get the ERC1155 token address and ID for a given Labor Market.
+     * @param _laborMarket The Labor Market to check.
+     * @return The ERC1155 token address and ID for a given Labor Market.
+     */
     function getMarketReputationConfig(
         address _laborMarket
     )

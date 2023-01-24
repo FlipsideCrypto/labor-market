@@ -77,9 +77,10 @@ contract LikertEnforcementCriteria {
     /**
      * @notice Returns the point on the payment curve for a submission.
      * @param submissionId The submission to calculate the point for.
+     * @param total The total amount of tokens to be paid out.
      * @return The point on the payment curve.
      */
-    function verify(uint256 submissionId) external view returns (uint256) {
+    function verify(uint256 submissionId, uint256 total) external view returns (uint256) {
         uint256 x;
 
         uint256 score = submissionToScores[msg.sender][submissionId].avg;
@@ -87,17 +88,19 @@ contract LikertEnforcementCriteria {
         uint256 alloc = (1e18 /
             getTotalBucket(msg.sender, Likert(score), getRid(submissionId)));
 
-        LaborMarketInterface market = LaborMarketInterface(msg.sender);
-        uint256 pTokens = market
-            .getRequest(market.getSubmission(submissionId).requestId)
-            .pTokenQ / 1e18;
+        // LaborMarketInterface market = LaborMarketInterface(msg.sender);
+        // uint256 pTokens = market
+        //     .getRequest(market.getSubmission(submissionId).requestId)
+        //     .pTokenQ / 1e18;
+
+        total = total / 1e18;
 
         if (score == uint256(Likert.BAD)) {
-            x = sqrt(alloc * (pTokens * 0));
+            x = sqrt(alloc * (total * 0));
         } else if (score == uint256(Likert.OK)) {
-            x = sqrt(alloc * ((pTokens * 20) / 100));
+            x = sqrt(alloc * ((total * 20) / 100));
         } else if (score == uint256(Likert.GOOD)) {
-            x = sqrt(alloc * ((pTokens * 80) / 100));
+            x = sqrt(alloc * ((total * 80) / 100));
         }
 
         return x;

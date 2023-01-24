@@ -285,6 +285,31 @@ contract LaborMarketVersions is
     }
 
     /**
+     * @notice Sets the reputation decay configuration for a token.
+     * @param _reputationModule The address of the Reputation Module.
+     * @param _reputationToken The address of the Reputation Token.
+     * @param _reputationTokenId The token ID of the Reputation Token.
+     * @param _decayRate The rate of decay.
+     * @param _decayInterval The interval of decay.
+     */
+    function _setReputationDecay(
+          address _reputationModule
+        , address _reputationToken
+        , uint256 _reputationTokenId
+        , uint256 _decayRate
+        , uint256 _decayInterval
+    )
+        internal
+    {
+        ReputationModuleInterface(_reputationModule).setDecayConfig(
+            _reputationToken,
+            _reputationTokenId,
+            _decayRate,
+            _decayInterval
+        );
+    }
+
+    /**
      * @notice Signals to external callers that this is a BadgerVersions contract.
      * @param _interfaceId The interface ID to check.
      * @return True if the interface ID is supported.

@@ -9,6 +9,7 @@ import { LaborMarketManager } from "./LaborMarketManager.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract LaborMarket is LaborMarketManager {
+    
     /**
      * @notice Creates a service request.
      * @param _pToken The address of the payment token.
@@ -23,6 +24,7 @@ contract LaborMarket is LaborMarketManager {
     function submitRequest(
           address _pToken
         , uint256 _pTokenQ
+        , uint256 _rTokenQ
         , uint256 _signalExp
         , uint256 _submissionExp
         , uint256 _enforcementExp
@@ -49,6 +51,7 @@ contract LaborMarket is LaborMarketManager {
             serviceRequester: _msgSender(),
             pToken: _pToken,
             pTokenQ: (pTokenAfter - pTokenBefore),
+            rTokenQ: _rTokenQ,
             signalExp: _signalExp,
             submissionExp: _submissionExp,
             enforcementExp: _enforcementExp,
@@ -64,6 +67,7 @@ contract LaborMarket is LaborMarketManager {
             _requestUri,
             _pToken,
             _pTokenQ,
+            _rTokenQ,
             _signalExp,
             _submissionExp,
             _enforcementExp
@@ -240,6 +244,8 @@ contract LaborMarket is LaborMarketManager {
     /**
      * @notice Allows a service provider to claim payment for a service submission.
      * @param _submissionId The id of the service providers submission.
+     * @param _to The address to send the payment to.
+     * @param _data The data to send with the payment.
      */
     function claim(
           uint256 _submissionId
@@ -275,21 +281,29 @@ contract LaborMarket is LaborMarketManager {
             "LaborMarket::claim: Enforcement deadline not passed."
         );
 
-        uint256 curveIndex = (_data.length > 0)
+        uint256 pCurveIndex = (_data.length > 0)
             ? enforcementCriteria.verifyWithData(_submissionId, _data)
-            : enforcementCriteria.verify(_submissionId);
+            : enforcementCriteria.verify(_submissionId, serviceRequests[requestId].pTokenQ);
 
-        uint256 amount = paymentCurve.curvePoint(curveIndex);
+        uint256 rCurveIndex = enforcementCriteria.verify(
+            _submissionId, 
+            serviceRequests[requestId].rTokenQ
+        );
+
+        uint256 payAmount = paymentCurve.curvePoint(pCurveIndex);
+        uint256 reputationAmount = paymentCurve.curvePoint(rCurveIndex);
 
         hasPerformed[_submissionId][_msgSender()][HAS_CLAIMED] = true;
 
         IERC20(
             serviceRequests[serviceSubmissions[_submissionId].requestId].pToken
-        ).transfer(_to, amount);
+        ).transfer(_to, payAmount);
 
-        emit RequestPayClaimed(_msgSender(), requestId, _submissionId, amount, _to);
+        reputationModule.mintReputation(_msgSender(), reputationAmount);
 
-        return amount;
+        emit RequestPayClaimed(_msgSender(), requestId, _submissionId, payAmount, _to);
+
+        return payAmount;
     }
 
     /**
@@ -329,7 +343,9 @@ contract LaborMarket is LaborMarketManager {
      * @notice Allows a maintainer to retrieve reputation that is stuck in review signals.
      * @param _requestId The id of the service request.
      */
-    function retrieveReputation(uint256 _requestId) 
+    function retrieveReputation(
+        uint256 _requestId
+    ) 
         public 
     {
         require(
@@ -394,6 +410,7 @@ contract LaborMarket is LaborMarketManager {
      * @param _requestId The id of the service requesters request.
      * @param _pToken The address of the payment token.
      * @param _pTokenQ The quantity of payment tokens.
+     * @param _rTokenQ The quantity of reputation tokens.
      * @param _signalExp The expiration of the signal period.
      * @param _submissionExp The expiration of the submission period.
      * @param _enforcementExp The expiration of the enforcement period.
@@ -405,6 +422,7 @@ contract LaborMarket is LaborMarketManager {
           uint256 _requestId
         , address _pToken
         , uint256 _pTokenQ
+        , uint256 _rTokenQ
         , uint256 _signalExp
         , uint256 _submissionExp
         , uint256 _enforcementExp
@@ -438,6 +456,7 @@ contract LaborMarket is LaborMarketManager {
             serviceRequester: _msgSender(),
             pToken: _pToken,
             pTokenQ: (pTokenAfter - pTokenBefore),
+            rTokenQ: _rTokenQ,
             signalExp: _signalExp,
             submissionExp: _submissionExp,
             enforcementExp: _enforcementExp,
@@ -453,6 +472,7 @@ contract LaborMarket is LaborMarketManager {
             _requestUri,
             _pToken,
             _pTokenQ,
+            _rTokenQ,
             _signalExp,
             _submissionExp,
             _enforcementExp

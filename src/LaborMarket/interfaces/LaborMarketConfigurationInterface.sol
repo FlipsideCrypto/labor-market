@@ -16,15 +16,15 @@ interface LaborMarketConfigurationInterface {
         uint256 submitMax;
     }
 
-    struct BadgePair {
-        address token;
-        uint256 tokenId;
-    }
-
     struct Modules {
         address network;
         address enforcement;
         address payment;
         address reputation;
+    }
+
+    struct BadgePair {
+        address token;
+        uint256 tokenId;
     }
 }

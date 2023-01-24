@@ -94,6 +94,7 @@ contract LaborMarketManager is
         , string indexed uri
         , address pToken
         , uint256 pTokenQ
+        , uint256 rTokenQ
         , uint256 signalExp
         , uint256 submissionExp
         , uint256 enforcementExp
@@ -157,7 +158,7 @@ contract LaborMarketManager is
                 _msgSender(),
                 configuration.delegate.tokenId
             ) > 0,
-            "LaborMarket::onlyDelegate: Not a delegate."
+            "LaborMarket::onlyDelegate: Not a delegate"
         );
         _;
     }

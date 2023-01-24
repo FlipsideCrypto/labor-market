@@ -7,7 +7,7 @@ interface EnforcementCriteriaInterface {
         external
         returns (uint256);
 
-    function verify(uint256 submissionId) external returns (uint256);
+    function verify(uint256 submissionId, uint256 amount) external returns (uint256);
 
     function verifyWithData(uint256 submissionId, bytes calldata data)
         external

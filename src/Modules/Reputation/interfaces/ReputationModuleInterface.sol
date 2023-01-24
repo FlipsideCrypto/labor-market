@@ -24,19 +24,16 @@ interface ReputationModuleInterface {
         , uint256 _reputationTokenId
     )
         external;
+        
+    function useReputation(
+          address _account
+        , uint256 _amount
+    )
+        external;
 
-    // function setMarketRepConfig(
-    //       uint256 _signalStake
-    //     , uint256 _submitMin
-    //     , uint256 _submitMax
-    // )
-    //     external;
-
-    function setDecayConfig(
-          address _reputationToken
-        , uint256 _reputationTokenId
-        , uint256 _decayRate
-        , uint256 _decayInterval
+    function mintReputation(
+          address _account
+        , uint256 _amount
     )
         external;
 
@@ -48,15 +45,12 @@ interface ReputationModuleInterface {
     )
         external; 
 
-    function useReputation(
-          address _account
-        , uint256 _amount
-    )
-        external;
 
-    function mintReputation(
-          address _account
-        , uint256 _amount
+    function setDecayConfig(
+          address _reputationToken
+        , uint256 _reputationTokenId
+        , uint256 _decayRate
+        , uint256 _decayInterval
     )
         external;
 
