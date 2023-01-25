@@ -8,12 +8,14 @@ import { LaborMarketManager } from "./LaborMarketManager.sol";
 /// @dev Helper interfaces.
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+
 contract LaborMarket is LaborMarketManager {
     
     /**
      * @notice Creates a service request.
      * @param _pToken The address of the payment token.
      * @param _pTokenQ The quantity of the payment token.
+     * @param _rTokenQ The quantity of the reputation token that can be earned.
      * @param _signalExp The signal deadline expiration.
      * @param _submissionExp The submission deadline expiration.
      * @param _enforcementExp The enforcement deadline expiration.
@@ -167,7 +169,7 @@ contract LaborMarket is LaborMarketManager {
             ++serviceRequests[_requestId].submissionCount;
         }
 
-        ServiceSubmission memory serviceSubmission = ServiceSubmission({
+        serviceSubmissions[serviceId] = ServiceSubmission({
             serviceProvider: _msgSender(),
             requestId: _requestId,
             timestamp: block.timestamp,
@@ -175,8 +177,6 @@ contract LaborMarket is LaborMarketManager {
             scores: new uint256[](0),
             reviewed: false
         });
-
-        serviceSubmissions[serviceId] = serviceSubmission;
 
         hasPerformed[_requestId][_msgSender()][HAS_SUBMITTED] = true;
 

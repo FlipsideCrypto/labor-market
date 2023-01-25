@@ -4,6 +4,7 @@ import 'hardhat-deploy';
 import "hardhat-watcher";
 import "hardhat-abi-exporter";
 import "@nomiclabs/hardhat-waffle";
+import "@nomiclabs/hardhat-ethers"
 import "@nomiclabs/hardhat-etherscan";
 import "@typechain/hardhat";
 import "hardhat-preprocessor";
@@ -38,7 +39,7 @@ const config: HardhatUserConfig = {
             settings: {
                 optimizer: { // Keeps the amount of gas used in check
                     enabled: true,
-                    runs: 1000,
+                    runs: 10,
                 }
             }
         }

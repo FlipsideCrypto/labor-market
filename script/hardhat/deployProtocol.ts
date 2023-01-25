@@ -45,10 +45,10 @@ async function main(verify) {
     console.log("✅ Reputation Module Deployed.")
 
 
-    const PaymentModule = await ethers.getContractFactory("PaymentModule");
-    let paymentModule = await PaymentModule.deploy();
-    paymentModule = await paymentModule.deployed();
-    console.log("✅ Payment Module Deployed.")
+    // const PaymentModule = await ethers.getContractFactory("PaymentModule");
+    // let paymentModule = await PaymentModule.deploy();
+    // paymentModule = await paymentModule.deployed();
+    // console.log("✅ Payment Module Deployed.")
 
     const PayCurve = await ethers.getContractFactory("PayCurve");
     let payCurve = await PayCurve.deploy();
@@ -59,7 +59,7 @@ async function main(verify) {
         "LaborMarketNetwork Address": network.address,
         "EnforcementModule Address": enforcementModule.address,
         "ReputationModule Address": reputationModule.address,
-        "PaymentModule Address": paymentModule.address,
+        // "PaymentModule Address": paymentModule.address,
         "PayCurve Address": payCurve.address
     })
 
@@ -78,9 +78,9 @@ async function main(verify) {
         {
           contract: reputationModule, args: ReputationModuleArgs, name: "ReputationModule"
         },
-        {
-          contract: paymentModule, args: [], name: "PaymentModule"
-        },
+        // {
+        //   contract: paymentModule, args: [], name: "PaymentModule"
+        // },
         {
           contract: payCurve, args: [], name: "PayCurve"
         },

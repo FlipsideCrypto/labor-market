@@ -7,6 +7,8 @@ import { PayCurveInterface } from "./interfaces/PayCurveInterface.sol";
 contract PayCurve is 
     PayCurveInterface 
 {
+    constructor () {}
+
     function curvePoint(uint256 x) 
         public 
         pure 

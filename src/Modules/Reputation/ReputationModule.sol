@@ -91,6 +91,14 @@ contract ReputationModule is
     {
         MarketReputationConfig memory config = marketRepConfig[_msgSender()];
 
+        require(
+            IERC1155(config.reputationToken).balanceOf(
+                _account, 
+                config.reputationTokenId
+            ) >= _amount,
+            "ReputationModule: Not enough reputation to use."
+        );
+
         BadgerOrganizationInterface(config.reputationToken).revoke(
             _account,
             config.reputationTokenId,

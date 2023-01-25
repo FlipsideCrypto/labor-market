@@ -496,23 +496,24 @@ contract LaborMarketTest is PRBTest, StdCheats {
             (1000e18 - signalStake * 2)
         );
 
+        // Verify that Alice's reputation is unlocked
+        assertEq(
+            reputationModule.getAvailableReputation(address(market), alice),
+            100e18
+        );
+
         // Claim the reward
         changePrank(alice);
 
         // Skip to enforcement deadline
         vm.warp(5 weeks);
-        uint256 balanceBefore = reputationModule.getAvailableReputation(address(market), alice);
         market.claim(submissionId, msg.sender, "");
-        uint256 balanceAfter = reputationModule.getAvailableReputation(address(market), alice);
-
-        console.log("Balance before: %s", balanceBefore % 1e18);
-        console.log("Balance after: %s", balanceAfter % 1e18);
-
-        // Verify that Alice's reputation is unlocked
-        // assertEq(
-        //     reputationModule.getAvailableReputation(address(market), alice),
-        //     100e18
-        // );
+        
+        // Verify that Alice received a reputation reward
+        assertGt(
+            reputationModule.getAvailableReputation(address(market), alice),
+            100e18
+        );
     }
 
     function test_VerifyAllEmittedEvents() public {
