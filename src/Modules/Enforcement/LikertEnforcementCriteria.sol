@@ -222,15 +222,15 @@ contract LikertEnforcementCriteria {
                 allocation: (((pTokens * 5) / 100))
             }),
             ClaimableBucket({
-                count: getTotalBucket(msg.sender, Likert.BAD, requestId),
+                count: getTotalBucket(msg.sender, Likert.OK, requestId),
                 allocation: (((pTokens * 10) / 100))
             }),
             ClaimableBucket({
-                count: getTotalBucket(msg.sender, Likert.OK, requestId),
+                count: getTotalBucket(msg.sender, Likert.GOOD, requestId),
                 allocation: (((pTokens * 25) / 100))
             }),
             ClaimableBucket({
-                count: getTotalBucket(msg.sender, Likert.GOOD, requestId),
+                count: getTotalBucket(msg.sender, Likert.GREAT, requestId),
                 allocation: (((pTokens * 60) / 100))
             })
         ];
