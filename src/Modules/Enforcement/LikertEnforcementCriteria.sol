@@ -14,9 +14,11 @@ contract LikertEnforcementCriteria {
 
     /// @dev The scoring scale.
     enum Likert {
+        SPAM,
         BAD,
         OK,
-        GOOD
+        GOOD,
+        GREAT
     }
 
     /// @dev The scores given to a service submission.
@@ -41,7 +43,7 @@ contract LikertEnforcementCriteria {
         returns (uint256)
     {
         require(
-            score <= uint256(Likert.GOOD),
+            score <= uint256(Likert.GREAT),
             "EnforcementCriteria::review: invalid score"
         );
 
@@ -95,12 +97,20 @@ contract LikertEnforcementCriteria {
 
         total = total / 1e18;
 
-        if (score == uint256(Likert.BAD)) {
+        if (score == uint256(Likert.SPAM)) {
             x = sqrt(alloc * (total * 0));
-        } else if (score == uint256(Likert.OK)) {
-            x = sqrt(alloc * ((total * 20) / 100));
-        } else if (score == uint256(Likert.GOOD)) {
-            x = sqrt(alloc * ((total * 80) / 100));
+        }
+        else if (score == uint256(Likert.BAD)) {
+            x = sqrt(alloc * ((total * 5) / 100));
+        }
+        else if (score == uint256(Likert.OK)) {
+            x = sqrt(alloc * ((total * 10) / 100));
+        }
+        else if (score == uint256(Likert.GOOD)) {
+            x = sqrt(alloc * ((total * 25) / 100));
+        }
+        else {
+            x = sqrt(alloc * ((total * 60) / 100));
         }
 
         return x;
@@ -202,18 +212,26 @@ contract LikertEnforcementCriteria {
         LaborMarketInterface market = LaborMarketInterface(msg.sender);
         uint256 pTokens = market.getRequest(requestId).pTokenQ;
 
-        ClaimableBucket[3] memory buckets = [
+        ClaimableBucket[5] memory buckets = [
             ClaimableBucket({
-                count: getTotalBucket(msg.sender, Likert.BAD, requestId),
+                count: getTotalBucket(msg.sender, Likert.SPAM, requestId),
                 allocation: ((pTokens * 0))
             }),
             ClaimableBucket({
+                count: getTotalBucket(msg.sender, Likert.BAD, requestId),
+                allocation: (((pTokens * 5) / 100))
+            }),
+            ClaimableBucket({
+                count: getTotalBucket(msg.sender, Likert.BAD, requestId),
+                allocation: (((pTokens * 10) / 100))
+            }),
+            ClaimableBucket({
                 count: getTotalBucket(msg.sender, Likert.OK, requestId),
-                allocation: (((pTokens * 20) / 100))
+                allocation: (((pTokens * 25) / 100))
             }),
             ClaimableBucket({
                 count: getTotalBucket(msg.sender, Likert.GOOD, requestId),
-                allocation: (((pTokens * 80) / 100))
+                allocation: (((pTokens * 60) / 100))
             })
         ];
 

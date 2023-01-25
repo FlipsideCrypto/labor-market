@@ -39,7 +39,7 @@ const config: HardhatUserConfig = {
             settings: {
                 optimizer: { // Keeps the amount of gas used in check
                     enabled: true,
-                    runs: 10,
+                    runs: 100,
                 }
             }
         }

@@ -613,10 +613,10 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         // Verify reviewing events
         vm.expectEmit(true, true, true, true);
-        emit RequestReviewed(address(bob), requestId, submissionId, 2);
+        emit RequestReviewed(address(bob), requestId, submissionId, 4);
 
         changePrank(bob);
-        market.review(requestId, submissionId, 2);
+        market.review(requestId, submissionId, 4);
 
         // // Verify claiming events
         vm.expectEmit(true, true, true, true);
@@ -624,7 +624,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
             address(alice),
             requestId,
             submissionId,
-            799999999973870935009, // (100e18 * 0.8)
+            599999999959251220329, // (100e18 * 0.6)
             address(alice)
         );
 
@@ -1024,23 +1024,23 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         // A valid maintainer reviews the request
         changePrank(bob);
-        market.review(requestId, submissionId, 2);
+        market.review(requestId, submissionId, 3);
 
         // Another maintainer reviews the request
         changePrank(bobert);
-        market.review(requestId, submissionId, 0);
+        market.review(requestId, submissionId, 1);
 
         // Scores
-        assertEq(market.getSubmission(submissionId).scores[0], 2);
-        assertEq(market.getSubmission(submissionId).scores[1], 0);
+        assertEq(market.getSubmission(submissionId).scores[0], 3);
+        assertEq(market.getSubmission(submissionId).scores[1], 1);
 
         changePrank(alice);
         vm.warp(123 weeks);
 
         // User claims reward
-        // Score should average to 1 meaning it falls in the 20% bucket and should receive 20% of the reward
+        // Score should average to 2 meaning it falls in the 10% bucket and should receive 10% of the reward
         uint256 qClaimed = market.claim(submissionId, alice, "");
-        assertAlmostEq(qClaimed, 200e18, 0.000001e18);
+        assertAlmostEq(qClaimed, 100e18, 0.000001e18);
 
         vm.stopPrank();
     }
@@ -1239,9 +1239,9 @@ contract LaborMarketTest is PRBTest, StdCheats {
         vm.warp(123 weeks);
 
         // User claims reward
-        // Score should average to 1 meaning it falls in the 20% bucket and should receive 20% of the reward
+        // Score should average to 1 meaning it falls in the 5% bucket and should receive 5% of the reward
         uint256 qClaimed = market.claim(submissionId, alice, "");
-        assertAlmostEq(qClaimed, 200e18, 0.000001e18);
+        assertAlmostEq(qClaimed, 50e18, 0.000001e18);
 
         // User claims reward again
         vm.expectRevert(
