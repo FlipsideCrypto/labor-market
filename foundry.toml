@@ -8,13 +8,14 @@ gas_reports = ["*"]
 libs = ["node_modules", "lib"]
 optimizer = true
 via-ir = false
-optimizer_runs = 200
+optimizer_runs = 125
 solc = "0.8.17"
 out = "out"
 src = "src"
 test = "test/forge"
 cache_path = 'cache'
 script='script/forge'
+fs_permissions = [{ access = "read", path="./" }]
 
 [rpc_endpoints]
 goerli = "${GOERLI_RPC_URL}"

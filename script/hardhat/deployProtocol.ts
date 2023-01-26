@@ -36,6 +36,7 @@ async function main(verify) {
     enforcementModule = await enforcementModule.deployed();
     console.log("✅ Enforcement Module Deployed.")
 
+    
     const ReputationModuleArgs = [network.address]
     const ReputationModule = await ethers.getContractFactory("ReputationModule");
     let reputationModule = await ReputationModule.deploy(
@@ -45,21 +46,16 @@ async function main(verify) {
     console.log("✅ Reputation Module Deployed.")
 
 
-    // const PaymentModule = await ethers.getContractFactory("PaymentModule");
-    // let paymentModule = await PaymentModule.deploy();
-    // paymentModule = await paymentModule.deployed();
-    // console.log("✅ Payment Module Deployed.")
-
     const PayCurve = await ethers.getContractFactory("PayCurve");
     let payCurve = await PayCurve.deploy();
     payCurve = await payCurve.deployed();
+    console.log("✅ Pay Curve Deployed.")
 
     console.table({
         "LaborMarketImplementation Address": laborMarket.address,
         "LaborMarketNetwork Address": network.address,
         "EnforcementModule Address": enforcementModule.address,
         "ReputationModule Address": reputationModule.address,
-        // "PaymentModule Address": paymentModule.address,
         "PayCurve Address": payCurve.address
     })
 
@@ -67,29 +63,26 @@ async function main(verify) {
     if (verify === true && chainId !== 31337 && chainId !== 1337) {
       const contracts = [
         {
-          contract: laborMarket, args: [], name: "LaborMarket"
+          address: laborMarket.address, args: [], name: "LaborMarket"
         },
         {
-          contract: network, args: NetworkArgs, name: "LaborMarketNetwork"
+          address: network.address, args: NetworkArgs, name: "LaborMarketNetwork"
         },
         {
-          contract: enforcementModule, args: [], name: "LikertEnforcementCriteria"
+          address: enforcementModule.address, args: [], name: "LikertEnforcementCriteria"
         },
         {
-          contract: reputationModule, args: ReputationModuleArgs, name: "ReputationModule"
+          address: reputationModule.address, args: ReputationModuleArgs, name: "ReputationModule"
         },
-        // {
-        //   contract: paymentModule, args: [], name: "PaymentModule"
-        // },
         {
-          contract: payCurve, args: [], name: "PayCurve"
+          address: payCurve.address, args: [], name: "PayCurve"
         },
       ]
 
       await new Promise(r => setTimeout(r, 30000));
       for (const contract of contracts) {
         await hre.run("verify:verify", {
-          address: contract.contract.address,
+          address: contract.address,
           constructorArguments: contract.args,
         });
         await new Promise(r => setTimeout(r, 30000));

@@ -10,6 +10,7 @@ import "@typechain/hardhat";
 import "hardhat-preprocessor";
 import "hardhat-abi-exporter";
 import "hardhat-contract-sizer";
+import "hardhat-finder";
 import { HardhatUserConfig } from "hardhat/config";
 import { task } from "hardhat/config";
 
@@ -45,6 +46,16 @@ const config: HardhatUserConfig = {
         }
     ],
   },
+  finder: {
+    contract: {
+        name: "PayCurve",
+        path: "src/Modules/Payment/PayCurve.sol",
+    },
+    outputs: [
+      "dependencies-info",
+      "dependencies-source-code"
+    ]
+  },
   gasReporter: {
     currency: 'USD',
     gasPrice: 60,
@@ -76,7 +87,7 @@ const config: HardhatUserConfig = {
   },
   contractSizer: {
     alphaSort: false,
-    disambiguatePaths: false,
+    disambiguatePaths: true,
     runOnCompile: true,
   },
   etherscan: {
