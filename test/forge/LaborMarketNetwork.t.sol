@@ -14,6 +14,8 @@ import {LaborMarket} from "src/LaborMarket/LaborMarket.sol";
 import {LaborMarketFactory} from "src/Network/LaborMarketFactory.sol";
 import {LaborMarketNetwork} from "src/Network/LaborMarketNetwork.sol";
 
+import { LaborMarketConfigurationInterface } from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
+
 contract LaborMarketNetworkTest is PRBTest, StdCheats {
     AnyReputationToken public repToken;
 
@@ -38,12 +40,25 @@ contract LaborMarketNetworkTest is PRBTest, StdCheats {
         // Deploy an empty labor market for implementation
         marketImplementation = new LaborMarket();
 
+        LaborMarketConfigurationInterface.BadgePair memory governorPair = LaborMarketConfigurationInterface.BadgePair({
+            token: address(repToken),
+            tokenId: 0
+        });
+        LaborMarketConfigurationInterface.BadgePair memory creatorPair = LaborMarketConfigurationInterface.BadgePair({
+            token: address(repToken),
+            tokenId: 1
+        });
+
+        // Mint the governor and creator badges
+        repToken.freeMint(deployer, 0, 1);
+        repToken.freeMint(deployer, 1, 1);
+
         // Deploy a labor market network
         network = new LaborMarketNetwork({
             _factoryImplementation: address(marketImplementation),
             _capacityImplementation: address(address(0)),
-            _governorBadge: address(repToken),
-            _governorTokenId: 1
+            _governorBadge: governorPair,
+            _creatorBadge: creatorPair
         });
     }
 

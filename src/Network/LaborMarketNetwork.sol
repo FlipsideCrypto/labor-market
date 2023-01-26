@@ -14,13 +14,13 @@ contract LaborMarketNetwork is
     constructor(
           address _factoryImplementation
         , address _capacityImplementation
-        , address _governorBadge
-        , uint256 _governorTokenId
+        , BadgePair memory _governorBadge
+        , BadgePair memory _creatorBadge
     ) 
         LaborMarketFactory(
               _factoryImplementation
             , _governorBadge
-            , _governorTokenId
+            , _creatorBadge
         ) 
     {
         capacityToken = IERC20(_capacityImplementation);
@@ -29,21 +29,21 @@ contract LaborMarketNetwork is
     /**
      * @notice Allows the owner to set the Governor Badge.
      * @dev This is used to gate the ability to create and update Labor Markets.
-     * @param _governorBadge The address of the Governor Badge.
-     * @param _governorTokenId The token ID of the Governor Badge.
+     * @param _governorBadge The address and tokenId of the GovernorBadge.
+     * @param _creatorBadge The address and tokenId of the CreatorBadge.
      * Requirements:
      * - Only the owner can call this function.
      */
-    function setGovernorBadge(
-          address _governorBadge
-        , uint256 _governorTokenId
+    function setNetworkRoles(
+          BadgePair memory _governorBadge
+        , BadgePair memory _creatorBadge
     ) 
         external
         virtual
         override
         onlyOwner
     {
-        _setGovernorBadge(_governorBadge, _governorTokenId);
+        _setNetworkRoles(_governorBadge, _creatorBadge);
     }
 
     /**
@@ -56,8 +56,12 @@ contract LaborMarketNetwork is
         external
         virtual
         override
-        onlyOwner
     {
+        require(
+            _isGovernor(_msgSender()),
+            "LaborMarketNetwork: Only a Governor can call this."
+        );
+        
         capacityToken = IERC20(_implementation);
     }
 
@@ -84,7 +88,10 @@ contract LaborMarketNetwork is
         virtual
         override
     {
-        _validateGovernor(_msgSender());
+        require(
+            _isGovernor(_msgSender()), 
+            "LaborMarketNetwork: Only a Governor can call this."
+        );
 
         _setReputationDecay(
               _reputationModule
@@ -99,13 +106,30 @@ contract LaborMarketNetwork is
     /**
      * @notice Checks if the sender is a Governor.
      * @param _sender The message sender address.
+     * @return True if the sender is a Governor.
      */
-    function validateGovernor(address _sender) 
+    function isGovernor(address _sender)
         external
         view
         virtual
         override
+        returns (bool)
     {
-        _validateGovernor(_sender);
+        return _isGovernor(_sender);
+    }
+
+    /**
+     * @notice Checks if the sender is a Creator.
+     * @param _sender The message sender address.
+     * @return True if the sender is a Creator.
+     */
+    function isCreator(address _sender)
+        external
+        view
+        virtual
+        override
+        returns (bool)
+    {
+        return _isCreator(_sender);
     }
 }

@@ -47,9 +47,6 @@ contract X is Script {
     PayCurve public payCurve;
 
     address public capacityToken = address(0);
-    
-    address public governorBadgeAddress = address(0xA873Dad23D357a19ac03CdA4ea3522108D26ebeA);
-    uint256 public governorBadgeTokenId = 3;
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -58,12 +55,21 @@ contract X is Script {
         // Deploy an empty labor market for implementation
         marketImplementation = new LaborMarket();
 
+        LaborMarketConfigurationInterface.BadgePair memory governorPair = LaborMarketConfigurationInterface.BadgePair({
+            token: address(0xA873Dad23D357a19ac03CdA4ea3522108D26ebeA),
+            tokenId: 7
+        });
+        LaborMarketConfigurationInterface.BadgePair memory creatorPair = LaborMarketConfigurationInterface.BadgePair({
+            token: address(0xA873Dad23D357a19ac03CdA4ea3522108D26ebeA),
+            tokenId: 8
+        });
+
         // Deploy a labor market network
         network = new LaborMarketNetwork({
             _factoryImplementation: address(marketImplementation),
             _capacityImplementation: capacityToken,
-            _governorBadge: governorBadgeAddress,
-            _governorTokenId: governorBadgeTokenId
+            _governorBadge: governorPair,
+            _creatorBadge: creatorPair
         });
 
         // Deploy a new reputation module

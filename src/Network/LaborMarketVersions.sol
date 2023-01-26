@@ -34,8 +34,14 @@ contract LaborMarketVersions is
     /// @dev The address interface of the Governor Badge.
     IERC1155 public governorBadge;
 
+    /// @dev The address interface of the Creator Badge.
+    IERC1155 creatorBadge;
+
     /// @dev The token ID of the Governor Badge.
     uint256 public governorTokenId;
+
+    /// @dev The token ID of the Creator Badge.
+    uint256 public creatorTokenId;
 
     /// @dev All of the versions that are actively running.
     ///      This also enables the ability to self-fork ones product.
@@ -67,8 +73,8 @@ contract LaborMarketVersions is
 
     constructor(
           address _implementation
-        , address _governorBadge
-        , uint256 _governorTokenId
+        , BadgePair memory _governorBadge
+        , BadgePair memory _creatorBadge
     ) {
         /// @dev Initialize the foundational version of the Labor Market primitive.
         _setVersion(
@@ -79,9 +85,11 @@ contract LaborMarketVersions is
             false
         );
 
-        /// @dev Set the Governor Badge.
-        governorBadge = IERC1155(_governorBadge);
-        governorTokenId = _governorTokenId;
+        /// @dev Set the network roles.
+        _setNetworkRoles(
+            _governorBadge, 
+            _creatorBadge
+        );
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -190,49 +198,38 @@ contract LaborMarketVersions is
     }
 
     /**
-     * @notice Gates permissions behind the Governor Badge.
-     * @dev This is an internal function to allow gating Governor permissions
-     *      within the entire network and factory contract stack.
+     * @notice Gates permissions behind the Creator Badge.
+     * @dev This is an internal function to allow gating Creator permissions
+     *     within the entire network and factory contract stack.
      * @param _sender The address to verify against.
+     * @return Whether or not the sender is a Creator.
      */
-    function _validateGovernor(address _sender)
+    function _isCreator(address _sender)
         internal
         view
+        returns (bool)
     {
-        require(
-            governorBadge.balanceOf(_sender, governorTokenId) > 0,
-            "LaborMarketVersions::_validateGovernor: Not governor."
-        );
+        return creatorBadge.balanceOf(_sender, creatorTokenId) > 0;
+    }
+
+    /**
+     * @notice Gates permissions behind the Governor Badge.
+     * @dev This is an internal function to allow gating Governor permissions
+     *     within the entire network and factory contract stack.
+     * @param _sender The address to verify against.
+     * @return Whether or not the sender is a Governor.
+     */
+    function _isGovernor(address _sender) 
+        internal
+        view
+        returns (bool)
+    {
+        return governorBadge.balanceOf(_sender, governorTokenId) > 0;
     }
 
     /*//////////////////////////////////////////////////////////////
                             INTERNAL SETTERS
     //////////////////////////////////////////////////////////////*/
-
-    /**
-     * See {LaborMarketVersionsInterface.setVersion}
-     */
-    function _setVersion(
-          address _implementation
-        , address _owner
-        , bytes32 _licenseKey
-        , uint256 _amount
-        , bool _locked
-    ) 
-        internal 
-    {
-        /// @dev Set the version configuration.
-        versions[_implementation] = Version({
-            owner: _owner,
-            licenseKey: _licenseKey,
-            amount: _amount,
-            locked: _locked
-        });
-
-        /// @dev Announce that the version has been updated to index it on the front-end.
-        emit VersionUpdated(_implementation, versions[_implementation]);
-    }
-
     /**
      * See {LaborMarketFactory.createLaborMarket}
      */
@@ -271,7 +268,6 @@ contract LaborMarketVersions is
             _configuration.reputation.tokenId
         );
 
-
         /// @dev Announce the creation of the Labor Market.
         emit LaborMarketCreated(marketAddress, _deployer, _implementation);
 
@@ -279,16 +275,45 @@ contract LaborMarketVersions is
     }
 
     /**
-     * See {LaborMarketNetwork.setGovernorBadge}
+     * See {LaborMarketVersionsInterface.setVersion}
      */
-    function _setGovernorBadge(
-          address _governorBadge
-        , uint256 _governorTokenId
+    function _setVersion(
+          address _implementation
+        , address _owner
+        , bytes32 _licenseKey
+        , uint256 _amount
+        , bool _locked
     ) 
+        internal 
+    {
+        /// @dev Set the version configuration.
+        versions[_implementation] = Version({
+            owner: _owner,
+            licenseKey: _licenseKey,
+            amount: _amount,
+            locked: _locked
+        });
+
+        /// @dev Announce that the version has been updated to index it on the front-end.
+        emit VersionUpdated(_implementation, versions[_implementation]);
+    }
+
+    /**
+     * See {LaborMarketsNetwork.setNetworkRoles}
+     */
+    function _setNetworkRoles(
+          BadgePair memory _governorBadge
+        , BadgePair memory _creatorBadge
+    )
         internal
     {
-        governorBadge = IERC1155(_governorBadge);
-        governorTokenId = _governorTokenId;
+        /// @dev Set the Governor Badge.
+        governorBadge = IERC1155(_governorBadge.token);
+        governorTokenId = _governorBadge.tokenId;
+
+        /// @dev Set the Creator Badge.
+        creatorBadge = IERC1155(_creatorBadge.token);
+        creatorTokenId = _creatorBadge.tokenId;
     }
 
     /**

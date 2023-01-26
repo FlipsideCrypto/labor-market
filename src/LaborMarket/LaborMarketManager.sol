@@ -42,6 +42,9 @@ contract LaborMarketManager is
     
     bytes32 public constant HAS_SIGNALED = keccak256("hasSignaled");
 
+    /// @dev The address of the market creator.
+    address public creator;
+
     /// @dev The network contract.
     LaborMarketNetworkInterface public network;
 

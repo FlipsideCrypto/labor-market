@@ -53,11 +53,23 @@ contract LaborMarketFactoryTest is PRBTest, StdCheats {
         // Deploy an empty labor market for implementation
         marketImplementation = new LaborMarket();
 
+        LaborMarketConfigurationInterface.BadgePair memory governorPair = LaborMarketConfigurationInterface.BadgePair({
+            token: address(repToken),
+            tokenId: 0
+        });
+        LaborMarketConfigurationInterface.BadgePair memory creatorPair = LaborMarketConfigurationInterface.BadgePair({
+            token: address(repToken),
+            tokenId: 1
+        });
+
+        repToken.freeMint(deployer, 0, 1);
+        repToken.freeMint(deployer, 1, 1);
+
         // Deploy a labor market factory
         factory = new LaborMarketFactory({
             _implementation: address(marketImplementation),
-            _governorBadge: address(repToken),
-            _governorTokenId: 1
+            _governorBadge: governorPair,
+            _creatorBadge: creatorPair
         });
         vm.stopPrank();
     }
@@ -108,7 +120,7 @@ contract LaborMarketFactoryTest is PRBTest, StdCheats {
     }
 
     function test_ExecTransaction() public {
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert("LaborMarketFactory: Only Governors can call this.");
         vm.prank(address(0xaa));
         factory.execTransaction(address(marketImplementation), "0x", 0);
 

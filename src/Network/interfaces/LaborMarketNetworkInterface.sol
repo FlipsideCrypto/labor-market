@@ -11,10 +11,11 @@ interface LaborMarketNetworkInterface {
     )
         external;
 
-    function setGovernorBadge(
-        address _governorBadge,
-        uint256 _governorTokenId
-    ) external;
+    function setNetworkRoles(
+          LaborMarketConfigurationInterface.BadgePair memory _governorBadge
+        , LaborMarketConfigurationInterface.BadgePair memory _creatorBadge
+    ) 
+        external;
 
     function setReputationDecay(
           address _reputationModule
@@ -26,7 +27,17 @@ interface LaborMarketNetworkInterface {
     )
         external;
 
-    function validateGovernor(address _sender) 
+    function isGovernor(address _sender) 
         external 
-        view;
+        view
+        returns (
+            bool
+        );
+
+    function isCreator(address _sender) 
+        external 
+        view
+        returns (
+            bool
+        );
 }

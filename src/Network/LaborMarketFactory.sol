@@ -16,13 +16,13 @@ contract LaborMarketFactory is
 {
     constructor(
           address _implementation
-        , address _governorBadge
-        , uint256 _governorTokenId
+        , BadgePair memory _governorBadge
+        , BadgePair memory _creatorBadge
     ) 
         LaborMarketVersions(
               _implementation
             , _governorBadge
-            , _governorTokenId
+            , _creatorBadge
         )
     {}
 
@@ -44,8 +44,11 @@ contract LaborMarketFactory is
             address laborMarketAddress
         )
     {
-        /// @dev MVP only allows governors to deploy new Labor Markets.
-        _validateGovernor(_msgSender());
+        /// @dev MVP only allows creators to deploy new Labor Markets.
+        require(
+            _isCreator(_msgSender()),
+            "LaborMarketFactory: Only creators can deploy new Labor Markets."
+        );
 
         /// @dev Load the version.
         Version memory version = versions[_implementation];
@@ -147,8 +150,13 @@ contract LaborMarketFactory is
         external
         virtual
         payable
-        onlyOwner
     {
+        /// @dev Only allow protocol Governors to execute protocol level transactions.
+        require(
+            _isGovernor(_msgSender()),
+            "LaborMarketFactory: Only Governors can call this."   
+        );
+
         /// @dev Make the call.
         (
               bool success

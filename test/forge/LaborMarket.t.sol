@@ -55,6 +55,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
     uint256 private constant PAYMENT_TOKEN_ID = 2;
     uint256 private constant MAINTAINER_TOKEN_ID = 3;
     uint256 private constant GOVERNOR_TOKEN_ID = 4;
+    uint256 private constant CREATOR_TOKEN_ID = 5;
     uint256 private constant REPUTATION_DECAY_RATE = 0;
     uint256 private constant REPUTATION_DECAY_INTERVAL = 0;
 
@@ -183,12 +184,21 @@ contract LaborMarketTest is PRBTest, StdCheats {
         // Deploy an empty labor market for implementation
         marketImplementation = new LaborMarket();
 
+        LaborMarketConfigurationInterface.BadgePair memory governorPair = LaborMarketConfigurationInterface.BadgePair({
+            token: address(repToken),
+            tokenId: GOVERNOR_TOKEN_ID
+        });
+        LaborMarketConfigurationInterface.BadgePair memory creatorPair = LaborMarketConfigurationInterface.BadgePair({
+            token: address(repToken),
+            tokenId: CREATOR_TOKEN_ID
+        });
+
         // Deploy a labor market network
         network = new LaborMarketNetwork({
             _factoryImplementation: address(marketImplementation),
             _capacityImplementation: address(payToken),
-            _governorBadge: address(repToken),
-            _governorTokenId: GOVERNOR_TOKEN_ID
+            _governorBadge: governorPair,
+            _creatorBadge: creatorPair
         });
 
         // Deploy a new reputation module
@@ -203,7 +213,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         // Initialize reputation and roles
         address[] memory delegates = new address[](1);
         delegates[0] = address(reputationModule);
-        for (uint256 i=0; i <= GOVERNOR_TOKEN_ID; i++) {
+        for (uint256 i=0; i <= CREATOR_TOKEN_ID; i++) {
             repToken.setBadge(
                 i,
                 false,
@@ -218,8 +228,9 @@ contract LaborMarketTest is PRBTest, StdCheats {
             );
         }
 
-        // Make deployer a governor
+        // Make deployer a governor and creator
         repToken.leaderMint(address(deployer), GOVERNOR_TOKEN_ID, 1, "0x");
+        repToken.leaderMint(address(deployer), CREATOR_TOKEN_ID, 1, "0x");
 
         // Create a new labor market configuration
         LaborMarketConfigurationInterface.LaborMarketConfiguration
