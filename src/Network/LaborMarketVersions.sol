@@ -89,8 +89,16 @@ contract LaborMarketVersions is
     //////////////////////////////////////////////////////////////*/
 
     /**
-     * See {LaborMarketVersions._setVersion}
-     *
+     * @notice Allows configuration to specific versions.
+     * @dev This enables the ability to have Enterprise versions as well as public versions. None of this
+     *      state is immutable as a license model may change in the future and updates here do not impact
+     *      Labor Markets that are already running.
+     * @param _implementation The implementation address.
+     * @param _owner The owner of the version.
+     * @param _tokenAddress The token address.
+     * @param _tokenId The token ID.
+     * @param _amount The amount that this user will have to pay.
+     * @param _locked Whether or not this version has been made immutable.
      * Requirements:
      * - The caller must be the owner.
      * - If the caller is not the owner, cannot set a Payment Token as they cannot withdraw.
@@ -146,7 +154,12 @@ contract LaborMarketVersions is
     //////////////////////////////////////////////////////////////*/
 
     /**
-     * See {LaborMarketVersionsInterface.getVersionKey}
+     * @notice Build the version key for a version and a sender.
+     * @dev If the license for a version is updated, then the previous fundings
+     *      will be lost and no longer active unless the version is reverted back
+     *      to the previous configuration.
+     * @param _implementation The implementation address.
+     * @return The version key.
      */
     function getVersionKey(address _implementation)
         public
@@ -159,7 +172,10 @@ contract LaborMarketVersions is
     }
 
     /**
-     * See {LaborMarketsVersionInterface.getLicenseKey}
+     * @notice Builds the license key for a version and a sender.
+     * @param _versionKey The version key.
+     * @param _sender The message sender address.
+     * returns The license key for the message sender.
      */
     function getLicenseKey(
           bytes32 _versionKey
@@ -218,12 +234,7 @@ contract LaborMarketVersions is
     }
 
     /**
-     * @notice Creates a new Labor Market to be managed by the deploying address.
-     * @param _implementation The address of the implementation to be used.
-     * @param _licenseKey The license key of the individual processing the Labor Market creation.
-     * @param _versionCost The cost of deploying the version.
-     * @param _deployer The address that will be the deployer of the Labor Market contract.
-     * @param _configuration The configuration of the Labor Market.
+     * See {LaborMarketFactory.createLaborMarket}
      */
     function _createLaborMarket(
           address _implementation
@@ -268,11 +279,7 @@ contract LaborMarketVersions is
     }
 
     /**
-     * @notice Sets the governor badge of the network.
-     * @param _governorBadge The address of the Governor Badge.
-     * @param _governorTokenId The token ID of the Governor Badge.
-     * @dev This is an internal function to allow setting the Governor Badge
-     *      utilizing the LaborMarketNetwork interface.
+     * See {LaborMarketNetwork.setGovernorBadge}
      */
     function _setGovernorBadge(
           address _governorBadge
@@ -285,12 +292,7 @@ contract LaborMarketVersions is
     }
 
     /**
-     * @notice Sets the reputation decay configuration for a token.
-     * @param _reputationModule The address of the Reputation Module.
-     * @param _reputationToken The address of the Reputation Token.
-     * @param _reputationTokenId The token ID of the Reputation Token.
-     * @param _decayRate The rate of decay.
-     * @param _decayInterval The interval of decay.
+     * See {LaborMarketsNetwork.setReputationDecay}
      */
     function _setReputationDecay(
           address _reputationModule
@@ -298,6 +300,7 @@ contract LaborMarketVersions is
         , uint256 _reputationTokenId
         , uint256 _decayRate
         , uint256 _decayInterval
+        , uint256 _decayStartEpoch
     )
         internal
     {
@@ -305,7 +308,8 @@ contract LaborMarketVersions is
             _reputationToken,
             _reputationTokenId,
             _decayRate,
-            _decayInterval
+            _decayInterval,
+            _decayStartEpoch
         );
     }
 
