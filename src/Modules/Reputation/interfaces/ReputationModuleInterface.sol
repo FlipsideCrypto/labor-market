@@ -11,6 +11,7 @@ interface ReputationModuleInterface {
     struct DecayConfig {
         uint256 decayRate;
         uint256 decayInterval;
+        uint256 decayStartEpoch;
     }
 
     struct ReputationAccountInfo {
@@ -51,6 +52,7 @@ interface ReputationModuleInterface {
         , uint256 _reputationTokenId
         , uint256 _decayRate
         , uint256 _decayInterval
+        , uint256 _decayStartEpoch
     )
         external;
 

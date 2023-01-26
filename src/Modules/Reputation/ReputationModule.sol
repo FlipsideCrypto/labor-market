@@ -41,6 +41,14 @@ contract ReputationModule is
         , uint256 decayInterval
     );
 
+    /// @dev When the balance of an account is changed.
+    event ReputationBalanceChange (
+        address indexed account,
+        address indexed reputationToken,
+        uint256 indexed reputationTokenId,
+        int256 amount
+    );
+
     constructor(
         address _network
     ) {
@@ -63,7 +71,10 @@ contract ReputationModule is
         override
         external
     {
-        require(_msgSender() == network, "ReputationModule: Only network can call this.");
+        require(
+            _msgSender() == network, 
+            "ReputationModule: Only network can call this."
+        );
 
         marketRepConfig[_laborMarket] = MarketReputationConfig({
               reputationToken: _reputationToken
@@ -89,19 +100,10 @@ contract ReputationModule is
         external
         override
     {
-        MarketReputationConfig memory config = marketRepConfig[_msgSender()];
-
-        require(
-            IERC1155(config.reputationToken).balanceOf(
-                _account, 
-                config.reputationTokenId
-            ) >= _amount,
-            "ReputationModule: Not enough reputation to use."
-        );
-
-        BadgerOrganizationInterface(config.reputationToken).revoke(
+        _revokeReputation(
+            marketRepConfig[_msgSender()].reputationToken,
+            marketRepConfig[_msgSender()].reputationTokenId,
             _account,
-            config.reputationTokenId,
             _amount
         );
     }
@@ -112,6 +114,8 @@ contract ReputationModule is
      * @param _reputationToken The address of the reputation token.
      * @param _reputationTokenId The ID of the reputation token.
      * @param _frozenUntilEpoch The epoch until which the reputation is frozen.
+     * Requirements:
+     * - The frozenUntilEpoch must be in the future.
      */
     function freezeReputation(
           address _account
@@ -121,24 +125,20 @@ contract ReputationModule is
     )
         external
         override
-    {
-        ReputationAccountInfo storage info = accountInfo[_reputationToken][_reputationTokenId][_account];
-
-        uint256 decay = _getReputationDecay(
-            _reputationToken, 
-            _reputationTokenId,
-            info.frozenUntilEpoch,
-            info.lastDecayEpoch
+    {   
+        require(
+            _frozenUntilEpoch > block.timestamp,
+            "ReputationModule: Cannot retroactively freeze reputation."
         );
 
-        info.frozenUntilEpoch = _frozenUntilEpoch;
-        info.lastDecayEpoch = block.timestamp;
-
-        BadgerOrganizationInterface(_reputationToken).revoke(
+        _revokeReputation(
+            _reputationToken,
+            _reputationTokenId,
             _account,
-            _reputationTokenId,
-            decay
+            0
         );
+
+        accountInfo[_reputationToken][_reputationTokenId][_account].frozenUntilEpoch = _frozenUntilEpoch;
     }
 
     /**
@@ -169,6 +169,13 @@ contract ReputationModule is
             _amount,
             ""
         );
+
+        emit ReputationBalanceChange(
+            _account,
+            config.reputationToken,
+            config.reputationTokenId,
+            int256(_amount)
+        );
     }
 
     /**
@@ -177,6 +184,7 @@ contract ReputationModule is
      * @param _reputationTokenId The ID of the reputation token.
      * @param _decayRate The rate of decay.
      * @param _decayInterval The interval of decay.
+     * @param _decayStartEpoch The epoch at which decay starts.
      * Requirements:
      * - Only the network can call this function.
      */
@@ -185,6 +193,7 @@ contract ReputationModule is
         , uint256 _reputationTokenId
         , uint256 _decayRate
         , uint256 _decayInterval
+        , uint256 _decayStartEpoch
     )
         external
         override
@@ -194,6 +203,7 @@ contract ReputationModule is
         decayConfig[_reputationToken][_reputationTokenId] = DecayConfig({
               decayRate: _decayRate
             , decayInterval: _decayInterval
+            , decayStartEpoch: _decayStartEpoch
         });
 
         emit ReputationDecayConfigured(
@@ -288,6 +298,59 @@ contract ReputationModule is
     }
 
     /**
+     * @notice Manage the revoking of reputation and the decay application.
+     * @param _reputationToken The address of the reputation token.
+     * @param _reputationTokenId The ID of the reputation token.
+     * @param _account The account to revoke reputation from.
+     * @param _amount The amount of reputation to revoke.
+     */
+    function _revokeReputation(
+          address _reputationToken
+        , uint256 _reputationTokenId
+        , address _account
+        , uint256 _amount
+    )
+        internal
+    {
+        uint256 balance = IERC1155(_reputationToken).balanceOf(
+            _account,
+            _reputationTokenId
+        );
+
+        require(
+            balance >= _amount,
+            "ReputationModule: Not enough reputation to use."
+        );
+
+        ReputationAccountInfo storage info = accountInfo[_reputationToken][_reputationTokenId][_account];
+
+        uint256 decay = _getReputationDecay(
+            _reputationToken, 
+            _reputationTokenId,
+            info.frozenUntilEpoch,
+            info.lastDecayEpoch
+        );
+
+        uint256 amount = _amount + decay;
+        if (amount > balance) amount = balance;
+
+        info.lastDecayEpoch = block.timestamp;
+
+        BadgerOrganizationInterface(_reputationToken).revoke(
+            _account,
+            _reputationTokenId,
+            amount
+        );
+
+        emit ReputationBalanceChange(
+            _account,
+            _reputationToken,
+            _reputationTokenId,
+            int256(amount) * -1
+        );
+    }
+
+    /**
      * @notice Get the amount of reputation that has decayed.
      * @param _reputationToken The reputation token to check.
      * @param _reputationTokenId The reputation token ID to check.
@@ -316,7 +379,10 @@ contract ReputationModule is
             return 0;
         }
 
-        return (((block.timestamp - _lastDecayEpoch - _frozenUntilEpoch) /
+        uint256 startEpoch = _lastDecayEpoch > decay.decayStartEpoch ? 
+            _lastDecayEpoch : decay.decayStartEpoch;
+
+        return (((block.timestamp - startEpoch - _frozenUntilEpoch) /
             decay.decayInterval) * decay.decayRate);
     }
 }
