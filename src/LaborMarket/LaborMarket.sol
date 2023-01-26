@@ -287,11 +287,11 @@ contract LaborMarket is LaborMarketManager {
 
         uint256 rCurveIndex = enforcementCriteria.verify(
             _submissionId, 
-            serviceRequests[requestId].rTokenQ
+            serviceRequests[requestId].rTokenQ * 1e18 // Scale to 18 decimals for utilization with ERC20 specific math.
         );
 
         uint256 payAmount = paymentCurve.curvePoint(pCurveIndex);
-        uint256 reputationAmount = paymentCurve.curvePoint(rCurveIndex);
+        uint256 reputationAmount = paymentCurve.curvePoint(rCurveIndex) / 1e18; // Revert the 18 decimal scale.
 
         hasPerformed[_submissionId][_msgSender()][HAS_CLAIMED] = true;
 

@@ -219,7 +219,7 @@ contract ReputationModule is
      * @dev This function takes into account non-applied decay and the frozen state.
      * @param _laborMarket The Labor Market context.
      * @param _account The account to check.
-     * @return The amount of reputation that is available to use.
+     * @return _availableReputation The amount of reputation that is available to use.
      */
     function getAvailableReputation(
         address _laborMarket,
@@ -229,7 +229,7 @@ contract ReputationModule is
         view
         override
         returns (
-            uint256
+            uint256 _availableReputation
         )
     {
         MarketReputationConfig memory config = marketRepConfig[_laborMarket];
@@ -244,12 +244,12 @@ contract ReputationModule is
             info.lastDecayEpoch
         );
 
-        return (
-            IERC1155(config.reputationToken).balanceOf(
-                _account,
-                config.reputationTokenId
-            ) - decayed
+        _availableReputation = IERC1155(config.reputationToken).balanceOf(
+            _account,
+            config.reputationTokenId
         );
+
+        return _availableReputation > decayed ? _availableReputation - decayed : 0;
     }
 
     /**
@@ -331,6 +331,7 @@ contract ReputationModule is
             info.lastDecayEpoch
         );
 
+        // If decay is more than the balance, just take all balance.
         uint256 amount = _amount + decay;
         if (amount > balance) amount = balance;
 
@@ -379,6 +380,7 @@ contract ReputationModule is
             return 0;
         }
 
+        // If the last decay epoch is greater than the decay start epoch, use that.
         uint256 startEpoch = _lastDecayEpoch > decay.decayStartEpoch ? 
             _lastDecayEpoch : decay.decayStartEpoch;
 

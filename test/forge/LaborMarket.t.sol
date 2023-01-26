@@ -1251,4 +1251,130 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         vm.stopPrank();
     }
+
+    function test_ReputationalDecay() public {
+        vm.startPrank(deployer);
+
+        repToken.leaderMint(bob, GOVERNOR_TOKEN_ID, 1, "0x");
+        repToken.leaderMint(delegate, GOVERNOR_TOKEN_ID, 1, "0x");
+
+        network.setReputationDecay(
+            address(reputationModule),
+            address(repToken),
+            REPUTATION_TOKEN_ID,
+            10,
+            5000,
+            block.timestamp
+        );
+
+        address nerd = address(0x3);
+        repToken.leaderMint(nerd, REPUTATION_TOKEN_ID, 10000, "0x");
+
+        LaborMarketConfigurationInterface.LaborMarketConfiguration
+            memory config = LaborMarketConfigurationInterface
+                .LaborMarketConfiguration({
+                    marketUri: "ipfs://000",
+                    modules: LaborMarketConfigurationInterface.Modules({
+                        network: address(network),
+                        reputation: address(reputationModule),
+                        enforcement: address(enforcementCriteria),
+                        payment: address(payCurve)
+                    }),
+                    maintainer: LaborMarketConfigurationInterface.BadgePair({
+                        token: address(repToken),
+                        tokenId: MAINTAINER_TOKEN_ID
+                    }),
+                    delegate: LaborMarketConfigurationInterface.BadgePair({
+                        token: address(repToken),
+                        tokenId: DELEGATE_TOKEN_ID
+                    }),
+                    reputation: LaborMarketConfigurationInterface.BadgePair({
+                        token: address(repToken),
+                        tokenId: REPUTATION_TOKEN_ID
+                    }),
+                    signalStake: 5,
+                    submitMin: 10,
+                    submitMax: 10000e18
+                });
+        market = LaborMarket(
+            network.createLaborMarket({
+                _implementation: address(marketImplementation),
+                _deployer: bob,
+                _configuration: config
+            })
+        );
+
+        payToken.freeMint(address(bob), 10000e18);
+
+        changePrank(bob);
+        payToken.approve(address(market), 10000e18);
+        uint256 requestId = market.submitRequest({
+            _pToken: address(payToken),
+            _pTokenQ: 100e18,
+            _rTokenQ: 5000,
+            _signalExp: block.timestamp + 1 hours,
+            _submissionExp: block.timestamp + 1 days,
+            _enforcementExp: block.timestamp + 1 weeks,
+            _requestUri: "ipfs://222"
+        });
+
+        // A valid user signals
+        changePrank(nerd);
+        uint256 balanceBefore = repToken.balanceOf(address(nerd), REPUTATION_TOKEN_ID);
+        market.signal(requestId);
+
+        // User fulfills the request
+        uint256 submissionId = market.provide(requestId, "IPFS://333");
+
+        // A valid maintainer signals for review
+        changePrank(bob);
+        market.signalReview(requestId, 3);
+
+        // A valid maintainer reviews the request
+        market.review(requestId, submissionId, 1);
+
+        vm.warp(2 weeks);
+
+        // User claims reward
+        changePrank(nerd);
+
+        uint256 pTokenReward = market.claim(submissionId, nerd, "");
+        assertAlmostEq(pTokenReward, 5e18, 0.000001e18);
+
+        uint256 repBalance = repToken.balanceOf(address(nerd), REPUTATION_TOKEN_ID);
+        assertAlmostEq(repBalance, balanceBefore + 250, 1); // 5% of 5000 is 250
+
+        uint256 decay = reputationModule.getPendingDecay(
+            address(market),
+            address(nerd)
+        );
+
+        changePrank(bob);
+        uint256 newRequestId = createSimpleRequest(market);
+
+        // A valid user signals
+        changePrank(nerd);
+        market.signal(newRequestId);
+
+        repBalance = repToken.balanceOf(address(nerd), REPUTATION_TOKEN_ID);
+        decay = reputationModule.getPendingDecay(
+            address(market),
+            address(nerd)
+        );
+
+        assertAlmostEq(repBalance, repBalance - decay, 1);
+
+
+        balanceBefore = repToken.balanceOf(address(nerd), REPUTATION_TOKEN_ID);
+        vm.warp(100 weeks);
+        uint256 newBalance = reputationModule.getAvailableReputation(
+            address(market),
+            address(nerd)
+        );
+
+        assertEq(newBalance, 0);
+
+
+        vm.stopPrank();
+    }
 }
