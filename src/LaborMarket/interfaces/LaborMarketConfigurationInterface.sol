@@ -6,9 +6,14 @@ interface LaborMarketConfigurationInterface {
     struct LaborMarketConfiguration {
         string marketUri;
         Modules modules;
-        BadgePair delegate;
-        BadgePair maintainer;
-        BadgePair reputation;
+        BadgePair delegateBadge;
+        BadgePair maintainerBadge;
+        BadgePair reputationBadge;
+        ReputationParams reputationParams;
+    }
+
+    struct ReputationParams {
+        uint256 rewardPool;
         uint256 signalStake;
         uint256 submitMin;
         uint256 submitMax;

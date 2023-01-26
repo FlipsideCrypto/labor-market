@@ -15,7 +15,6 @@ contract LaborMarket is LaborMarketManager {
      * @notice Creates a service request.
      * @param _pToken The address of the payment token.
      * @param _pTokenQ The quantity of the payment token.
-     * @param _rTokenQ The quantity of the reputation token that can be earned.
      * @param _signalExp The signal deadline expiration.
      * @param _submissionExp The submission deadline expiration.
      * @param _enforcementExp The enforcement deadline expiration.
@@ -26,7 +25,6 @@ contract LaborMarket is LaborMarketManager {
     function submitRequest(
           address _pToken
         , uint256 _pTokenQ
-        , uint256 _rTokenQ
         , uint256 _signalExp
         , uint256 _submissionExp
         , uint256 _enforcementExp
@@ -53,7 +51,6 @@ contract LaborMarket is LaborMarketManager {
             serviceRequester: _msgSender(),
             pToken: _pToken,
             pTokenQ: (pTokenAfter - pTokenBefore),
-            rTokenQ: _rTokenQ,
             signalExp: _signalExp,
             submissionExp: _submissionExp,
             enforcementExp: _enforcementExp,
@@ -69,7 +66,6 @@ contract LaborMarket is LaborMarketManager {
             _requestUri,
             _pToken,
             _pTokenQ,
-            _rTokenQ,
             _signalExp,
             _submissionExp,
             _enforcementExp
@@ -97,7 +93,7 @@ contract LaborMarket is LaborMarketManager {
             "LaborMarket::signal: Already signaled."
         );
 
-        reputationModule.useReputation(_msgSender(), configuration.signalStake);
+        reputationModule.useReputation(_msgSender(), configuration.reputationParams.signalStake);
 
         hasPerformed[_requestId][_msgSender()][HAS_SIGNALED] = true;
 
@@ -105,7 +101,7 @@ contract LaborMarket is LaborMarketManager {
             ++signalCount[_requestId];
         }
 
-        emit RequestSignal(_msgSender(), _requestId, configuration.signalStake);
+        emit RequestSignal(_msgSender(), _requestId, configuration.reputationParams.signalStake);
     }
 
     /**
@@ -127,7 +123,7 @@ contract LaborMarket is LaborMarketManager {
             "LaborMarket::signalReview: Already signaled."
         );
 
-        uint256 signalStake = _quantity * configuration.signalStake;
+        uint256 signalStake = _quantity * configuration.reputationParams.signalStake;
 
         reputationModule.useReputation(_msgSender(), signalStake);
 
@@ -180,7 +176,7 @@ contract LaborMarket is LaborMarketManager {
 
         hasPerformed[_requestId][_msgSender()][HAS_SUBMITTED] = true;
 
-        reputationModule.mintReputation(_msgSender(), configuration.signalStake);
+        reputationModule.mintReputation(_msgSender(), configuration.reputationParams.signalStake);
 
         emit RequestFulfilled(_msgSender(), _requestId, serviceId, _uri);
 
@@ -235,7 +231,7 @@ contract LaborMarket is LaborMarketManager {
 
         reputationModule.mintReputation(
             _msgSender(),
-            configuration.signalStake
+            configuration.reputationParams.signalStake
         );
 
         emit RequestReviewed(_msgSender(), _requestId, _submissionId, _score);
@@ -287,7 +283,7 @@ contract LaborMarket is LaborMarketManager {
 
         uint256 rCurveIndex = enforcementCriteria.verify(
             _submissionId, 
-            serviceRequests[requestId].rTokenQ * 1e18 // Scale to 18 decimals for utilization with ERC20 specific math.
+            configuration.reputationParams.rewardPool * 1e18 // Scale to 18 decimals for utilization with ERC20 specific math.
         );
 
         uint256 payAmount = paymentCurve.curvePoint(pCurveIndex);
@@ -369,7 +365,7 @@ contract LaborMarket is LaborMarketManager {
 
         reputationModule.mintReputation(
             _msgSender(),
-            configuration.signalStake * reviewPromise.remainder
+            configuration.reputationParams.signalStake * reviewPromise.remainder
         );
 
         reviewPromise.total = 0;
@@ -410,7 +406,6 @@ contract LaborMarket is LaborMarketManager {
      * @param _requestId The id of the service requesters request.
      * @param _pToken The address of the payment token.
      * @param _pTokenQ The quantity of payment tokens.
-     * @param _rTokenQ The quantity of reputation tokens.
      * @param _signalExp The expiration of the signal period.
      * @param _submissionExp The expiration of the submission period.
      * @param _enforcementExp The expiration of the enforcement period.
@@ -422,7 +417,6 @@ contract LaborMarket is LaborMarketManager {
           uint256 _requestId
         , address _pToken
         , uint256 _pTokenQ
-        , uint256 _rTokenQ
         , uint256 _signalExp
         , uint256 _submissionExp
         , uint256 _enforcementExp
@@ -456,7 +450,6 @@ contract LaborMarket is LaborMarketManager {
             serviceRequester: _msgSender(),
             pToken: _pToken,
             pTokenQ: (pTokenAfter - pTokenBefore),
-            rTokenQ: _rTokenQ,
             signalExp: _signalExp,
             submissionExp: _submissionExp,
             enforcementExp: _enforcementExp,
@@ -472,7 +465,6 @@ contract LaborMarket is LaborMarketManager {
             _requestUri,
             _pToken,
             _pTokenQ,
-            _rTokenQ,
             _signalExp,
             _submissionExp,
             _enforcementExp

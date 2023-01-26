@@ -97,7 +97,6 @@ contract LaborMarketManager is
         , string indexed uri
         , address pToken
         , uint256 pTokenQ
-        , uint256 rTokenQ
         , uint256 signalExp
         , uint256 submissionExp
         , uint256 enforcementExp
@@ -160,7 +159,7 @@ contract LaborMarketManager is
         require(
             delegateBadge.balanceOf(
                 _msgSender(),
-                configuration.delegate.tokenId
+                configuration.delegateBadge.tokenId
             ) > 0,
             "LaborMarket::onlyDelegate: Not a delegate"
         );
@@ -172,7 +171,7 @@ contract LaborMarketManager is
         require(
             maintainerBadge.balanceOf(
                 _msgSender(),
-                configuration.maintainer.tokenId
+                configuration.maintainerBadge.tokenId
             ) > 0,
             "LaborMarket::onlyMaintainer: Not a maintainer"
         );
@@ -183,8 +182,8 @@ contract LaborMarketManager is
     modifier permittedParticipant() {
         uint256 availableRep = _getAvailableReputation();
         require((
-                availableRep >= configuration.submitMin &&
-                availableRep < configuration.submitMax
+                availableRep >= configuration.reputationParams.submitMin &&
+                availableRep < configuration.reputationParams.submitMax
             ), "LaborMarket::permittedParticipant: Not a permitted participant"
         );
         _;
@@ -273,8 +272,8 @@ contract LaborMarketManager is
         );
 
         /// @dev Configure the Labor Market access control.
-        delegateBadge = IERC1155(_configuration.delegate.token);
-        maintainerBadge = IERC1155(_configuration.maintainer.token);
+        delegateBadge = IERC1155(_configuration.delegateBadge.token);
+        maintainerBadge = IERC1155(_configuration.maintainerBadge.token);
 
         /// @dev Configure the Labor Market parameters.
         configuration = _configuration;

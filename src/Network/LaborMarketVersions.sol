@@ -264,8 +264,8 @@ contract LaborMarketVersions is
         /// @dev Register the Labor Market with the Reputation Module.
         ReputationModuleInterface(_configuration.modules.reputation).useReputationModule(
             marketAddress,
-            _configuration.reputation.token,
-            _configuration.reputation.tokenId
+            _configuration.reputationBadge.token,
+            _configuration.reputationBadge.tokenId
         );
 
         /// @dev Announce the creation of the Labor Market.

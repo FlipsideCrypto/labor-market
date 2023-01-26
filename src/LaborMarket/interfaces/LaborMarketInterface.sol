@@ -9,7 +9,6 @@ interface LaborMarketInterface is LaborMarketConfigurationInterface {
         address serviceRequester;
         address pToken;
         uint256 pTokenQ;
-        uint256 rTokenQ;
         uint256 signalExp;
         uint256 submissionExp;
         uint256 enforcementExp;

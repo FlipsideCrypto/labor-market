@@ -243,21 +243,24 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
                         enforcement: address(likertEnforcement),
                         payment: address(payCurve)
                     }),
-                    maintainer: LaborMarketConfigurationInterface.BadgePair({
+                    maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
                         tokenId: MAINTAINER_TOKEN_ID
                     }),
-                    delegate: LaborMarketConfigurationInterface.BadgePair({
+                    delegateBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
                         tokenId: DELEGATE_TOKEN_ID
                     }),
-                    reputation: LaborMarketConfigurationInterface.BadgePair({
+                    reputationBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
                         tokenId: REPUTATION_TOKEN_ID
                     }),
-                    signalStake: 1e18,
-                    submitMin: 1e18,
-                    submitMax: 10000e18
+                    reputationParams: LaborMarketConfigurationInterface.ReputationParams({
+                        rewardPool: 5000,
+                        signalStake: 5,
+                        submitMin: 10,
+                        submitMax: 10000e18
+                    })
                 });
 
         // Create a new labor market configuration for fcfs
@@ -271,21 +274,24 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
                         enforcement: address(fcfsEnforcement),
                         payment: address(payCurve)
                     }),
-                    maintainer: LaborMarketConfigurationInterface.BadgePair({
+                    maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
                         tokenId: MAINTAINER_TOKEN_ID
                     }),
-                    delegate: LaborMarketConfigurationInterface.BadgePair({
+                    delegateBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
                         tokenId: DELEGATE_TOKEN_ID
                     }),
-                    reputation: LaborMarketConfigurationInterface.BadgePair({
+                    reputationBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
                         tokenId: REPUTATION_TOKEN_ID
                     }),
-                    signalStake: 1e18,
-                    submitMin: 1e18,
-                    submitMax: 10000e18
+                    reputationParams: LaborMarketConfigurationInterface.ReputationParams({
+                        rewardPool: 5000,
+                        signalStake: 5,
+                        submitMin: 10,
+                        submitMax: 10000e18
+                    })
                 });
 
         // Create a new labor market configuration for best5
@@ -299,21 +305,24 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
                         enforcement: address(best5Enforcement),
                         payment: address(payCurve)
                     }),
-                    maintainer: LaborMarketConfigurationInterface.BadgePair({
+                    maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
                         tokenId: MAINTAINER_TOKEN_ID
                     }),
-                    delegate: LaborMarketConfigurationInterface.BadgePair({
+                    delegateBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
                         tokenId: DELEGATE_TOKEN_ID
                     }),
-                    reputation: LaborMarketConfigurationInterface.BadgePair({
+                    reputationBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
                         tokenId: REPUTATION_TOKEN_ID
                     }),
-                    signalStake: 1e18,
-                    submitMin: 1e18,
-                    submitMax: 10000e18
+                    reputationParams: LaborMarketConfigurationInterface.ReputationParams({
+                        rewardPool: 5000,
+                        signalStake: 5,
+                        submitMin: 10,
+                        submitMax: 10000e18
+                    })
                 });
 
         // Create a new labor market configuration for merkle
@@ -327,21 +336,24 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
                         enforcement: address(merkleEnforcement),
                         payment: address(payCurve)
                     }),
-                    maintainer: LaborMarketConfigurationInterface.BadgePair({
+                    maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
                         tokenId: MAINTAINER_TOKEN_ID
                     }),
-                    delegate: LaborMarketConfigurationInterface.BadgePair({
+                    delegateBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
                         tokenId: DELEGATE_TOKEN_ID
                     }),
-                    reputation: LaborMarketConfigurationInterface.BadgePair({
+                    reputationBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
                         tokenId: REPUTATION_TOKEN_ID
                     }),
-                    signalStake: 1e18,
-                    submitMin: 1e18,
-                    submitMax: 10000e18
+                    reputationParams: LaborMarketConfigurationInterface.ReputationParams({
+                        rewardPool: 5000,
+                        signalStake: 5,
+                        submitMin: 10,
+                        submitMax: 10000e18
+                    })
                 });
 
         // Create a new likert labor market
@@ -430,7 +442,6 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
         uint256 rid = simpleMarket.submitRequest({
             _pToken: address(payToken),
             _pTokenQ: 1000e18,
-            _rTokenQ: 5000e18,
             _signalExp: block.timestamp + 1 hours,
             _submissionExp: block.timestamp + 1 days,
             _enforcementExp: block.timestamp + 1 weeks,
@@ -536,7 +547,7 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
         }
 
         assertAlmostEq(totalPaid, 1000e18, 0.000001e18);
-        assertAlmostEq(totalReputation, 5000e18, 0.000001e18);
+        assertAlmostEq(totalReputation, 5000, 0.000001e18);
     }
 
 
