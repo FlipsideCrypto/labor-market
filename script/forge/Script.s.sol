@@ -46,8 +46,9 @@ contract X is Script {
     LikertEnforcementCriteria public enforcementCriteria;
     PayCurve public payCurve;
 
-    address public governorBadgeAddress = address(0xA873Dad23D357a19ac03CdA4ea3522108D26ebeA);
     address public capacityToken = address(0);
+    
+    address public governorBadgeAddress = address(0xA873Dad23D357a19ac03CdA4ea3522108D26ebeA);
     uint256 public governorBadgeTokenId = 3;
 
     function run() external {

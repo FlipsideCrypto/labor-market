@@ -104,7 +104,7 @@ contract LaborMarketManager is
     event RequestSignal(
           address indexed signaler
         , uint256 indexed requestId
-        , uint256 signalAmount
+        , uint256 indexed signalAmount
     );
 
     /// @notice emitted when a maintainer signals a review.
@@ -125,6 +125,7 @@ contract LaborMarketManager is
           address indexed fulfiller
         , uint256 indexed requestId
         , uint256 indexed submissionId
+        , string uri
     );
 
     /// @notice emitted when a service submission is reviewed

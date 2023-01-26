@@ -39,6 +39,7 @@ contract ReputationModule is
         , uint256 indexed reputationTokenId
         , uint256 decayRate
         , uint256 decayInterval
+        , uint256 decayStartEpoch
     );
 
     /// @dev When the balance of an account is changed.
@@ -211,6 +212,7 @@ contract ReputationModule is
             , _reputationTokenId
             , _decayRate
             , _decayInterval
+            , _decayStartEpoch
         );
     }
 

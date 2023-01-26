@@ -182,7 +182,7 @@ contract LaborMarket is LaborMarketManager {
 
         reputationModule.mintReputation(_msgSender(), configuration.signalStake);
 
-        emit RequestFulfilled(_msgSender(), _requestId, serviceId);
+        emit RequestFulfilled(_msgSender(), _requestId, serviceId, _uri);
 
         return serviceId;
     }

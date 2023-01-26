@@ -108,7 +108,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
     event RequestSignal(
           address indexed signaler
         , uint256 indexed requestId
-        , uint256 signalAmount
+        , uint256 indexed signalAmount
     );
 
     /// @notice emitted when a maintainer signals a review.
@@ -129,6 +129,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
           address indexed fulfiller
         , uint256 indexed requestId
         , uint256 indexed submissionId
+        , string _uri
     );
 
     /// @notice emitted when a service submission is reviewed
@@ -592,7 +593,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         uint256 requestId = createSimpleRequest(market);
 
         // Verify signaling events
-        vm.expectEmit(true, true, true, true);
+        vm.expectEmit(true, true, true, false);
         emit RequestSignal(address(alice), requestId, 1e18);
 
         changePrank(alice);
@@ -606,7 +607,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         // Verify submission events
         vm.expectEmit(true, true, true, true);
-        emit RequestFulfilled(address(alice), requestId, requestId + 1);
+        emit RequestFulfilled(address(alice), requestId, requestId + 1, "IPFS://333");
 
         changePrank(alice);
         uint256 submissionId = market.provide(requestId, "IPFS://333");

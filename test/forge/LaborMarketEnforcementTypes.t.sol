@@ -127,7 +127,8 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
     event RequestFulfilled(
         address indexed fulfiller,
         uint256 indexed requestId,
-        uint256 indexed submissionId
+        uint256 indexed submissionId,
+        string _uri
     );
 
     event RequestReviewed(
