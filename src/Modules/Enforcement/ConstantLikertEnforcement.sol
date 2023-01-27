@@ -4,7 +4,6 @@ pragma solidity ^0.8.17;
 
 import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
 
-
 contract ConstantLikertEnforcement {
     /// @dev Tracks the scores given to service submissions.
     /// @dev Labor Market -> Submission Id -> Scores
@@ -28,6 +27,8 @@ contract ConstantLikertEnforcement {
         uint256[] scores;
         uint256 avg;
     }
+
+    constructor() {}
 
     /*////////////////////////////////////////////////// 
                         SETTERS
@@ -93,7 +94,8 @@ contract ConstantLikertEnforcement {
 
         uint256 requestId = getRequestId(_submissionId);
 
-        /// @dev TODO: Does the order of operations like this prevent underflow?
+        /// @dev The ratio of the submission's average grade to the total grade times the total pool.
+        /// @dev Multiplication first to manage precision.
         x = (score * _total) / requestTotalGrade[msg.sender][requestId];
 
         return sqrt(x);

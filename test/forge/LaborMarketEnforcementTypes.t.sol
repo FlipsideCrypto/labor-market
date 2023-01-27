@@ -461,6 +461,7 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
         payToken.approve(address(fcfsMarket), 1_000e18);
         payToken.approve(address(best5Market), 1_000e18);
         payToken.approve(address(merkleMarket), 1_000e18);
+        payToken.approve(address(constantLikertMarket), 1_000e18);
 
         changePrank(deployer);
         repToken.leaderMint(bobert, REPUTATION_TOKEN_ID, 1000e18, "0x");
@@ -506,7 +507,95 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
     }
 
     function test_ConstantLikertMarket() public {
-        
+        /**
+        | Here we test the workings of enforcement (reviewing) following a likert metric.
+        |
+        | First, we populate the request with submissions
+        | Second, we review the submissions
+        | Third, we test the enforcement criteria following an example scenario.
+        | 
+        | * Example scenario:
+        | pTokens: 1000
+        | Participants: 7
+        // // | Likert ratings: (1, BAD), (2, OK), (3, GOOD), (4, GOOD), (5, GREAT)
+        // // | Bucket distribution: (1, 66), (2, 36), (3, 10)
+        // // | Payout distribution: (1, 0), (2, 20%), (3, 80%)
+        // // | Expected Tokens per person per bucket: (1, 0), (2, 5.5), (3, 80)
+        */
+
+        vm.startPrank(deployer);
+
+        payToken.freeMint(bob, 10000e18);
+
+        changePrank(bob);
+        // Create a request
+        uint256 requestId = createSimpleRequest(constantLikertMarket);
+
+        // Signal the request on 112 accounts
+        for (uint256 i = requestId; i < 113; i++) {
+            address user = address(uint160(1337 + i));
+
+            // Mint required tokens
+            changePrank(deployer);
+            repToken.leaderMint(user, DELEGATE_TOKEN_ID, 1, "0x");
+            repToken.leaderMint(user, REPUTATION_TOKEN_ID, 100e18, "0x");
+            changePrank(user);
+
+            // Aprove the market
+            repToken.setApprovalForAll(address(likertMarket), true);
+
+            constantLikertMarket.signal(requestId);
+            constantLikertMarket.provide(requestId, "NaN");
+        }
+
+        // Have bob review the submissions
+        changePrank(bob);
+
+        // The reviewer signals the requestId
+        constantLikertMarket.signalReview(requestId, 113);
+
+        // The reviewer reviews the submissions
+        for (uint256 i = requestId; i < 113; i++) {
+            if (i < 67) {
+                // SPAM
+                constantLikertMarket.review(requestId, i + 1, 0);
+            } else if (i < 100) {
+                // BAD
+                constantLikertMarket.review(requestId, i + 1, 1);
+            } else if (i < 105) {
+                // OK
+                constantLikertMarket.review(requestId, i + 1, 2);
+            } else if (i < 110) {
+                // GOOD
+                constantLikertMarket.review(requestId, i + 1, 3);
+            } else {
+                // GREAT
+                constantLikertMarket.review(requestId, i + 1, 4);
+            }
+        }
+
+        // Keeps track of the total amount paid out
+        uint256 totalPaid;
+        uint256 totalReputation;
+
+        // Skip to enforcement deadline
+        vm.warp(5 weeks);
+
+        // Claim rewards
+        for (uint256 i = requestId; i < 113; i++) {
+            address user = address(uint160(1337 + i));
+            changePrank(user);
+
+            // Claim
+            uint256 repBefore = repToken.balanceOf(user, REPUTATION_TOKEN_ID);
+            uint256 paid = constantLikertMarket.claim(i + 1, msg.sender, ""); 
+            totalPaid += paid;
+            uint256 repAfter = repToken.balanceOf(user, REPUTATION_TOKEN_ID);
+            totalReputation += repAfter - repBefore;
+        }
+
+        assertAlmostEq(totalPaid, 1000e18, 0.000001e18);
+        assertAlmostEq(totalReputation, 5000, 0.000001e18);
     }
 
     function test_LikertMarket() public {

@@ -1,7 +1,7 @@
 {
   "name": "labor-markets-abi",
-  "version": "1.3.2",
-  "description": "Labor markets ABI and deployed contract for the app team to utilize for integration",
+  "version": "1.4.0",
+  "description": "Labor Markets ABI and deployed contract addresses.",
   "files": [
     "dist"
   ],
@@ -23,6 +23,6 @@
       "name": "thermohaline" 
     }
   ],
-  "license": "MIT",
+  "license": "Apache-2.0",
   "prepublish": "tsc"
 }

@@ -113,7 +113,9 @@ contract LaborMarketNetwork is
         view
         virtual
         override
-        returns (bool)
+        returns (
+            bool
+        )
     {
         return _isGovernor(_sender);
     }
@@ -128,7 +130,9 @@ contract LaborMarketNetwork is
         view
         virtual
         override
-        returns (bool)
+        returns (
+            bool
+        )
     {
         return _isCreator(_sender);
     }

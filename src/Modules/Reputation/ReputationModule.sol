@@ -188,6 +188,7 @@ contract ReputationModule is
      * @param _decayStartEpoch The epoch at which decay starts.
      * Requirements:
      * - Only the network can call this function.
+     * - The network function caller must be a Governor.
      */
     function setDecayConfig(
           address _reputationToken

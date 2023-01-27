@@ -18,24 +18,25 @@ import {LaborMarketVersions} from "src/Network/LaborMarketVersions.sol";
 import {ReputationModule} from "src/Modules/Reputation/ReputationModule.sol";
 import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/ReputationModuleInterface.sol";
 
-import {LikertEnforcementCriteria} from "src/Modules/Enforcement/LikertEnforcementCriteria.sol";
+import {ConstantLikertEnforcement} from "src/Modules/Enforcement/ConstantLikertEnforcement.sol";
 
 import {PayCurve} from "src/Modules/Payment/PayCurve.sol";
 
 import {LaborMarketConfigurationInterface} from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
 import {LaborMarketNetworkInterface} from "src/Network/interfaces/LaborMarketNetworkInterface.sol";
 
-// Assumes:
-// RPC_URL= ABC
-// PRIVATE_KEY= DEF
-// ETHERSCAN_API_KEY= GHI
+
+// To Deploy: 
+// source .env
+// forge script DeployProtocol --rpc-url $POLYGON_RPC_URL --private-key ${PRIVATE_KEY} --chain-id 137 --broadcast --verify -vvvv --etherscan-api-key $POLYGONSCAN_API_KEY
+
 
 struct PaymentTokenInt { 
     bytes32 paymentKey;
     uint256 amount;
 }
 
-contract X is Script {
+contract DeployProtocol is Script {
     LaborMarket public marketImplementation;
     LaborMarket public market;
 
@@ -43,7 +44,7 @@ contract X is Script {
 
     LaborMarketNetwork public network;
 
-    LikertEnforcementCriteria public enforcementCriteria;
+    ConstantLikertEnforcement public constantLikertEnforcement;
     PayCurve public payCurve;
 
     address public capacityToken = address(0);
@@ -56,12 +57,12 @@ contract X is Script {
         marketImplementation = new LaborMarket();
 
         LaborMarketConfigurationInterface.BadgePair memory governorPair = LaborMarketConfigurationInterface.BadgePair({
-            token: address(0xA873Dad23D357a19ac03CdA4ea3522108D26ebeA),
-            tokenId: 7
+            token: address(0x854DE1bf96dFBe69FC46f1a888d26934Ad47B77f),
+            tokenId: 0
         });
         LaborMarketConfigurationInterface.BadgePair memory creatorPair = LaborMarketConfigurationInterface.BadgePair({
-            token: address(0xA873Dad23D357a19ac03CdA4ea3522108D26ebeA),
-            tokenId: 8
+            token: address(0x854DE1bf96dFBe69FC46f1a888d26934Ad47B77f),
+            tokenId: 1
         });
 
         // Deploy a labor market network
@@ -76,7 +77,7 @@ contract X is Script {
         reputationModule = new ReputationModule(address(network));
 
         // Create enforcement criteria
-        enforcementCriteria = new LikertEnforcementCriteria();
+        constantLikertEnforcement = new ConstantLikertEnforcement();
 
         // Create a new pay curve
         payCurve = new PayCurve();

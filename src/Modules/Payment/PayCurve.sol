@@ -9,6 +9,7 @@ contract PayCurve is
 {
     constructor () {}
 
+    /// @notice Returns the value of the curve at x.
     function curvePoint(uint256 x) 
         public 
         pure 

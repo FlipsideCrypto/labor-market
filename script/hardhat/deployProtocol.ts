@@ -2,6 +2,10 @@ const hre = require("hardhat");
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
+/// NOTE: 
+/// Something is messed up with the hardhat compilation.
+/// The entire src directory is compiled and deployed with each contract.
+
 async function main(verify) {
     const [deployer] = await ethers.getSigners();
     const balance = ethers.utils.formatEther(await deployer.getBalance());

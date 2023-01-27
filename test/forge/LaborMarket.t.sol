@@ -227,13 +227,6 @@ contract LaborMarketTest is PRBTest, StdCheats {
             );
         }
 
-        console.log("LaborMarket address", address(network));
-        console.log("ReputationModule address", address(reputationModule));
-        console.log("EnforcementCriteria address", address(enforcementCriteria));
-        console.log("PayCurve address", address(payCurve));
-        console.log("Badger address", address(badger));
-        console.log("BadgerOrganization address", address(repToken));
-
         // Make deployer a governor and creator
         repToken.leaderMint(address(deployer), GOVERNOR_TOKEN_ID, 1, "0x");
         repToken.leaderMint(address(deployer), CREATOR_TOKEN_ID, 1, "0x");
@@ -277,8 +270,6 @@ contract LaborMarketTest is PRBTest, StdCheats {
                 _configuration: config
             })
         );
-
-        console.log('Market address', address(market));
 
         // Approve and mint tokens
         changePrank(deployer);

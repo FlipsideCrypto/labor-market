@@ -10,7 +10,6 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 
 contract LaborMarket is LaborMarketManager {
-    
     /**
      * @notice Creates a service request.
      * @param _pToken The address of the payment token.
@@ -21,6 +20,7 @@ contract LaborMarket is LaborMarketManager {
      * @param _requestUri The uri of the service request data.
      * Requirements:
      * - A user has to be conform to the reputational restrictions imposed by the labor market.
+     * - Caller has to have approved the LaborMarket contract to transfer the payment token.
      */
     function submitRequest(
           address _pToken

@@ -141,6 +141,8 @@ contract LaborMarketFactory is
      * @param _to The address to execute the transaction on.
      * @param _data The data to pass to the receiver.
      * @param _value The amount of ETH to send with the transaction.
+     * Requirements:
+     * - Only protocol Governors can call this.
      */
     function execTransaction(
           address _to

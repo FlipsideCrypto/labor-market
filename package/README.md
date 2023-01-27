@@ -1,8 +1,14 @@
 ## Installation
 ``npm i labor-markets-abi``
 
-## Updates
-As we get further into integration, changes, and implementation notes will be added to this readme.
+## Creating a new version
+- [ ] Run ``npx hardhat clean`` then ``npx hardhat compile``
+- [ ] cd to the package/ directory
+- [ ] Run ``npm run clean``
+- [ ] Run ``node prepareTS.js``
+- [ ] Run ``npm run build``
+- [ ] Update the version in package.json
+- [ ] Run ``npm publish``
 
 ## Usage
 
