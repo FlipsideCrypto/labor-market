@@ -1,12 +1,15 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 
-pragma solidity 0.8.17;
+pragma solidity ^0.8.17;
 
 import { PayCurveInterface } from "./interfaces/PayCurveInterface.sol";
 
 contract PayCurve is 
     PayCurveInterface 
 {
+    constructor () {}
+
+    /// @notice Returns the value of the curve at x.
     function curvePoint(uint256 x) 
         public 
         pure 

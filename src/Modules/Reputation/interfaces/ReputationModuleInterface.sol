@@ -1,56 +1,59 @@
-// SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+// SPDX-License-Identifier: Apache-2.0
 
-import { ReputationEngineInterface } from "./ReputationEngineInterface.sol";
+pragma solidity ^0.8.17;
 
 interface ReputationModuleInterface {
-    struct ReputationMarketConfig {
-        address reputationEngine;
-        uint256 signalStake;
-        uint256 providerThreshold;
-        uint256 maintainerThreshold;
+    struct MarketReputationConfig {
+        address reputationToken;
+        uint256 reputationTokenId;
     }
 
-    function createReputationEngine(
-          address _implementation
-        , address _baseToken
-        , uint256 _baseTokenId
-        , uint256 _decayRate
-        , uint256 _decayInterval
-    )
-        external
-        returns (
-            address
-        );
+    struct DecayConfig {
+        uint256 decayRate;
+        uint256 decayInterval;
+        uint256 decayStartEpoch;
+    }
+
+    struct ReputationAccountInfo {
+        uint256 lastDecayEpoch;
+        uint256 frozenUntilEpoch;
+    }
 
     function useReputationModule(
           address _laborMarket
-        , ReputationMarketConfig calldata _repConfig
+        , address _reputationToken
+        , uint256 _reputationTokenId
+    )
+        external;
+        
+    function useReputation(
+          address _account
+        , uint256 _amount
     )
         external;
 
-    function setMarketRepConfig(
-        ReputationMarketConfig calldata _repConfig
+    function mintReputation(
+          address _account
+        , uint256 _amount
     )
         external;
 
     function freezeReputation(
           address _account
+        , address _reputationToken
+        , uint256 _reputationTokenId
         , uint256 _frozenUntilEpoch
     )
-        external;
+        external; 
 
 
-    function lockReputation(
-          address _account
-        , uint256 _amount
-    ) 
-        external;
-
-    function unlockReputation(
-          address _account
-        , uint256 _amount
-    ) 
+    function setDecayConfig(
+          address _reputationToken
+        , uint256 _reputationTokenId
+        , uint256 _decayRate
+        , uint256 _decayInterval
+        , uint256 _decayStartEpoch
+    )
         external;
 
     function getAvailableReputation(
@@ -73,27 +76,12 @@ interface ReputationModuleInterface {
             uint256
         );
 
-    function getReputationAccountInfo(
-          address _laborMarket
-        , address _account
+    function getMarketReputationConfig(
+        address _laborMarket
     )
         external
         view
         returns (
-            ReputationEngineInterface.ReputationAccountInfo memory
-        );
-
-    function getMarketReputationConfig(address _laborMarket)
-        external
-        view
-        returns (
-            ReputationMarketConfig memory
-        );
-
-    function getReputationEngine(address _laborMarket) 
-        external
-        view
-        returns (
-            address
+            MarketReputationConfig memory
         );
 }

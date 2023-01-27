@@ -1,20 +1,33 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 
-pragma solidity 0.8.17;
-
-import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/ReputationModuleInterface.sol";
+pragma solidity ^0.8.17;
 
 interface LaborMarketConfigurationInterface {
     struct LaborMarketConfiguration {
-        address network;
-        address enforcementModule;
-        address paymentModule;
         string marketUri;
-        address delegateBadge;
-        uint256 delegateTokenId;
-        address maintainerBadge;
-        uint256 maintainerTokenId;
-        address reputationModule;
-        ReputationModuleInterface.ReputationMarketConfig reputationConfig;
+        Modules modules;
+        BadgePair delegateBadge;
+        BadgePair maintainerBadge;
+        BadgePair reputationBadge;
+        ReputationParams reputationParams;
+    }
+
+    struct ReputationParams {
+        uint256 rewardPool;
+        uint256 signalStake;
+        uint256 submitMin;
+        uint256 submitMax;
+    }
+
+    struct Modules {
+        address network;
+        address enforcement;
+        address payment;
+        address reputation;
+    }
+
+    struct BadgePair {
+        address token;
+        uint256 tokenId;
     }
 }

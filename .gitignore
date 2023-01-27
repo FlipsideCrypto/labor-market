@@ -1,2 +1,16 @@
 /node_modules
 /cache
+node_modules
+.env
+coverage
+coverage.json
+typechain
+typechain-types
+broadcast
+
+# Hardhat files
+cache
+artifacts
+cache_hardhat
+abis/
+out

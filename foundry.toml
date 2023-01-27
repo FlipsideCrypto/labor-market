@@ -5,15 +5,30 @@ auto_detect_solc = false
 bytecode_hash = "none"
 fuzz_runs = 256
 gas_reports = ["*"]
-libs = ["lib"]
+libs = ["node_modules", "lib"]
 optimizer = true
-via-ir = true
-optimizer_runs = 10_000
-out = "out"
+via-ir = false
+optimizer_runs = 150
 solc = "0.8.17"
+out = "out"
 src = "src"
-test = "test"
+test = "test/forge"
+cache_path = 'cache'
+script='script/forge'
+fs_permissions = [{ access = "read", path="./" }]
+
+[rpc_endpoints]
+goerli="${GOERLI_RPC_URL}"
+polygon="${POLYGON_RPC_URL}"
+mumbai="${MUMBAI_RPC_URL}"
+
+[etherscan]
+goerli={ key = "${ETHERSCAN_API_KEY}" }
+polygon={ key = "${POLYGONSCAN_API_KEY}" }
+mumbai={ key = "${POLYGONSCAN_API_KEY}" }
 
 [profile.ci]
 fuzz_runs = 1_000
 verbosity = 4
+
+
