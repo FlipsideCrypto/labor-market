@@ -23,6 +23,7 @@ import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { IERC1155ReceiverUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155ReceiverUpgradeable.sol";
 import { IERC721ReceiverUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
 
+
 contract LaborMarketManager is
     LaborMarketInterface,
     ERC1155HolderUpgradeable,
@@ -161,7 +162,7 @@ contract LaborMarketManager is
                 _msgSender(),
                 configuration.delegateBadge.tokenId
             ) > 0,
-            "LaborMarket::onlyDelegate: Not a delegate"
+            "LaborMarket::onlyDelegate: Not delegate"
         );
         _;
     }
@@ -173,18 +174,22 @@ contract LaborMarketManager is
                 _msgSender(),
                 configuration.maintainerBadge.tokenId
             ) > 0,
-            "LaborMarket::onlyMaintainer: Not a maintainer"
+            "LaborMarket::onlyMaintainer: Not maintainer"
         );
         _;
     }
 
     /// @notice Gates the permissions to provide submissions based on reputation.
     modifier permittedParticipant() {
-        uint256 availableRep = _getAvailableReputation();
+        uint256 availableRep = reputationModule.getAvailableReputation(
+            address(this),
+            _msgSender()
+        );
+
         require((
                 availableRep >= configuration.reputationParams.submitMin &&
                 availableRep < configuration.reputationParams.submitMax
-            ), "LaborMarket::permittedParticipant: Not a permitted participant"
+            ), "LaborMarket::permittedParticipant: Not permitted participant"
         );
         _;
     }
@@ -197,66 +202,28 @@ contract LaborMarketManager is
         override
         initializer
     {
-        _setConfiguration(_configuration);
-    }
-
-    /*//////////////////////////////////////////////////////////////
-                                GETTERS
-    //////////////////////////////////////////////////////////////*/
-
-    /**
-     * @notice Returns the service request data.
-     * @param _requestId The id of the service requesters request.
-     */
-    function getRequest(
-        uint256 _requestId
-    )
-        external
-        view
-        returns (ServiceRequest memory)
-    {
-        return serviceRequests[_requestId];
+        setConfiguration(_configuration);
     }
 
     /**
-     * @notice Returns the service submission data.
-     * @param _submissionId The id of the service providers submission.
+     * @notice Allows a network governor to set the configuration.
+     * @param _configuration The new configuration.
+     * Requirements:
+     * - The caller must be the creator of the market or a 
+     *   governor at the network level.
      */
-    function getSubmission(
-        uint256 _submissionId
-    )
-        external
-        view
-        returns (ServiceSubmission memory)
-    {
-        return serviceSubmissions[_submissionId];
-    }
-
-    /**
-     * @notice Returns the market configuration.
-     */
-    function getConfiguration()
-        external
-        view
-        returns (LaborMarketConfiguration memory)
-    {
-        return configuration;
-    }
-
-    /*//////////////////////////////////////////////////////////////
-                            INTERNAL SETTERS
-    //////////////////////////////////////////////////////////////*/
-
-    /**
-     * @dev Handle all the logic for configuration of a LaborMarket.
-     */
-    function _setConfiguration(
+    function setConfiguration(
         LaborMarketConfiguration calldata _configuration
     )
-        internal
+        public
     {
         /// @dev Connect to the higher level network to pull the active states.
         network = LaborMarketNetworkInterface(_configuration.modules.network);
+
+        require(
+            _msgSender() == creator || _msgSender() == address(network),
+            "LaborMarketManager::setConfiguration: Not creator or governor"
+        );
 
         /// @dev Configure the Labor Market state control.
         enforcementCriteria = EnforcementCriteriaInterface(
@@ -280,20 +247,56 @@ contract LaborMarketManager is
 
         emit LaborMarketConfigured(_configuration);
     }
+
     /*//////////////////////////////////////////////////////////////
-                            INTERNAL GETTERS
+                                GETTERS
     //////////////////////////////////////////////////////////////*/
 
     /**
-     * @dev See {ReputationModule-getAvailableReputation}
+     * @notice Returns the service request data.
+     * @param _requestId The id of the service requesters request.
      */
-    function _getAvailableReputation() internal view returns (uint256) {
-        return
-            reputationModule.getAvailableReputation(
-                address(this),
-                _msgSender()
-            );
+    function getRequest(
+        uint256 _requestId
+    )
+        external
+        override
+        view
+        returns (ServiceRequest memory)
+    {
+        return serviceRequests[_requestId];
     }
+
+    /**
+     * @notice Returns the service submission data.
+     * @param _submissionId The id of the service providers submission.
+     */
+    function getSubmission(
+        uint256 _submissionId
+    )
+        external
+        override
+        view
+        returns (ServiceSubmission memory)
+    {
+        return serviceSubmissions[_submissionId];
+    }
+
+    /**
+     * @notice Returns the market configuration.
+     */
+    function getConfiguration()
+        external
+        override
+        view
+        returns (LaborMarketConfiguration memory)
+    {
+        return configuration;
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                            INTERNAL GETTERS
+    //////////////////////////////////////////////////////////////*/
 
     /**
      * @dev Delegatable ETH support

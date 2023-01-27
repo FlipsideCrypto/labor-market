@@ -26,6 +26,7 @@ import {LikertEnforcementCriteria} from "src/Modules/Enforcement/LikertEnforceme
 import {FCFSEnforcementCriteria} from "src/Modules/Enforcement/FCFSEnforcementCriteria.sol";
 import {Best5EnforcementCriteria} from "src/Modules/Enforcement/Best5EnforcementCriteria.sol";
 import {MerkleEnforcementCriteria} from "src/Modules/Enforcement/MerkleEnforcementCriteria.sol";
+import {ConstantLikertEnforcement} from "src/Modules/Enforcement/ConstantLikertEnforcement.sol";
 
 import {PayCurve} from "src/Modules/Payment/PayCurve.sol";
 
@@ -44,6 +45,7 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
     LaborMarket public fcfsMarket;
     LaborMarket public best5Market;
     LaborMarket public merkleMarket;
+    LaborMarket public constantLikertMarket;
 
     ReputationModule public reputationModule;
 
@@ -55,6 +57,7 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
     FCFSEnforcementCriteria public fcfsEnforcement;
     Best5EnforcementCriteria public best5Enforcement;
     MerkleEnforcementCriteria public merkleEnforcement;
+    ConstantLikertEnforcement public constantLikertEnforcement;
 
     PayCurve public payCurve;
 
@@ -227,6 +230,7 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
         fcfsEnforcement = new FCFSEnforcementCriteria();
         best5Enforcement = new Best5EnforcementCriteria();
         merkleEnforcement = new MerkleEnforcementCriteria();
+        constantLikertEnforcement = new ConstantLikertEnforcement();
 
         // Create a new pay curve
         payCurve = new PayCurve();
@@ -241,6 +245,37 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
                         network: address(network),
                         reputation: address(reputationModule),
                         enforcement: address(likertEnforcement),
+                        payment: address(payCurve)
+                    }),
+                    maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
+                        token: address(repToken),
+                        tokenId: MAINTAINER_TOKEN_ID
+                    }),
+                    delegateBadge: LaborMarketConfigurationInterface.BadgePair({
+                        token: address(repToken),
+                        tokenId: DELEGATE_TOKEN_ID
+                    }),
+                    reputationBadge: LaborMarketConfigurationInterface.BadgePair({
+                        token: address(repToken),
+                        tokenId: REPUTATION_TOKEN_ID
+                    }),
+                    reputationParams: LaborMarketConfigurationInterface.ReputationParams({
+                        rewardPool: 5000,
+                        signalStake: 5,
+                        submitMin: 10,
+                        submitMax: 10000e18
+                    })
+                });
+
+        // Create a new labor market configuration for constant likert
+        LaborMarketConfigurationInterface.LaborMarketConfiguration
+            memory constantLikertConfig = LaborMarketConfigurationInterface
+                .LaborMarketConfiguration({
+                    marketUri: "ipfs://000",
+                    modules: LaborMarketConfigurationInterface.Modules({
+                        network: address(network),
+                        reputation: address(reputationModule),
+                        enforcement: address(constantLikertEnforcement),
                         payment: address(payCurve)
                     }),
                     maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
@@ -392,6 +427,14 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
             })
         );
 
+        constantLikertMarket = LaborMarket(
+            network.createLaborMarket({
+                _implementation: address(marketImplementation),
+                _deployer: deployer,
+                _configuration: constantLikertConfig
+            })
+        );
+
         // Approve and mint tokens
         repToken.leaderMint(alice, REPUTATION_TOKEN_ID, 100e18, "0x");
         repToken.leaderMint(alice, DELEGATE_TOKEN_ID, 1, "0x");
@@ -460,6 +503,10 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
 
     function coinflip() internal view returns (uint256) {
         return ((pseudoRandom(123) + uint160(msg.sender)) % 2) == 0 ? 1 : 0;
+    }
+
+    function test_ConstantLikertMarket() public {
+        
     }
 
     function test_LikertMarket() public {

@@ -227,6 +227,13 @@ contract LaborMarketTest is PRBTest, StdCheats {
             );
         }
 
+        console.log("LaborMarket address", address(network));
+        console.log("ReputationModule address", address(reputationModule));
+        console.log("EnforcementCriteria address", address(enforcementCriteria));
+        console.log("PayCurve address", address(payCurve));
+        console.log("Badger address", address(badger));
+        console.log("BadgerOrganization address", address(repToken));
+
         // Make deployer a governor and creator
         repToken.leaderMint(address(deployer), GOVERNOR_TOKEN_ID, 1, "0x");
         repToken.leaderMint(address(deployer), CREATOR_TOKEN_ID, 1, "0x");
@@ -270,6 +277,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
                 _configuration: config
             })
         );
+
+        console.log('Market address', address(market));
 
         // Approve and mint tokens
         changePrank(deployer);
@@ -674,7 +683,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         // Try to signal the request and expect it to revert
         vm.expectRevert(
-            "LaborMarket::permittedParticipant: Not a permitted participant"
+            "LaborMarket::permittedParticipant: Not permitted participant"
         );
         market.signal(requestId);
         vm.stopPrank();
@@ -691,13 +700,13 @@ contract LaborMarketTest is PRBTest, StdCheats {
         market.signal(requestId);
 
         // A user tries to signal for review and we expect it to revert
-        vm.expectRevert("LaborMarket::onlyMaintainer: Not a maintainer");
+        vm.expectRevert("LaborMarket::onlyMaintainer: Not maintainer");
         market.signalReview(requestId, 3);
 
         // We also expect a revert if a random address tries to review
         changePrank(evilUser);
 
-        vm.expectRevert("LaborMarket::onlyMaintainer: Not a maintainer");
+        vm.expectRevert("LaborMarket::onlyMaintainer: Not maintainer");
         market.signalReview(requestId, 3);
 
         vm.stopPrank();
@@ -753,7 +762,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         market.signal(requestId);
 
         // Valid user tries to signal same request again and we expect it to revert
-        vm.expectRevert("LaborMarket::signal: Already signaled.");
+        vm.expectRevert("LaborMarket::signal: Already signaled");
         market.signal(requestId);
 
         vm.stopPrank();
@@ -770,7 +779,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         market.signalReview(requestId, 3);
 
         // Maintainer tries to signal same request again and we expect it to revert
-        vm.expectRevert("LaborMarket::signalReview: Already signaled.");
+        vm.expectRevert("LaborMarket::signalReview: Already signaled");
         market.signalReview(requestId, 3);
 
         vm.stopPrank();
@@ -793,7 +802,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         // Maintainer tries to review twice
         market.review(requestId, 1, 2);
 
-        vm.expectRevert("LaborMarket::review: Already reviewed.");
+        vm.expectRevert("LaborMarket::review: Already reviewed");
         market.review(requestId, 1, 2);
         vm.stopPrank();
     }
@@ -826,7 +835,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         market.claim(submissionId, msg.sender, "");
 
         // User tries to claim same reward again
-        vm.expectRevert("LaborMarket::claim: Already claimed.");
+        vm.expectRevert("LaborMarket::claim: Already claimed");
         market.claim(submissionId, msg.sender, "");
 
         vm.stopPrank();
@@ -846,7 +855,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         market.provide(requestId, "IPFS://333");
 
         // Try to fulfill the request again and expect it to revert
-        vm.expectRevert("LaborMarket::provide: Already submitted.");
+        vm.expectRevert("LaborMarket::provide: Already submitted");
         market.provide(requestId, "IPFS://333");
 
         vm.stopPrank();
@@ -875,7 +884,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         // User attempts to claim the reward, we expect a revert
         changePrank(alice);
-        vm.expectRevert("LaborMarket::claim: Not reviewed.");
+        vm.expectRevert("LaborMarket::claim: Not reviewed");
         market.claim(submissionId, msg.sender, "");
 
         vm.stopPrank();
@@ -903,7 +912,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         // User claims reward
         changePrank(evilUser);
-        vm.expectRevert("LaborMarket::claim: Not service provider.");
+        vm.expectRevert("LaborMarket::claim: Not provider");
         market.claim(submissionId, msg.sender, "");
 
         vm.stopPrank();
@@ -921,7 +930,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         changePrank(bob);
         // User tries to withdraw the request
-        vm.expectRevert("LaborMarket::withdrawRequest: Already active.");
+        vm.expectRevert("LaborMarket::withdrawRequest: Already active");
         market.withdrawRequest(requestId);
 
         vm.stopPrank();
@@ -935,7 +944,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         // Another delegate attempts to withdraw the request
         changePrank(delegate);
-        vm.expectRevert("LaborMarket::withdrawRequest: Not service requester.");
+        vm.expectRevert("LaborMarket::withdrawRequest: Not requester");
         market.withdrawRequest(requestId);
 
         vm.stopPrank();
@@ -952,7 +961,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         // Attempt to signal
         changePrank(alice);
-        vm.expectRevert("LaborMarket::signal: Signal deadline passed.");
+        vm.expectRevert("LaborMarket::signal: Signal deadline passed");
         market.signal(requestId);
 
         // Go back in time
@@ -965,7 +974,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         vm.warp(block.timestamp + 100 weeks);
 
         // Attempt to fulfill
-        vm.expectRevert("LaborMarket::provide: Submission deadline passed.");
+        vm.expectRevert("LaborMarket::provide: Submission deadline passed");
         uint256 submissionId = market.provide(requestId, "IPFS://333");
 
         // Go back in time
@@ -981,7 +990,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         vm.warp(block.timestamp + 100 weeks);
 
         // Should revert
-        vm.expectRevert("LaborMarket::review: Enforcement deadline passed.");
+        vm.expectRevert("LaborMarket::review: Enforcement deadline passed");
         market.review(requestId, submissionId, 2);
 
         vm.stopPrank();
@@ -994,7 +1003,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         uint256 requestId = createSimpleRequest(market);
 
         // Attempt to fulfill
-        vm.expectRevert("LaborMarket::provide: Not signaled.");
+        vm.expectRevert("LaborMarket::provide: Not signaled");
         market.provide(requestId, "IPFS://333");
 
         vm.stopPrank();
@@ -1014,7 +1023,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         uint256 submissionId = market.provide(requestId, "IPFS://333");
 
         // Attempt to review
-        vm.expectRevert("LaborMarket::review: Not signaled.");
+        vm.expectRevert("LaborMarket::review: Not signaled");
         market.review(requestId, submissionId, 2);
 
         vm.stopPrank();
@@ -1153,7 +1162,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         // Reviewer reclaims their signal stake
         vm.expectRevert(
-            "LaborMarket::retrieveReputation: Insufficient reviews."
+            "LaborMarket::retrieveReputation: Insufficient reviews"
         );
         market.retrieveReputation(requestId);
 
@@ -1214,7 +1223,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         // Reviewer reclaims their signal stake again
         vm.expectRevert(
-            "LaborMarket::retrieveReputation: No reputation to retrieve."
+            "LaborMarket::retrieveReputation: No reputation to retrieve"
         );
         market.retrieveReputation(requestId);
 
@@ -1264,7 +1273,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         // User claims reward again
         vm.expectRevert(
-            "LaborMarket::claim: Already claimed."
+            "LaborMarket::claim: Already claimed"
         );
         market.claim(submissionId, alice, "");
 

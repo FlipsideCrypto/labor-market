@@ -107,7 +107,7 @@ describe("Reputation", function () {
         network = await network.deployed();
 
 
-        const LikertEnforcement = await ethers.getContractFactory("LikertEnforcementCriteria");
+        const LikertEnforcement = await ethers.getContractFactory("Best5EnforcementCriteria");
         enforcementModule = await LikertEnforcement.deploy();
         enforcementModule = await enforcementModule.deployed();
 

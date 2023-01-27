@@ -40,12 +40,14 @@ contract LaborMarket is LaborMarketManager {
             ++serviceId;
         }
 
+        IERC20 pToken = IERC20(_pToken);
+
         // Keep accounting in mind for ERC20s with transfer fees.
-        uint256 pTokenBefore = IERC20(_pToken).balanceOf(address(this));
+        uint256 pTokenBefore = pToken.balanceOf(address(this));
 
-        IERC20(_pToken).transferFrom(_msgSender(), address(this), _pTokenQ);
+        pToken.transferFrom(_msgSender(), address(this), _pTokenQ);
 
-        uint256 pTokenAfter = IERC20(_pToken).balanceOf(address(this));
+        uint256 pTokenAfter = pToken.balanceOf(address(this));
 
         ServiceRequest memory serviceRequest = ServiceRequest({
             serviceRequester: _msgSender(),
@@ -86,11 +88,11 @@ contract LaborMarket is LaborMarketManager {
     {
         require(
             block.timestamp <= serviceRequests[_requestId].signalExp,
-            "LaborMarket::signal: Signal deadline passed."
+            "LaborMarket::signal: Signal deadline passed"
         );
         require(
             !hasPerformed[_requestId][_msgSender()][HAS_SIGNALED],
-            "LaborMarket::signal: Already signaled."
+            "LaborMarket::signal: Already signaled"
         );
 
         reputationModule.useReputation(_msgSender(), configuration.reputationParams.signalStake);
@@ -120,7 +122,7 @@ contract LaborMarket is LaborMarketManager {
 
         require(
             reviewPromise.remainder == 0,
-            "LaborMarket::signalReview: Already signaled."
+            "LaborMarket::signalReview: Already signaled"
         );
 
         uint256 signalStake = _quantity * configuration.reputationParams.signalStake;
@@ -149,15 +151,15 @@ contract LaborMarket is LaborMarketManager {
     {
         require(
             block.timestamp <= serviceRequests[_requestId].submissionExp,
-            "LaborMarket::provide: Submission deadline passed."
+            "LaborMarket::provide: Submission deadline passed"
         );
         require(
             hasPerformed[_requestId][_msgSender()][HAS_SIGNALED],
-            "LaborMarket::provide: Not signaled."
+            "LaborMarket::provide: Not signaled"
         );
         require(
             !hasPerformed[_requestId][_msgSender()][HAS_SUBMITTED],
-            "LaborMarket::provide: Already submitted."
+            "LaborMarket::provide: Already submitted"
         );
 
         unchecked {
@@ -198,22 +200,22 @@ contract LaborMarket is LaborMarketManager {
     {
         require(
             block.timestamp <= serviceRequests[_requestId].enforcementExp,
-            "LaborMarket::review: Enforcement deadline passed."
+            "LaborMarket::review: Enforcement deadline passed"
         );
 
         require(
             reviewSignals[_requestId][_msgSender()].remainder > 0,
-            "LaborMarket::review: Not signaled."
+            "LaborMarket::review: Not signaled"
         );
 
         require(
             !hasPerformed[_submissionId][_msgSender()][HAS_REVIEWED],
-            "LaborMarket::review: Already reviewed."
+            "LaborMarket::review: Already reviewed"
         );
 
         require(
             serviceSubmissions[_submissionId].serviceProvider != _msgSender(),
-            "LaborMarket::review: Cannot review own submission."
+            "LaborMarket::review: Cannot review own submission"
         );
 
         _score = enforcementCriteria.review(_submissionId, _score);
@@ -255,17 +257,17 @@ contract LaborMarket is LaborMarketManager {
     {
         require(
             !hasPerformed[_submissionId][_msgSender()][HAS_CLAIMED],
-            "LaborMarket::claim: Already claimed."
+            "LaborMarket::claim: Already claimed"
         );
 
         require(
             serviceSubmissions[_submissionId].reviewed,
-            "LaborMarket::claim: Not reviewed."
+            "LaborMarket::claim: Not reviewed"
         );
 
         require(
             serviceSubmissions[_submissionId].serviceProvider == _msgSender(),
-            "LaborMarket::claim: Not service provider."
+            "LaborMarket::claim: Not provider"
         );
 
         uint256 requestId = serviceSubmissions[_submissionId].requestId;
@@ -274,7 +276,7 @@ contract LaborMarket is LaborMarketManager {
             block.timestamp >=
                 serviceRequests[requestId]
                     .enforcementExp,
-            "LaborMarket::claim: Enforcement deadline not passed."
+            "LaborMarket::claim: Not enforcement deadline"
         );
 
         uint256 pCurveIndex = (_data.length > 0)
@@ -309,19 +311,19 @@ contract LaborMarket is LaborMarketManager {
     function claimRemainder(
         uint256 _requestId
     ) 
-        public 
+        external 
     {
         require(
             serviceRequests[_requestId].serviceRequester == _msgSender(),
-            "LaborMarket::claimRemainder: Not service requester."
+            "LaborMarket::claimRemainder: Not requester"
         );
         require(
             block.timestamp >= serviceRequests[_requestId].enforcementExp,
-            "LaborMarket::claimRemainder: Enforcement deadline not passed."
+            "LaborMarket::claimRemainder: Not enforcement deadline"
         );
         require(
             !hasPerformed[_requestId][_msgSender()][HAS_CLAIMED_REMAINDER],
-            "LaborMarket::claimRemainder: Already claimed."
+            "LaborMarket::claimRemainder: Already claimed"
         );
         uint256 totalClaimable = enforcementCriteria.getRemainder(_requestId);
 
@@ -342,17 +344,17 @@ contract LaborMarket is LaborMarketManager {
     function retrieveReputation(
         uint256 _requestId
     ) 
-        public 
+        external
     {
         require(
             reviewSignals[_requestId][_msgSender()].remainder > 0,
-            "LaborMarket::retrieveReputation: No reputation to retrieve."
+            "LaborMarket::retrieveReputation: No reputation to retrieve"
         );
 
         require(
             block.timestamp >
                 serviceRequests[serviceSubmissions[serviceId].requestId].enforcementExp,
-            "LaborMarket::retrieveReputation: Enforcement deadline not passed."
+            "LaborMarket::retrieveReputation: Not enforcement deadline"
         );
 
         ReviewPromise storage reviewPromise = reviewSignals[_requestId][_msgSender()];
@@ -360,7 +362,7 @@ contract LaborMarket is LaborMarketManager {
         require(
             reviewPromise.total >=
             serviceRequests[_requestId].submissionCount,
-            "LaborMarket::retrieveReputation: Insufficient reviews."
+            "LaborMarket::retrieveReputation: Insufficient reviews"
         );
 
         reputationModule.mintReputation(
@@ -385,11 +387,11 @@ contract LaborMarket is LaborMarketManager {
     {
         require(
             serviceRequests[_requestId].serviceRequester == _msgSender(),
-            "LaborMarket::withdrawRequest: Not service requester."
+            "LaborMarket::withdrawRequest: Not requester"
         );
         require(
             signalCount[_requestId] < 1,
-            "LaborMarket::withdrawRequest: Already active."
+            "LaborMarket::withdrawRequest: Already active"
         );
         address pToken = serviceRequests[_requestId].pToken;
         uint256 amount = serviceRequests[_requestId].pTokenQ;
@@ -426,27 +428,30 @@ contract LaborMarket is LaborMarketManager {
     {
         require(
             serviceRequests[_requestId].serviceRequester == _msgSender(),
-            "LaborMarket::withdrawRequest: Not service requester."
+            "LaborMarket::withdrawRequest: Not requester"
         );
         require(
             signalCount[_requestId] < 1,
-            "LaborMarket::withdrawRequest: Already active."
+            "LaborMarket::withdrawRequest: Already active"
         );
 
+        IERC20 pToken = IERC20(_pToken);
+
         // Refund the prior payment token.
-        IERC20(serviceRequests[_requestId].pToken).transfer(
+        pToken.transferFrom(
+            address(this),
             _msgSender(),
             serviceRequests[_requestId].pTokenQ
         );
     
         // Keep accounting in mind for ERC20s with transfer fees.
-        uint256 pTokenBefore = IERC20(_pToken).balanceOf(address(this));
+        uint256 pTokenBefore = pToken.balanceOf(address(this));
 
-        IERC20(_pToken).transferFrom(_msgSender(), address(this), _pTokenQ);
+        pToken.transferFrom(_msgSender(), address(this), _pTokenQ);
 
-        uint256 pTokenAfter = IERC20(_pToken).balanceOf(address(this));
+        uint256 pTokenAfter = pToken.balanceOf(address(this));
 
-        ServiceRequest memory serviceRequest = ServiceRequest({
+        serviceRequests[serviceId] = ServiceRequest({
             serviceRequester: _msgSender(),
             pToken: _pToken,
             pTokenQ: (pTokenAfter - pTokenBefore),
@@ -456,8 +461,6 @@ contract LaborMarket is LaborMarketManager {
             submissionCount: 0,
             uri: _requestUri
         });
-
-        serviceRequests[serviceId] = serviceRequest;
 
         emit RequestConfigured(
             _msgSender(),
@@ -469,25 +472,5 @@ contract LaborMarket is LaborMarketManager {
             _submissionExp,
             _enforcementExp
         );
-    }
-
-    /**
-     * @notice Allows a network governor to set the configuration.
-     * @param _configuration The new configuration.
-     * Requirements:
-     * - The caller must be the creator of the market or a 
-     *   governor at the network level.
-     */
-    function setConfiguration(
-        LaborMarketConfiguration calldata _configuration
-    )
-        external
-    {
-        require(
-            _msgSender() == creator || network.isGovernor(_msgSender()),
-            "LaborMarket::setConfiguration: Not creator or governor."
-        );
-        
-        _setConfiguration(_configuration);
     }
 }
