@@ -241,7 +241,7 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
             memory likertConfig = LaborMarketConfigurationInterface
                 .LaborMarketConfiguration({
                     marketUri: "ipfs://000",
-                    creator: address(deployer),
+                    owner: address(deployer),
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),
@@ -273,7 +273,7 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
             memory constantLikertConfig = LaborMarketConfigurationInterface
                 .LaborMarketConfiguration({
                     marketUri: "ipfs://000",
-                    creator: address(deployer),
+                    owner: address(deployer),
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),
@@ -305,7 +305,7 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
             memory fcfsConfig = LaborMarketConfigurationInterface
                 .LaborMarketConfiguration({
                     marketUri: "ipfs://000",
-                    creator: address(deployer),
+                    owner: address(deployer),
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),
@@ -337,7 +337,7 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
             memory best5Config = LaborMarketConfigurationInterface
                 .LaborMarketConfiguration({
                     marketUri: "ipfs://000",
-                    creator: address(deployer),
+                    owner: address(deployer),
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),
@@ -369,7 +369,7 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
             memory merkleConfig = LaborMarketConfigurationInterface
                 .LaborMarketConfiguration({
                     marketUri: "ipfs://000",
-                    creator: address(deployer),
+                    owner: address(deployer),
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),

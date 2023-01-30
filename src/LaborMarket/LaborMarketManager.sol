@@ -206,7 +206,7 @@ contract LaborMarketManager is
      * @notice Allows a network governor to set the configuration.
      * @param _configuration The new configuration.
      * Requirements:
-     * - The caller must be the creator of the market or a 
+     * - The caller must be the owner of the market or a 
      *   governor at the network level.
      */
     function setConfiguration(
@@ -218,8 +218,8 @@ contract LaborMarketManager is
         network = LaborMarketNetworkInterface(_configuration.modules.network);
 
         require(
-            _msgSender() == configuration.creator || _msgSender() == address(network),
-            "LaborMarketManager::setConfiguration: Not creator or governor"
+            _msgSender() == configuration.owner || _msgSender() == address(network),
+            "LaborMarketManager::setConfiguration: Not owner or governor"
         );
 
         /// @dev Configure the Labor Market state control.

@@ -16,7 +16,7 @@ export const ReputationToken = {
     "abi": ReputationTokenABI
 }
 export const LaborMarket = {
-    "address": "0x6f9b5c6407593dd0a07Db76094e307d47241361c" as const,
+    "address": "0xC9bDA83eD91C1b70085A14850BE8d2DeD4d49168" as const,
     "abi": LaborMarketABI
 }
 export const LaborMarketNetwork = {

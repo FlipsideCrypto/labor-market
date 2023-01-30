@@ -283,7 +283,7 @@ contract LaborMarketVersions is
         );
 
         /// @dev Announce the creation of the Labor Market.
-        emit LaborMarketCreated(marketAddress, _configuration.creator, _implementation);
+        emit LaborMarketCreated(marketAddress, _configuration.owner, _implementation);
 
         return marketAddress;
     }
