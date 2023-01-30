@@ -241,6 +241,7 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
             memory likertConfig = LaborMarketConfigurationInterface
                 .LaborMarketConfiguration({
                     marketUri: "ipfs://000",
+                    creator: address(deployer),
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),
@@ -272,6 +273,7 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
             memory constantLikertConfig = LaborMarketConfigurationInterface
                 .LaborMarketConfiguration({
                     marketUri: "ipfs://000",
+                    creator: address(deployer),
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),
@@ -303,6 +305,7 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
             memory fcfsConfig = LaborMarketConfigurationInterface
                 .LaborMarketConfiguration({
                     marketUri: "ipfs://000",
+                    creator: address(deployer),
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),
@@ -334,6 +337,7 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
             memory best5Config = LaborMarketConfigurationInterface
                 .LaborMarketConfiguration({
                     marketUri: "ipfs://000",
+                    creator: address(deployer),
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),
@@ -365,6 +369,7 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
             memory merkleConfig = LaborMarketConfigurationInterface
                 .LaborMarketConfiguration({
                     marketUri: "ipfs://000",
+                    creator: address(deployer),
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),
@@ -395,7 +400,6 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
         likertMarket = LaborMarket(
             network.createLaborMarket({
                 _implementation: address(marketImplementation),
-                _deployer: deployer,
                 _configuration: likertConfig
             })
         );
@@ -404,7 +408,6 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
         fcfsMarket = LaborMarket(
             network.createLaborMarket({
                 _implementation: address(marketImplementation),
-                _deployer: deployer,
                 _configuration: fcfsConfig
             })
         );
@@ -413,7 +416,6 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
         best5Market = LaborMarket(
             network.createLaborMarket({
                 _implementation: address(marketImplementation),
-                _deployer: deployer,
                 _configuration: best5Config
             })
         );
@@ -422,7 +424,6 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
         merkleMarket = LaborMarket(
             network.createLaborMarket({
                 _implementation: address(marketImplementation),
-                _deployer: deployer,
                 _configuration: merkleConfig
             })
         );
@@ -430,7 +431,6 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
         constantLikertMarket = LaborMarket(
             network.createLaborMarket({
                 _implementation: address(marketImplementation),
-                _deployer: deployer,
                 _configuration: constantLikertConfig
             })
         );

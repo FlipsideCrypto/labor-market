@@ -43,9 +43,6 @@ contract LaborMarketManager is
     
     bytes32 public constant HAS_SIGNALED = keccak256("hasSignaled");
 
-    /// @dev The address of the market creator.
-    address public creator;
-
     /// @dev The network contract.
     LaborMarketNetworkInterface public network;
 
@@ -221,7 +218,7 @@ contract LaborMarketManager is
         network = LaborMarketNetworkInterface(_configuration.modules.network);
 
         require(
-            _msgSender() == creator || _msgSender() == address(network),
+            _msgSender() == configuration.creator || _msgSender() == address(network),
             "LaborMarketManager::setConfiguration: Not creator or governor"
         );
 

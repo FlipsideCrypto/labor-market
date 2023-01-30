@@ -5,6 +5,7 @@ pragma solidity ^0.8.17;
 interface LaborMarketConfigurationInterface {
     struct LaborMarketConfiguration {
         string marketUri;
+        address creator;
         Modules modules;
         BadgePair delegateBadge;
         BadgePair maintainerBadge;

@@ -236,6 +236,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
             memory config = LaborMarketConfigurationInterface
                 .LaborMarketConfiguration({
                     marketUri: "ipfs://000",
+                    creator: address(deployer),
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),
@@ -266,7 +267,6 @@ contract LaborMarketTest is PRBTest, StdCheats {
         market = LaborMarket(
             network.createLaborMarket({
                 _implementation: address(marketImplementation),
-                _deployer: deployer,
                 _configuration: config
             })
         );
@@ -401,6 +401,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
             memory config = LaborMarketConfigurationInterface
                 .LaborMarketConfiguration({
                     marketUri: "ipfs://000",
+                    creator: address(deployer),
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),
@@ -439,7 +440,6 @@ contract LaborMarketTest is PRBTest, StdCheats {
             market = LaborMarket(
                 network.createLaborMarket({
                     _implementation: address(marketImplementation),
-                    _deployer: deployer,
                     _configuration: config
                 })
             );
@@ -538,6 +538,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
             memory config = LaborMarketConfigurationInterface
                 .LaborMarketConfiguration({
                     marketUri: "ipfs://000",
+                    creator: address(deployer),
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),
@@ -576,7 +577,6 @@ contract LaborMarketTest is PRBTest, StdCheats {
         market = LaborMarket(
             network.createLaborMarket({
                 _implementation: address(marketImplementation),
-                _deployer: deployer,
                 _configuration: config
             })
         );
@@ -710,6 +710,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
             memory config = LaborMarketConfigurationInterface
                 .LaborMarketConfiguration({
                     marketUri: "ipfs://000",
+                    creator: address(deployer),
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),
@@ -1293,6 +1294,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
             memory config = LaborMarketConfigurationInterface
                 .LaborMarketConfiguration({
                     marketUri: "ipfs://000",
+                    creator: address(bob),
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),
@@ -1321,7 +1323,6 @@ contract LaborMarketTest is PRBTest, StdCheats {
         market = LaborMarket(
             network.createLaborMarket({
                 _implementation: address(marketImplementation),
-                _deployer: bob,
                 _configuration: config
             })
         );
