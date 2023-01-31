@@ -23,7 +23,6 @@ import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { IERC1155ReceiverUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155ReceiverUpgradeable.sol";
 import { IERC721ReceiverUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
 
-
 contract LaborMarketManager is
     LaborMarketInterface,
     ERC1155HolderUpgradeable,
@@ -42,9 +41,6 @@ contract LaborMarketManager is
     bytes32 public constant HAS_REVIEWED = keccak256("hasReviewed");
     
     bytes32 public constant HAS_SIGNALED = keccak256("hasSignaled");
-
-    /// @dev The address of the market creator.
-    address public creator;
 
     /// @dev The network contract.
     LaborMarketNetworkInterface public network;
@@ -209,7 +205,7 @@ contract LaborMarketManager is
      * @notice Allows a network governor to set the configuration.
      * @param _configuration The new configuration.
      * Requirements:
-     * - The caller must be the creator of the market or a 
+     * - The caller must be the owner of the market or a 
      *   governor at the network level.
      */
     function setConfiguration(
@@ -217,13 +213,12 @@ contract LaborMarketManager is
     )
         public
     {
-        /// @dev Connect to the higher level network to pull the active states.
-        network = LaborMarketNetworkInterface(_configuration.modules.network);
-
         require(
-            _msgSender() == creator || _msgSender() == address(network),
-            "LaborMarketManager::setConfiguration: Not creator or governor"
+            configuration.owner == address(0) || _msgSender() == configuration.owner || _msgSender() == address(network),
+            "LaborMarketManager::setConfiguration: Not owner or governor"
         );
+
+        network = LaborMarketNetworkInterface(_configuration.modules.network);
 
         /// @dev Configure the Labor Market state control.
         enforcementCriteria = EnforcementCriteriaInterface(

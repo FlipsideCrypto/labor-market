@@ -17,6 +17,7 @@ import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+import "hardhat/console.sol";
 
 contract LaborMarketVersions is
     LaborMarketVersionsInterface,
@@ -252,7 +253,6 @@ contract LaborMarketVersions is
           address _implementation
         , bytes32 _licenseKey
         , uint256 _versionCost
-        , address _deployer
         , LaborMarketConfiguration calldata _configuration
     )
         internal 
@@ -284,7 +284,7 @@ contract LaborMarketVersions is
         );
 
         /// @dev Announce the creation of the Labor Market.
-        emit LaborMarketCreated(marketAddress, _deployer, _implementation);
+        emit LaborMarketCreated(marketAddress, _configuration.owner, _implementation);
 
         return marketAddress;
     }
