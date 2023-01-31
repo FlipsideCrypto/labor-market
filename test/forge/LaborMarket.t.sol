@@ -203,12 +203,6 @@ contract LaborMarketTest is PRBTest, StdCheats {
         // Deploy a new reputation module
         reputationModule = new ReputationModule(address(network));
 
-        // Create enforcement criteria
-        enforcementCriteria = new LikertEnforcementCriteria();
-
-        // Create a new pay curve
-        payCurve = new PayCurve();
-
         // Initialize reputation and roles
         address[] memory delegates = new address[](1);
         delegates[0] = address(reputationModule);
@@ -230,6 +224,12 @@ contract LaborMarketTest is PRBTest, StdCheats {
         // Make deployer a governor and creator
         repToken.leaderMint(address(deployer), GOVERNOR_TOKEN_ID, 1, "0x");
         repToken.leaderMint(address(deployer), CREATOR_TOKEN_ID, 1, "0x");
+
+        // Create enforcement criteria
+        enforcementCriteria = new LikertEnforcementCriteria();
+
+        // Create a new pay curve
+        payCurve = new PayCurve();
 
         // Create a new labor market configuration
         LaborMarketConfigurationInterface.LaborMarketConfiguration
@@ -299,6 +299,12 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         changePrank(deployer);
         repToken.leaderMint(delegate, DELEGATE_TOKEN_ID, 1, "0x");
+
+        bool isDelegate = repToken.isDelegate(1, address(reputationModule));
+        console.log("Is delegate: %s", isDelegate);
+
+        console.log("Network: %s", address(network));
+        console.log("ReputationModule: %s", address(reputationModule));
 
         vm.stopPrank();
     }

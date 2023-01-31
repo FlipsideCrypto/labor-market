@@ -16,15 +16,15 @@ export const ReputationToken = {
     "abi": ReputationTokenABI
 }
 export const LaborMarket = {
-    "address": "0xC9bDA83eD91C1b70085A14850BE8d2DeD4d49168" as const,
+    "address": "0x2a1016382091AdB1C3832A45072Be7fE3D098BbA" as const,
     "abi": LaborMarketABI
 }
 export const LaborMarketNetwork = {
-    "address": "0x8FBcB647343b2E62D8d5527E5081DD77Aa3D5bb9" as const,
+    "address": "0x57bD82488017e1b32b3BeD03389fBCB6D69750b8" as const,
     "abi": LaborMarketNetworkABI
 }
 export const ReputationModule = {
-    "address": "0xA21d32426F0c0838031647473CE973fF0354bA00" as const,
+    "address": "0x2c4E906a755451c7f5fAfc00282350011e789002" as const,
     "abi": ReputationModuleABI
 }
 export const ConstantLikertEnforcement = {
