@@ -3,15 +3,40 @@
 pragma solidity ^0.8.17;
 
 interface EnforcementCriteriaInterface {
-    function review(uint256 submissionId, uint256 score)
+    function review(
+          uint256 _submissionId
+        , uint256 _score
+    )
         external
-        returns (uint256);
+        returns (
+            uint256
+        );
 
-    function verify(uint256 submissionId, uint256 amount) external returns (uint256);
+    function getShareOfPool(
+        uint256 _submissionId
+    ) 
+        external 
+        view
+        returns (
+            uint256
+        );
 
-    function verifyWithData(uint256 submissionId, bytes calldata data)
+    function getShareOfPoolWithData(
+          uint256 _submissionId
+        , bytes calldata _data
+    )
         external
-        returns (uint256);
+        view
+        returns (
+            uint256
+        );
 
-    function getRemainder(uint256 requestId) external view returns (uint256);
+    function getRemainder(
+        uint256 _requestId
+    ) 
+        external 
+        view 
+        returns (
+            uint256
+        );
 }

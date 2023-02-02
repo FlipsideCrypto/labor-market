@@ -8,6 +8,7 @@ import { LaborMarketManager } from "./LaborMarketManager.sol";
 /// @dev Helper interfaces.
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+import "hardhat/console.sol";
 
 contract LaborMarket is LaborMarketManager {
     /**
@@ -244,6 +245,7 @@ contract LaborMarket is LaborMarketManager {
      * @param _submissionId The id of the service providers submission.
      * @param _to The address to send the payment to.
      * @param _data The data to send with the payment.
+     * @return pTokenClaimed The amount of pTokens claimed.
      */
     function claim(
           uint256 _submissionId
@@ -252,7 +254,7 @@ contract LaborMarket is LaborMarketManager {
     ) 
         external 
         returns (
-            uint256
+            uint256 pTokenClaimed
         ) 
     {
         require(
@@ -279,29 +281,35 @@ contract LaborMarket is LaborMarketManager {
             "LaborMarket::claim: Not enforcement deadline"
         );
 
-        uint256 pCurveIndex = (_data.length > 0)
-            ? enforcementCriteria.verifyWithData(_submissionId, _data)
-            : enforcementCriteria.verify(_submissionId, serviceRequests[requestId].pTokenQ);
-
-        uint256 rCurveIndex = enforcementCriteria.verify(
-            _submissionId, 
-            configuration.reputationParams.rewardPool * 1e18 // Scale to 18 decimals for utilization with ERC20 specific math.
+        uint256 percentOfPool = enforcementCriteria.getShareOfPoolWithData(
+            _submissionId,
+            _data
         );
 
-        uint256 payAmount = paymentCurve.curvePoint(pCurveIndex);
-        uint256 reputationAmount = paymentCurve.curvePoint(rCurveIndex) / 1e18; // Revert the 18 decimal scale.
+        pTokenClaimed = (serviceRequests[requestId].pTokenQ * percentOfPool) / 1e18;
+        console.log("LaborMarket Address: %s", address(this));
+        console.log("percentOfPool: %s", percentOfPool);
+        console.log("pTokenClaimed: %s", pTokenClaimed);
+        console.log("pTokenQ: %s", serviceRequests[requestId].pTokenQ);
+        console.log("Before divisor: %s", (serviceRequests[requestId].pTokenQ * percentOfPool));
 
         hasPerformed[_submissionId][_msgSender()][HAS_CLAIMED] = true;
 
         IERC20(
-            serviceRequests[serviceSubmissions[_submissionId].requestId].pToken
-        ).transfer(_to, payAmount);
+            serviceRequests[requestId].pToken
+        ).transfer(
+            _to, 
+            pTokenClaimed
+        );
 
-        reputationModule.mintReputation(_msgSender(), reputationAmount);
+        reputationModule.mintReputation(
+            _msgSender(), 
+            (configuration.reputationParams.rewardPool * 1e18 * percentOfPool) / 1e18
+        );
 
-        emit RequestPayClaimed(_msgSender(), requestId, _submissionId, payAmount, _to);
+        emit RequestPayClaimed(_msgSender(), requestId, _submissionId, pTokenClaimed, _to);
 
-        return payAmount;
+        return pTokenClaimed;
     }
 
     /**
