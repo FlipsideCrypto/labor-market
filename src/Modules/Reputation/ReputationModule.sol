@@ -10,6 +10,7 @@ import { BadgerOrganizationInterface } from "../Badger/interfaces/BadgerOrganiza
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { ContextUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
+
 contract ReputationModule is 
     ReputationModuleInterface,
     ContextUpgradeable
@@ -376,18 +377,23 @@ contract ReputationModule is
     {
         DecayConfig memory decay = decayConfig[_reputationToken][_reputationTokenId];
 
+        /// @dev Get the most recent epoch to start decay from.
+        uint256 startEpoch = decay.decayStartEpoch;
+        if (_frozenUntilEpoch > startEpoch) 
+            startEpoch = decay.decayStartEpoch;
+        if (_lastDecayEpoch > startEpoch) 
+            startEpoch = _lastDecayEpoch;
+        
+
         if (
-            _frozenUntilEpoch > block.timestamp || 
+            startEpoch > block.timestamp ||
+            decay.decayStartEpoch == 0 ||
             decay.decayRate == 0
         ) {
             return 0;
         }
 
-        // If the last decay epoch is greater than the decay start epoch, use that.
-        uint256 startEpoch = _lastDecayEpoch > decay.decayStartEpoch ? 
-            _lastDecayEpoch : decay.decayStartEpoch;
-
-        return (((block.timestamp - startEpoch - _frozenUntilEpoch) /
-            decay.decayInterval) * decay.decayRate);
+        return (block.timestamp - startEpoch) /
+            decay.decayInterval * decay.decayRate;
     }
 }

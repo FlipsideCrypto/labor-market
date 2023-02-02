@@ -507,22 +507,6 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
     }
 
     function test_ConstantLikertMarket() public {
-        /**
-        | Here we test the workings of enforcement (reviewing) following a likert metric.
-        |
-        | First, we populate the request with submissions
-        | Second, we review the submissions
-        | Third, we test the enforcement criteria following an example scenario.
-        | 
-        | * Example scenario:
-        | pTokens: 1000
-        | Participants: 7
-        // // | Likert ratings: (1, BAD), (2, OK), (3, GOOD), (4, GOOD), (5, GREAT)
-        // // | Bucket distribution: (1, 66), (2, 36), (3, 10)
-        // // | Payout distribution: (1, 0), (2, 20%), (3, 80%)
-        // // | Expected Tokens per person per bucket: (1, 0), (2, 5.5), (3, 80)
-        */
-
         vm.startPrank(deployer);
 
         payToken.freeMint(bob, 10000e18);
@@ -595,7 +579,7 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
         }
 
         assertAlmostEq(totalPaid, 1000e18, 0.000001e18);
-        assertAlmostEq(totalReputation, 5000, 0.000001e18);
+        assertAlmostEq(totalReputation, 5000, 100);
     }
 
     function test_LikertMarket() public {

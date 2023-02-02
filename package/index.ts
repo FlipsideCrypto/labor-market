@@ -24,7 +24,7 @@ export const LaborMarketNetwork = {
     "abi": LaborMarketNetworkABI
 }
 export const ReputationModule = {
-    "address": "0x2c4E906a755451c7f5fAfc00282350011e789002" as const,
+    "address": "0xCC2B59CF632238170966548623f876085C68349e" as const,
     "abi": ReputationModuleABI
 }
 export const ConstantLikertEnforcement = {
