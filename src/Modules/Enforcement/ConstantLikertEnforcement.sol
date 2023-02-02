@@ -5,7 +5,7 @@ pragma solidity ^0.8.17;
 import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
 import {EnforcementCriteriaInterface} from "src/Modules/Enforcement/interfaces/EnforcementCriteriaInterface.sol";
 
-import { UD60x18 } from "@prb/math/UD60x18.sol";
+import { UD60x18, ud } from "@prb/math/src/UD60x18.sol";
 
 /**
  * @dev A contract that enforces a constant likert scale.
