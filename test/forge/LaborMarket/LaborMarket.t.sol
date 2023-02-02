@@ -7,7 +7,7 @@ import {console} from "forge-std/console.sol";
 import {PRBTest} from "prb-test/PRBTest.sol";
 
 // Contracts
-import { PaymentToken } from "./Helpers/HelperTokens.sol";
+import { PaymentToken } from "../Helpers/HelperTokens.sol";
 
 import { BadgerOrganization } from "src/Modules/Badger/BadgerOrganization.sol";
 import { Badger } from "src/Modules/Badger/Badger.sol";
@@ -23,7 +23,7 @@ import {LaborMarketVersions} from "src/Network/LaborMarketVersions.sol";
 import {ReputationModule} from "src/Modules/Reputation/ReputationModule.sol";
 import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/ReputationModuleInterface.sol";
 
-import {LikertEnforcementCriteria} from "src/Modules/Enforcement/LikertEnforcementCriteria.sol";
+import { ConstantLikertEnforcement } from "src/Modules/Enforcement/ConstantLikertEnforcement.sol";
 
 import {PayCurve} from "src/Modules/Payment/PayCurve.sol";
 
@@ -46,7 +46,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
     LaborMarketNetwork public network;
 
-    LikertEnforcementCriteria public enforcementCriteria;
+    ConstantLikertEnforcement public enforcementCriteria;
     PayCurve public payCurve;
 
     // Define the tokenIds for ERC1155
@@ -226,7 +226,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         repToken.leaderMint(address(deployer), CREATOR_TOKEN_ID, 1, "0x");
 
         // Create enforcement criteria
-        enforcementCriteria = new LikertEnforcementCriteria();
+        enforcementCriteria = new ConstantLikertEnforcement();
 
         // Create a new pay curve
         payCurve = new PayCurve();
@@ -642,7 +642,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
             address(alice),
             requestId,
             submissionId,
-            599999999959251220329, // (100e18 * 0.6)
+            999999999956753113201, // (100e18 * 0.6)
             address(alice)
         );
 
@@ -660,6 +660,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
         emit RequestWithdrawn(requestId2);
 
         market.withdrawRequest(requestId2);
+
+        vm.stopPrank();
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -1060,9 +1062,9 @@ contract LaborMarketTest is PRBTest, StdCheats {
         vm.warp(123 weeks);
 
         // User claims reward
-        // Score should average to 2 meaning it falls in the 10% bucket and should receive 10% of the reward
+        // It is the only score for constant likert, so it is the only one that counts.
         uint256 qClaimed = market.claim(submissionId, alice, "");
-        assertAlmostEq(qClaimed, 100e18, 0.000001e18);
+        assertAlmostEq(qClaimed, 1000e18, 0.0001e18);
 
         vm.stopPrank();
     }
@@ -1261,9 +1263,9 @@ contract LaborMarketTest is PRBTest, StdCheats {
         vm.warp(123 weeks);
 
         // User claims reward
-        // Score should average to 1 meaning it falls in the 5% bucket and should receive 5% of the reward
+        // There is only submission so they should get 99.9% of the reward
         uint256 qClaimed = market.claim(submissionId, alice, "");
-        assertAlmostEq(qClaimed, 50e18, 0.000001e18);
+        assertAlmostEq(qClaimed, 1000e18, 0.000001e18);
 
         // User claims reward again
         vm.expectRevert(

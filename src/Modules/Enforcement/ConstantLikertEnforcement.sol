@@ -72,7 +72,7 @@ contract ConstantLikertEnforcement {
             requestTotalGrade[msg.sender][requestId] += score.avg;
         }
 
-        return score.avg;
+        return _score;
     }
 
     /*////////////////////////////////////////////////// 
@@ -95,7 +95,6 @@ contract ConstantLikertEnforcement {
         uint256 requestId = getRequestId(_submissionId);
 
         /// @dev The ratio of the submission's average grade to the total grade times the total pool.
-        /// @dev Multiplication first to manage precision.
         x = (score * _total) / requestTotalGrade[msg.sender][requestId];
 
         return sqrt(x);

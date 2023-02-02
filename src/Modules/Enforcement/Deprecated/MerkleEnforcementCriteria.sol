@@ -5,7 +5,7 @@ pragma solidity ^0.8.17;
 import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import {PayCurveInterface} from "../Payment/interfaces/PayCurveInterface.sol";
+import {PayCurveInterface} from "src/Modules/Payment/interfaces/PayCurveInterface.sol";
 
 contract MerkleEnforcementCriteria is Ownable {
     /// @dev Merkle verification of submissions

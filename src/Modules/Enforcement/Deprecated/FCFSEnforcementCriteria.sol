@@ -3,7 +3,7 @@
 pragma solidity ^0.8.17;
 
 import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
-import {PayCurveInterface} from "../Payment/interfaces/PayCurveInterface.sol";
+import {PayCurveInterface} from "src/Modules/Payment/interfaces/PayCurveInterface.sol";
 
 contract FCFSEnforcementCriteria {
     /// @dev First come first servce on linear decreasing payout curve

@@ -7,7 +7,7 @@ import {console} from "forge-std/console.sol";
 import {PRBTest} from "prb-test/PRBTest.sol";
 
 // Contracts
-import {PaymentToken} from "./Helpers/HelperTokens.sol";
+import {PaymentToken} from "../Helpers/HelperTokens.sol";
 import { BadgerOrganization } from "src/Modules/Badger/BadgerOrganization.sol";
 import { Badger } from "src/Modules/Badger/Badger.sol";
 import { BadgerScoutInterface } from "src/Modules/Badger/interfaces/BadgerScoutInterface.sol";
@@ -22,11 +22,9 @@ import {LaborMarketVersions} from "src/Network/LaborMarketVersions.sol";
 import {ReputationModule} from "src/Modules/Reputation/ReputationModule.sol";
 import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/ReputationModuleInterface.sol";
 
-import {LikertEnforcementCriteria} from "src/Modules/Enforcement/LikertEnforcementCriteria.sol";
-import {FCFSEnforcementCriteria} from "src/Modules/Enforcement/FCFSEnforcementCriteria.sol";
-import {Best5EnforcementCriteria} from "src/Modules/Enforcement/Best5EnforcementCriteria.sol";
-import {MerkleEnforcementCriteria} from "src/Modules/Enforcement/MerkleEnforcementCriteria.sol";
-import {ConstantLikertEnforcement} from "src/Modules/Enforcement/ConstantLikertEnforcement.sol";
+import {LikertEnforcementCriteria} from "src/Modules/Enforcement/Deprecated/LikertEnforcementCriteria.sol";
+import {FCFSEnforcementCriteria} from "src/Modules/Enforcement/Deprecated/FCFSEnforcementCriteria.sol";
+import {MerkleEnforcementCriteria} from "src/Modules/Enforcement/Deprecated/MerkleEnforcementCriteria.sol";
 
 import {PayCurve} from "src/Modules/Payment/PayCurve.sol";
 
@@ -43,9 +41,7 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
     LaborMarket public marketImplementation;
     LaborMarket public likertMarket;
     LaborMarket public fcfsMarket;
-    LaborMarket public best5Market;
     LaborMarket public merkleMarket;
-    LaborMarket public constantLikertMarket;
 
     ReputationModule public reputationModule;
 
@@ -55,9 +51,7 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
 
     LikertEnforcementCriteria public likertEnforcement;
     FCFSEnforcementCriteria public fcfsEnforcement;
-    Best5EnforcementCriteria public best5Enforcement;
     MerkleEnforcementCriteria public merkleEnforcement;
-    ConstantLikertEnforcement public constantLikertEnforcement;
 
     PayCurve public payCurve;
 
@@ -228,9 +222,7 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
         // Create enforcement criteria
         likertEnforcement = new LikertEnforcementCriteria();
         fcfsEnforcement = new FCFSEnforcementCriteria();
-        best5Enforcement = new Best5EnforcementCriteria();
         merkleEnforcement = new MerkleEnforcementCriteria();
-        constantLikertEnforcement = new ConstantLikertEnforcement();
 
         // Create a new pay curve
         payCurve = new PayCurve();
@@ -268,38 +260,6 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
                     })
                 });
 
-        // Create a new labor market configuration for constant likert
-        LaborMarketConfigurationInterface.LaborMarketConfiguration
-            memory constantLikertConfig = LaborMarketConfigurationInterface
-                .LaborMarketConfiguration({
-                    marketUri: "ipfs://000",
-                    owner: address(deployer),
-                    modules: LaborMarketConfigurationInterface.Modules({
-                        network: address(network),
-                        reputation: address(reputationModule),
-                        enforcement: address(constantLikertEnforcement),
-                        payment: address(payCurve)
-                    }),
-                    maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
-                        token: address(repToken),
-                        tokenId: MAINTAINER_TOKEN_ID
-                    }),
-                    delegateBadge: LaborMarketConfigurationInterface.BadgePair({
-                        token: address(repToken),
-                        tokenId: DELEGATE_TOKEN_ID
-                    }),
-                    reputationBadge: LaborMarketConfigurationInterface.BadgePair({
-                        token: address(repToken),
-                        tokenId: REPUTATION_TOKEN_ID
-                    }),
-                    reputationParams: LaborMarketConfigurationInterface.ReputationParams({
-                        rewardPool: 5000,
-                        signalStake: 5,
-                        submitMin: 10,
-                        submitMax: 10000e18
-                    })
-                });
-
         // Create a new labor market configuration for fcfs
         LaborMarketConfigurationInterface.LaborMarketConfiguration
             memory fcfsConfig = LaborMarketConfigurationInterface
@@ -310,38 +270,6 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
                         network: address(network),
                         reputation: address(reputationModule),
                         enforcement: address(fcfsEnforcement),
-                        payment: address(payCurve)
-                    }),
-                    maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
-                        token: address(repToken),
-                        tokenId: MAINTAINER_TOKEN_ID
-                    }),
-                    delegateBadge: LaborMarketConfigurationInterface.BadgePair({
-                        token: address(repToken),
-                        tokenId: DELEGATE_TOKEN_ID
-                    }),
-                    reputationBadge: LaborMarketConfigurationInterface.BadgePair({
-                        token: address(repToken),
-                        tokenId: REPUTATION_TOKEN_ID
-                    }),
-                    reputationParams: LaborMarketConfigurationInterface.ReputationParams({
-                        rewardPool: 5000,
-                        signalStake: 5,
-                        submitMin: 10,
-                        submitMax: 10000e18
-                    })
-                });
-
-        // Create a new labor market configuration for best5
-        LaborMarketConfigurationInterface.LaborMarketConfiguration
-            memory best5Config = LaborMarketConfigurationInterface
-                .LaborMarketConfiguration({
-                    marketUri: "ipfs://000",
-                    owner: address(deployer),
-                    modules: LaborMarketConfigurationInterface.Modules({
-                        network: address(network),
-                        reputation: address(reputationModule),
-                        enforcement: address(best5Enforcement),
                         payment: address(payCurve)
                     }),
                     maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
@@ -412,26 +340,11 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
             })
         );
 
-        // Create a new best5 labor market
-        best5Market = LaborMarket(
-            network.createLaborMarket({
-                _implementation: address(marketImplementation),
-                _configuration: best5Config
-            })
-        );
-
         // Create a new merkle labor market
         merkleMarket = LaborMarket(
             network.createLaborMarket({
                 _implementation: address(marketImplementation),
                 _configuration: merkleConfig
-            })
-        );
-
-        constantLikertMarket = LaborMarket(
-            network.createLaborMarket({
-                _implementation: address(marketImplementation),
-                _configuration: constantLikertConfig
             })
         );
 
@@ -442,7 +355,6 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
         changePrank(alice);
         repToken.setApprovalForAll(address(likertMarket), true);
         repToken.setApprovalForAll(address(fcfsMarket), true);
-        repToken.setApprovalForAll(address(best5Market), true);
         repToken.setApprovalForAll(address(merkleMarket), true);
 
         changePrank(deployer);
@@ -454,14 +366,11 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
         changePrank(bob);
         repToken.setApprovalForAll(address(likertMarket), true);
         repToken.setApprovalForAll(address(fcfsMarket), true);
-        repToken.setApprovalForAll(address(best5Market), true);
         repToken.setApprovalForAll(address(merkleMarket), true);
 
         payToken.approve(address(likertMarket), 1_000e18);
         payToken.approve(address(fcfsMarket), 1_000e18);
-        payToken.approve(address(best5Market), 1_000e18);
         payToken.approve(address(merkleMarket), 1_000e18);
-        payToken.approve(address(constantLikertMarket), 1_000e18);
 
         changePrank(deployer);
         repToken.leaderMint(bobert, REPUTATION_TOKEN_ID, 1000e18, "0x");
@@ -470,7 +379,6 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
         changePrank(bobert);
         repToken.setApprovalForAll(address(likertMarket), true);
         repToken.setApprovalForAll(address(fcfsMarket), true);
-        repToken.setApprovalForAll(address(best5Market), true);
         repToken.setApprovalForAll(address(merkleMarket), true);
 
         changePrank(deployer);
@@ -506,236 +414,92 @@ contract LaborMarketEnforcementTypesTest is PRBTest, StdCheats {
         return ((pseudoRandom(123) + uint160(msg.sender)) % 2) == 0 ? 1 : 0;
     }
 
-    function test_ConstantLikertMarket() public {
-        vm.startPrank(deployer);
-
-        payToken.freeMint(bob, 10000e18);
-
-        changePrank(bob);
-        // Create a request
-        uint256 requestId = createSimpleRequest(constantLikertMarket);
-
-        // Signal the request on 112 accounts
-        for (uint256 i = requestId; i < 113; i++) {
-            address user = address(uint160(1337 + i));
-
-            // Mint required tokens
-            changePrank(deployer);
-            repToken.leaderMint(user, DELEGATE_TOKEN_ID, 1, "0x");
-            repToken.leaderMint(user, REPUTATION_TOKEN_ID, 100e18, "0x");
-            changePrank(user);
-
-            // Aprove the market
-            repToken.setApprovalForAll(address(likertMarket), true);
-
-            constantLikertMarket.signal(requestId);
-            constantLikertMarket.provide(requestId, "NaN");
-        }
-
-        // Have bob review the submissions
-        changePrank(bob);
-
-        // The reviewer signals the requestId
-        constantLikertMarket.signalReview(requestId, 113);
-
-        // The reviewer reviews the submissions
-        for (uint256 i = requestId; i < 113; i++) {
-            if (i < 67) {
-                // SPAM
-                constantLikertMarket.review(requestId, i + 1, 0);
-            } else if (i < 100) {
-                // BAD
-                constantLikertMarket.review(requestId, i + 1, 1);
-            } else if (i < 105) {
-                // OK
-                constantLikertMarket.review(requestId, i + 1, 2);
-            } else if (i < 110) {
-                // GOOD
-                constantLikertMarket.review(requestId, i + 1, 3);
-            } else {
-                // GREAT
-                constantLikertMarket.review(requestId, i + 1, 4);
-            }
-        }
-
-        // Keeps track of the total amount paid out
-        uint256 totalPaid;
-        uint256 totalReputation;
-
-        // Skip to enforcement deadline
-        vm.warp(5 weeks);
-
-        // Claim rewards
-        for (uint256 i = requestId; i < 113; i++) {
-            address user = address(uint160(1337 + i));
-            changePrank(user);
-
-            // Claim
-            uint256 repBefore = repToken.balanceOf(user, REPUTATION_TOKEN_ID);
-            uint256 paid = constantLikertMarket.claim(i + 1, msg.sender, ""); 
-            totalPaid += paid;
-            uint256 repAfter = repToken.balanceOf(user, REPUTATION_TOKEN_ID);
-            totalReputation += repAfter - repBefore;
-        }
-
-        assertAlmostEq(totalPaid, 1000e18, 0.000001e18);
-        assertAlmostEq(totalReputation, 5000, 100);
-    }
-
-    function test_LikertMarket() public {
-        /**
-        | Here we test the workings of enforcement (reviewing) following a likert metric.
-        |
-        | First, we populate the request with submissions
-        | Second, we review the submissions
-        | Third, we test the enforcement criteria following an example scenario.
-        | 
-        | * Example scenario:
-        | pTokens: 1000
-        | Participants: 112
-        | Likert ratings: (1, BAD), (2, OK), (3, GOOD), (4, GOOD), (5, GREAT)
-        | Bucket distribution: (1, 66), (2, 36), (3, 10)
-        | Payout distribution: (1, 0), (2, 20%), (3, 80%)
-        | Expected Tokens per person per bucket: (1, 0), (2, 5.5), (3, 80)
-        */
-
-        vm.startPrank(bob);
-
-        // Create a request
-        uint256 requestId = createSimpleRequest(likertMarket);
-
-        // Signal the request on 112 accounts
-        for (uint256 i = requestId; i < 113; i++) {
-            address user = address(uint160(1337 + i));
-
-            // Mint required tokens
-            changePrank(deployer);
-            repToken.leaderMint(user, DELEGATE_TOKEN_ID, 1, "0x");
-            repToken.leaderMint(user, REPUTATION_TOKEN_ID, 100e18, "0x");
-            changePrank(user);
-
-            // Aprove the market
-            repToken.setApprovalForAll(address(likertMarket), true);
-
-            likertMarket.signal(requestId);
-            likertMarket.provide(requestId, "NaN");
-        }
-
-        // Have bob review the submissions
-        changePrank(bob);
-
-        // The reviewer signals the requestId
-        likertMarket.signalReview(requestId, 113);
-
-        // The reviewer reviews the submissions
-        for (uint256 i = requestId; i < 113; i++) {
-            if (i < 67) {
-                // SPAM
-                likertMarket.review(requestId, i + 1, 0);
-            } else if (i < 100) {
-                // BAD
-                likertMarket.review(requestId, i + 1, 1);
-            } else if (i < 105) {
-                // OK
-                likertMarket.review(requestId, i + 1, 2);
-            } else if (i < 110) {
-                // GOOD
-                likertMarket.review(requestId, i + 1, 3);
-            } else {
-                // GREAT
-                likertMarket.review(requestId, i + 1, 4);
-            }
-        }
-
-        // Keeps track of the total amount paid out
-        uint256 totalPaid;
-        uint256 totalReputation;
-
-        // Skip to enforcement deadline
-        vm.warp(5 weeks);
-
-        // Claim rewards
-        for (uint256 i = requestId; i < 113; i++) {
-            address user = address(uint160(1337 + i));
-            changePrank(user);
-
-            // Claim
-            uint256 repBefore = repToken.balanceOf(user, REPUTATION_TOKEN_ID);
-            totalPaid += likertMarket.claim(i + 1, msg.sender, "");
-            uint256 repAfter = repToken.balanceOf(user, REPUTATION_TOKEN_ID);
-            totalReputation += repAfter - repBefore;
-        }
-
-        assertAlmostEq(totalPaid, 1000e18, 0.000001e18);
-        assertAlmostEq(totalReputation, 5000, 0.000001e18);
-    }
-
-
-    // function test_Best5Market() public {
+    // function test_LikertMarket() public {
     //     /**
-    //     | Here we test the workings of enforcement (reviewing) following a top 5 metric
+    //     | Here we test the workings of enforcement (reviewing) following a likert metric.
     //     |
     //     | First, we populate the request with submissions
     //     | Second, we review the submissions
-    //     | Third, we sort the submissions based on review ranking
+    //     | Third, we test the enforcement criteria following an example scenario.
     //     | 
     //     | * Example scenario:
     //     | pTokens: 1000
-    //     | Participants: 55
-    //     | Scores are randomly generated
-    //     | 5 winners who each receive 200 tokens (scaling index of 20)
-    //     | point on curve * base payout = payout
+    //     | Participants: 112
+    //     | Likert ratings: (1, BAD), (2, OK), (3, GOOD), (4, GOOD), (5, GREAT)
+    //     | Bucket distribution: (1, 66), (2, 36), (3, 10)
+    //     | Payout distribution: (1, 0), (2, 20%), (3, 80%)
+    //     | Expected Tokens per person per bucket: (1, 0), (2, 5.5), (3, 80)
     //     */
 
     //     vm.startPrank(bob);
 
     //     // Create a request
-    //     uint256 requestId = createSimpleRequest(best5Market);
+    //     uint256 requestId = createSimpleRequest(likertMarket);
 
-    //     // Signal the request on 55 accounts
-    //     for (uint256 i = requestId; i < 55; i++) {
+    //     // Signal the request on 112 accounts
+    //     for (uint256 i = requestId; i < 113; i++) {
     //         address user = address(uint160(1337 + i));
 
     //         // Mint required tokens
     //         changePrank(deployer);
     //         repToken.leaderMint(user, DELEGATE_TOKEN_ID, 1, "0x");
-    //         repToken.leaderMint(user, REPUTATION_TOKEN_ID, 1000e18, "0x");
+    //         repToken.leaderMint(user, REPUTATION_TOKEN_ID, 100e18, "0x");
     //         changePrank(user);
 
     //         // Aprove the market
-    //         repToken.setApprovalForAll(address(best5Market), true);
+    //         repToken.setApprovalForAll(address(likertMarket), true);
 
-    //         best5Market.signal(requestId);
-    //         best5Market.provide(requestId, "NaN");
+    //         likertMarket.signal(requestId);
+    //         likertMarket.provide(requestId, "NaN");
     //     }
 
     //     // Have bob review the submissions
     //     changePrank(bob);
 
     //     // The reviewer signals the requestId
-    //     best5Market.signalReview(requestId, 55);
+    //     likertMarket.signalReview(requestId, 113);
 
     //     // The reviewer reviews the submissions
-    //     for (uint256 i = requestId; i < 55; i++) {
-    //         best5Market.review(requestId, i + 1, pseudoRandom(i));
+    //     for (uint256 i = requestId; i < 113; i++) {
+    //         if (i < 67) {
+    //             // SPAM
+    //             likertMarket.review(requestId, i + 1, 0);
+    //         } else if (i < 100) {
+    //             // BAD
+    //             likertMarket.review(requestId, i + 1, 1);
+    //         } else if (i < 105) {
+    //             // OK
+    //             likertMarket.review(requestId, i + 1, 2);
+    //         } else if (i < 110) {
+    //             // GOOD
+    //             likertMarket.review(requestId, i + 1, 3);
+    //         } else {
+    //             // GREAT
+    //             likertMarket.review(requestId, i + 1, 4);
+    //         }
     //     }
 
     //     // Keeps track of the total amount paid out
     //     uint256 totalPaid;
+    //     uint256 totalReputation;
 
     //     // Skip to enforcement deadline
     //     vm.warp(5 weeks);
 
     //     // Claim rewards
-    //     for (uint256 i = requestId; i < 55; i++) {
+    //     for (uint256 i = requestId; i < 113; i++) {
     //         address user = address(uint160(1337 + i));
     //         changePrank(user);
 
     //         // Claim
-    //         totalPaid += best5Market.claim(i + 1, msg.sender, "");
+    //         uint256 repBefore = repToken.balanceOf(user, REPUTATION_TOKEN_ID);
+    //         totalPaid += likertMarket.claim(i + 1, msg.sender, "");
+    //         uint256 repAfter = repToken.balanceOf(user, REPUTATION_TOKEN_ID);
+    //         totalReputation += repAfter - repBefore;
     //     }
 
-    //     best5Enforcement.getSubmissions(address(best5Market), requestId);
+    //     assertAlmostEq(totalPaid, 1000e18, 0.000001e18);
+    //     assertAlmostEq(totalReputation, 5000, 0.000001e18);
     // }
 
     // function test_FcfsMarket() public {

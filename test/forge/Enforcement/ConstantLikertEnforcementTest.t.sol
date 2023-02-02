@@ -22,14 +22,14 @@ import {LaborMarketVersions} from "src/Network/LaborMarketVersions.sol";
 import {ReputationModule} from "src/Modules/Reputation/ReputationModule.sol";
 import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/ReputationModuleInterface.sol";
 
-import { ConstantLikertEnforcement } from "src/Modules/Enforcement/ConstantLikertEnforcement.sol";
+import {ConstantLikertEnforcement} from "src/Modules/Enforcement/ConstantLikertEnforcement.sol";
 
 import {PayCurve} from "src/Modules/Payment/PayCurve.sol";
 
 import {LaborMarketConfigurationInterface} from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
 import {LaborMarketNetworkInterface} from "src/Network/interfaces/LaborMarketNetworkInterface.sol";
 
-contract ReputationModuleTest is PRBTest, StdCheats {
+contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
     Badger public badger;
     BadgerOrganization public badgerMaster;
 
@@ -37,15 +37,15 @@ contract ReputationModuleTest is PRBTest, StdCheats {
     PaymentToken public payToken;
 
     LaborMarket public marketImplementation;
-    LaborMarket public market;
-
-    ConstantLikertEnforcement public enforcement;
+    LaborMarket public constantLikertMarket;
 
     ReputationModule public reputationModule;
 
     LaborMarketFactory public factory;
 
     LaborMarketNetwork public network;
+
+    ConstantLikertEnforcement public constantLikertEnforcement;
 
     PayCurve public payCurve;
 
@@ -76,9 +76,72 @@ contract ReputationModuleTest is PRBTest, StdCheats {
         address(uint160(uint256(keccak256("EVIL_USER"))));
 
     // Alt delegate
+    // Evil user
     address private delegate =
         address(uint160(uint256(keccak256("DELEGATOOOR"))));
 
+    // Events
+    event LaborMarketConfigured(
+        LaborMarketConfigurationInterface.LaborMarketConfiguration indexed configuration
+    );
+
+    event RequestWithdrawn(uint256 indexed requestId);
+
+    event LaborMarketCreated(
+        address indexed marketAddress,
+        address indexed owner,
+        address indexed implementation
+    );
+
+    event RequestCreated(
+        address indexed requester,
+        uint256 indexed requestId,
+        string indexed uri,
+        address pToken,
+        uint256 pTokenQ,
+        uint256 signalExp,
+        uint256 submissionExp,
+        uint256 enforcementExp
+    );
+
+    event RequestSignal(
+        address indexed signaler,
+        uint256 indexed requestId,
+        uint256 signalAmount
+    );
+
+    event ReviewSignal(
+        address indexed signaler,
+        uint256 indexed quantity,
+        uint256 signalAmount
+    );
+
+    event RequestFulfilled(
+        address indexed fulfiller,
+        uint256 indexed requestId,
+        uint256 indexed submissionId,
+        string _uri
+    );
+
+    event RequestReviewed(
+        address reviewer,
+        uint256 indexed requestId,
+        uint256 indexed submissionId,
+        uint256 indexed reviewScore
+    );
+
+    event RequestPayClaimed(
+        address indexed claimer,
+        uint256 indexed submissionId,
+        uint256 indexed payAmount,
+        address to
+    );
+
+    event RemainderClaimed(
+        address indexed claimer,
+        uint256 indexed requestId,
+        uint256 remainderAmount
+    );
 
     /*//////////////////////////////////////////////////////////////
                         HELPER FUNCTIONALITY
@@ -150,22 +213,22 @@ contract ReputationModuleTest is PRBTest, StdCheats {
         repToken.leaderMint(address(deployer), GOVERNOR_TOKEN_ID, 1, "0x");
         repToken.leaderMint(address(deployer), CREATOR_TOKEN_ID, 1, "0x");
 
-        enforcement = new ConstantLikertEnforcement();
+        // Create enforcement criteria
+        constantLikertEnforcement = new ConstantLikertEnforcement();
 
         // Create a new pay curve
         payCurve = new PayCurve();
 
-
-        // Create a new labor market configuration for likert
+        // Create a new labor market configuration for constant likert
         LaborMarketConfigurationInterface.LaborMarketConfiguration
-            memory likertConfig = LaborMarketConfigurationInterface
+            memory constantLikertConfig = LaborMarketConfigurationInterface
                 .LaborMarketConfiguration({
                     marketUri: "ipfs://000",
                     owner: address(deployer),
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),
-                        enforcement: address(enforcement),
+                        enforcement: address(constantLikertEnforcement),
                         payment: address(payCurve)
                     }),
                     maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
@@ -183,16 +246,15 @@ contract ReputationModuleTest is PRBTest, StdCheats {
                     reputationParams: LaborMarketConfigurationInterface.ReputationParams({
                         rewardPool: 5000,
                         signalStake: 5,
-                        submitMin: 5,
+                        submitMin: 10,
                         submitMax: 10000e18
                     })
                 });
 
-        // Create a new likert labor market
-        market = LaborMarket(
+        constantLikertMarket = LaborMarket(
             network.createLaborMarket({
                 _implementation: address(marketImplementation),
-                _configuration: likertConfig
+                _configuration: constantLikertConfig
             })
         );
 
@@ -201,7 +263,7 @@ contract ReputationModuleTest is PRBTest, StdCheats {
         repToken.leaderMint(alice, DELEGATE_TOKEN_ID, 1, "0x");
 
         changePrank(alice);
-        repToken.setApprovalForAll(address(market), true);
+        repToken.setApprovalForAll(address(constantLikertMarket), true);
 
         changePrank(deployer);
         repToken.leaderMint(bob, REPUTATION_TOKEN_ID, 100000e18, "0x");
@@ -210,15 +272,11 @@ contract ReputationModuleTest is PRBTest, StdCheats {
         repToken.leaderMint(bob, MAINTAINER_TOKEN_ID, 1, "0x");
 
         changePrank(bob);
-        repToken.setApprovalForAll(address(market), true);
-        payToken.approve(address(market), 1_000e18);
+        payToken.approve(address(constantLikertMarket), 1_000e18);
 
         changePrank(deployer);
         repToken.leaderMint(bobert, REPUTATION_TOKEN_ID, 1000e18, "0x");
         repToken.leaderMint(bobert, MAINTAINER_TOKEN_ID, 1, "0x");
-
-        changePrank(bobert);
-        repToken.setApprovalForAll(address(market), true);
 
         changePrank(deployer);
         repToken.leaderMint(delegate, DELEGATE_TOKEN_ID, 1, "0x");
@@ -242,121 +300,87 @@ contract ReputationModuleTest is PRBTest, StdCheats {
         return rid;
     }
 
-    function test_CanSetDecayConfig() public {
-        vm.startPrank(deployer);
-
-        network.setReputationDecay(
-            address(reputationModule),
-            address(repToken),
-            REPUTATION_TOKEN_ID,
-            10,
-            5000,
-            block.timestamp
-        );
-
-        (uint256 decay, uint256 interval, uint256 lastDecay) = reputationModule.decayConfig(
-            address(repToken),
-            REPUTATION_TOKEN_ID
-        );
-
-        assertEq(decay, 10, "Decay should be 10");
-        assertEq(interval, 5000, "Interval should be 5000");
-        assertEq(lastDecay, block.timestamp, "Last decay should be now");
-
-        vm.stopPrank();
+    function pseudoRandom(uint256 _n) internal view returns (uint256) {
+        return
+            uint256(
+                keccak256(abi.encodePacked(block.timestamp, msg.sender, _n))
+            ) / 1.5e75;
     }
 
-    function test_ReputationDecayOneInterval() public {
-        vm.startPrank(deployer);
-
-        repToken.leaderMint(bob, GOVERNOR_TOKEN_ID, 1, "0x");
-        repToken.leaderMint(delegate, GOVERNOR_TOKEN_ID, 1, "0x");
-
-        network.setReputationDecay(
-            address(reputationModule),
-            address(repToken),
-            REPUTATION_TOKEN_ID,
-            10,
-            5000,
-            block.timestamp
-        );
-
-        changePrank(bob);
-        payToken.approve(address(market), 10000e18);
-        uint256 requestId = market.submitRequest({
-            _pToken: address(payToken),
-            _pTokenQ: 100e18,
-            _signalExp: block.timestamp + 5 weeks,
-            _submissionExp: block.timestamp + 5 weeks,
-            _enforcementExp: block.timestamp + 5 weeks,
-            _requestUri: "ipfs://222"
-        });
-
-        // // A valid user signals
-        changePrank(alice);
-        uint256 balanceBefore = repToken.balanceOf(address(alice), REPUTATION_TOKEN_ID);
-
-        vm.warp(2 hours);
-        uint256 expectedDecay = reputationModule.getPendingDecay(
-            address(market),
-            address(alice)
-        );
-
-        market.signal(requestId);
-
-        assertEq(
-            repToken.balanceOf(address(alice), REPUTATION_TOKEN_ID),
-            balanceBefore - expectedDecay - 5
-        );
-
-        vm.stopPrank();
+    function coinflip() internal view returns (uint256) {
+        return ((pseudoRandom(123) + uint160(msg.sender)) % 2) == 0 ? 1 : 0;
     }
 
-    function test_ReputationDecayMaxDecay() public {
+    function test_ConstantLikertMarket() public {
         vm.startPrank(deployer);
 
-        address newGuy = address(0xffff);
-
-        repToken.leaderMint(bob, GOVERNOR_TOKEN_ID, 1, "0x");
-        repToken.leaderMint(delegate, GOVERNOR_TOKEN_ID, 1, "0x");
-        repToken.leaderMint(newGuy, REPUTATION_TOKEN_ID, 1000, "0x");
-
-        network.setReputationDecay(
-            address(reputationModule),
-            address(repToken),
-            REPUTATION_TOKEN_ID,
-            10,
-            5000,
-            block.timestamp
-        );
+        payToken.freeMint(bob, 10000e18);
 
         changePrank(bob);
-        payToken.approve(address(market), 10000e18);
+        // Create a request
+        uint256 requestId = createSimpleRequest(constantLikertMarket);
 
-        market.submitRequest({
-            _pToken: address(payToken),
-            _pTokenQ: 100e18,
-            _signalExp: block.timestamp + 100 weeks,
-            _submissionExp: block.timestamp + 100 weeks,
-            _enforcementExp: block.timestamp + 100 weeks,
-            _requestUri: "ipfs://222"
-        });
+        // Signal the request on 112 accounts
+        for (uint256 i = requestId; i < 113; i++) {
+            address user = address(uint160(1337 + i));
 
-        // // A valid user signals
-        changePrank(newGuy);
-        uint256 balanceBefore = repToken.balanceOf(address(newGuy), REPUTATION_TOKEN_ID);
+            // Mint required tokens
+            changePrank(deployer);
+            repToken.leaderMint(user, DELEGATE_TOKEN_ID, 1, "0x");
+            repToken.leaderMint(user, REPUTATION_TOKEN_ID, 100e18, "0x");
+            changePrank(user);
 
-        vm.warp(10 weeks);
-        uint256 expectedDecay = reputationModule.getPendingDecay(
-            address(market),
-            address(newGuy)
-        );
+            constantLikertMarket.signal(requestId);
+            constantLikertMarket.provide(requestId, "NaN");
+        }
 
-        assertEq(
-            reputationModule.getAvailableReputation(address(market), address(newGuy)),
-            0
-        );
+        // Have bob review the submissions
+        changePrank(bob);
 
-        vm.stopPrank();
+        // The reviewer signals the requestId
+        constantLikertMarket.signalReview(requestId, 113);
+
+        // The reviewer reviews the submissions
+        for (uint256 i = requestId; i < 113; i++) {
+            if (i < 67) {
+                // SPAM
+                constantLikertMarket.review(requestId, i + 1, 0);
+            } else if (i < 100) {
+                // BAD
+                constantLikertMarket.review(requestId, i + 1, 1);
+            } else if (i < 105) {
+                // OK
+                constantLikertMarket.review(requestId, i + 1, 2);
+            } else if (i < 110) {
+                // GOOD
+                constantLikertMarket.review(requestId, i + 1, 3);
+            } else {
+                // GREAT
+                constantLikertMarket.review(requestId, i + 1, 4);
+            }
+        }
+
+        // Keeps track of the total amount paid out
+        uint256 totalPaid;
+        uint256 totalReputation;
+
+        // Skip to enforcement deadline
+        vm.warp(5 weeks);
+
+        // Claim rewards
+        for (uint256 i = requestId; i < 113; i++) {
+            address user = address(uint160(1337 + i));
+            changePrank(user);
+
+            // Claim
+            uint256 repBefore = repToken.balanceOf(user, REPUTATION_TOKEN_ID);
+            uint256 paid = constantLikertMarket.claim(i + 1, msg.sender, ""); 
+            totalPaid += paid;
+            uint256 repAfter = repToken.balanceOf(user, REPUTATION_TOKEN_ID);
+            totalReputation += repAfter - repBefore;
+        }
+
+        assertAlmostEq(totalPaid, 1000e18, 0.000001e18);
+        assertAlmostEq(totalReputation, 5000, 100);
     }
 }

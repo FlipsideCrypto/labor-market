@@ -7,7 +7,7 @@ import {console} from "forge-std/console.sol";
 import {PRBTest} from "prb-test/PRBTest.sol";
 
 // Contracts
-import {AnyReputationToken} from "./Helpers/HelperTokens.sol";
+import {AnyReputationToken} from "../Helpers/HelperTokens.sol";
 
 import {LaborMarket} from "src/LaborMarket/LaborMarket.sol";
 
