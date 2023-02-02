@@ -6,6 +6,9 @@ coverage
 coverage.json
 typechain
 typechain-types
+
+# Forge files
+.gas-snapshot
 broadcast
 
 # Hardhat files
