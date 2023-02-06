@@ -286,8 +286,7 @@ contract LaborMarket is LaborMarketManager {
             _data
         );
 
-        pTokenClaimed = (serviceRequests[requestId].pTokenQ * percentOfPool) / 1e18;
-        console.log("LaborMarket Address: %s", address(this));
+        pTokenClaimed = (serviceRequests[requestId].pTokenQ * percentOfPool / 1e10);
         console.log("percentOfPool: %s", percentOfPool);
         console.log("pTokenClaimed: %s", pTokenClaimed);
         console.log("pTokenQ: %s", serviceRequests[requestId].pTokenQ);
@@ -298,13 +297,13 @@ contract LaborMarket is LaborMarketManager {
         IERC20(
             serviceRequests[requestId].pToken
         ).transfer(
-            _to, 
+            _to,
             pTokenClaimed
         );
 
         reputationModule.mintReputation(
             _msgSender(), 
-            (configuration.reputationParams.rewardPool * 1e18 * percentOfPool) / 1e18
+            (configuration.reputationParams.rewardPool * percentOfPool / 1e10)
         );
 
         emit RequestPayClaimed(_msgSender(), requestId, _submissionId, pTokenClaimed, _to);

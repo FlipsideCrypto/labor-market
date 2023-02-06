@@ -27,6 +27,7 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
 
     /// @dev Tracks the cumulative sum of average score.
     /// @dev Labor Market -> Request Id -> Total score
+    /// @dev Note: stored with 18 decimals.
     mapping(address => mapping(uint256 => uint256)) private requestTotalScore;
 
     /// @dev The Likert grading scale.
@@ -39,6 +40,7 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
     }
 
     /// @dev The scores given to a service submission.
+    /// @dev Note: uint256 stored with 18 decimals.
     struct Scores {
         uint256[] scores;
         uint256 avg;
@@ -77,10 +79,11 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
         }
 
         // Update the submission's scores
-        score.scores.push(_score);
+        score.scores.push(_score * 1e18);
         score.avg = _getAvg(
             score.scores
         );
+        console.log("score.avg: %s", score.avg);
 
         // Update the cumulative total earned score with the submission's new average.
         unchecked {
@@ -123,9 +126,7 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
             uint256 share
         )
     {
-        uint256 _return = _calculateShare(_submissionId);
-        console.log('getShareOfPoolWithData: %s', _return);
-        share = _calculateShare(_submissionId);
+        return _calculateShare(_submissionId);
     }
 
     /// @notice Get the remaining unclaimed.
@@ -162,14 +163,16 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
 
         uint256 requestId = _getRequestId(_submissionId);
 
+        console.log("calc score: %s", score);
+        console.log("requestTotalScore: %s", requestTotalScore[msg.sender][requestId]);
         ///REMOVE
-        uint256 total = (score * 1e18) / requestTotalScore[msg.sender][requestId];
-        console.log("Percent of Pool Earned: %s", total);
-        console.log("msg.sender: %s", msg.sender);
-        console.log("address this: %s", address(this));
+        uint256 total = (score * 1e10) / requestTotalScore[msg.sender][requestId];
+        // console.log('score', score);
+        console.log("Enforcement: Percent of Pool Earned: %s", total);
+        // console.log("Percentage actually", (total / 100));
         ///REMOVE
 
-        return (score * 1e18) / requestTotalScore[msg.sender][requestId];
+        return total;
     }
 
     /// @notice Gets the average of the scores given to a submission.
