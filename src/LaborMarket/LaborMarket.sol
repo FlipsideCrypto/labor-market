@@ -8,7 +8,6 @@ import { LaborMarketManager } from "./LaborMarketManager.sol";
 /// @dev Helper interfaces.
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "hardhat/console.sol";
 
 contract LaborMarket is LaborMarketManager {
     /**
@@ -287,10 +286,6 @@ contract LaborMarket is LaborMarketManager {
         );
 
         pTokenClaimed = (serviceRequests[requestId].pTokenQ * percentOfPool / 1e10);
-        console.log("percentOfPool: %s", percentOfPool);
-        console.log("pTokenClaimed: %s", pTokenClaimed);
-        console.log("pTokenQ: %s", serviceRequests[requestId].pTokenQ);
-        console.log("Before divisor: %s", (serviceRequests[requestId].pTokenQ * percentOfPool));
 
         hasPerformed[_submissionId][_msgSender()][HAS_CLAIMED] = true;
 

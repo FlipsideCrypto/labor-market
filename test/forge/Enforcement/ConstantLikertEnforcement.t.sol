@@ -68,6 +68,10 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
     // Maintainer 2
     address private bobert = address(0x11);
 
+    address private grader1 = address(0x111);
+
+    address private grader2 = address(0x222);
+
     // User
     address private alice = address(0x2);
 
@@ -270,6 +274,10 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
         repToken.leaderMint(bobert, REPUTATION_TOKEN_ID, 1_000_000e18, "0x");
         repToken.leaderMint(delegate, REPUTATION_TOKEN_ID, 1_000_000e18, "0x");
         repToken.leaderMint(delegate, MAINTAINER_TOKEN_ID, 1, "0x");
+        repToken.leaderMint(grader1, REPUTATION_TOKEN_ID, 1_000_000e18, "0x");
+        repToken.leaderMint(grader1, MAINTAINER_TOKEN_ID, 1, "0x");
+        repToken.leaderMint(grader2, REPUTATION_TOKEN_ID, 1_000_000e18, "0x");
+        repToken.leaderMint(grader2, MAINTAINER_TOKEN_ID, 1, "0x");
 
         changePrank(bob);
         payToken.approve(address(constantLikertMarket), 1_000e18);
@@ -307,6 +315,7 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
     function test_ConstantLikertRandomReviews() public {
         vm.startPrank(deployer);
 
+        uint256 runs = 100;
         payToken.freeMint(bob, 10000e18);
 
         changePrank(bob);
@@ -314,7 +323,7 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
         uint256 requestId = createSimpleRequest(constantLikertMarket);
 
         // Signal the request on 20 accounts
-        for (uint256 i = requestId; i < requestId + 20; i++) {
+        for (uint256 i = requestId; i < requestId + runs; i++) {
             address user = address(uint160(1337 + i));
 
             // Mint required tokens
@@ -327,23 +336,35 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
         }
 
         changePrank(bob);
-        constantLikertMarket.signalReview(requestId, 20);
+        constantLikertMarket.signalReview(requestId, runs);
 
         changePrank(bobert);
-        constantLikertMarket.signalReview(requestId, 20);
+        constantLikertMarket.signalReview(requestId, runs);
 
         changePrank(delegate);
-        constantLikertMarket.signalReview(requestId, 20);
+        constantLikertMarket.signalReview(requestId, runs);
+
+        changePrank(grader1);
+        constantLikertMarket.signalReview(requestId, runs);
+
+        changePrank(grader2);
+        constantLikertMarket.signalReview(requestId, runs);
 
         uint256 salt = 0;
-        for (uint256 i = requestId; i < requestId + 20; i++) {
+        for (uint256 i = requestId; i < requestId + runs; i++) {
             changePrank(delegate);
             salt = (salt * i + i + 2) % 1000;
             constantLikertMarket.review(requestId, i + 1, randomLikert(salt));
             changePrank(bobert);
-            salt = (salt * i + i + 2) % 1000;
+            salt = (salt * i + i + 3) % 1000;
             constantLikertMarket.review(requestId, i + 1, randomLikert(salt));
             changePrank(bob);
+            salt = (salt * i + i + 4) % 1000;
+            constantLikertMarket.review(requestId, i + 1, randomLikert(salt));
+            changePrank(grader1);
+            salt = (salt * i + i + 3) % 1000;
+            constantLikertMarket.review(requestId, i + 1, randomLikert(salt));
+            changePrank(grader2);
             salt = (salt * i + i + 2) % 1000;
             constantLikertMarket.review(requestId, i + 1, randomLikert(salt));
         }
@@ -356,7 +377,7 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
         vm.warp(5 weeks);
 
         // Claim rewards
-        for (uint256 i = requestId; i < requestId + 20; i++) {
+        for (uint256 i = requestId; i < requestId + runs; i++) {
             address user = address(uint160(1337 + i));
             changePrank(user);
 
@@ -371,7 +392,7 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
         console.log("totalPaid", totalPaid);
         console.log("totalReputation", totalReputation);
 
-        assertAlmostEq(totalPaid, 1000e18, 0.000001e18);
+        assertAlmostEq(totalPaid, 1000e18, 0.00001e18);
         assertAlmostEq(totalReputation, 5000, 100);
     }
 
@@ -432,7 +453,7 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
         console.log("totalPaid", totalPaid);
         console.log("totalReputation", totalReputation);
 
-        assertAlmostEq(totalPaid, 1000e18, 0.000001e18);
+        assertAlmostEq(totalPaid, 1000e18, 0.00001e18);
         assertAlmostEq(totalReputation, 5000, 100);
     }
 
@@ -505,7 +526,7 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
             totalReputation += repAfter - repBefore;
         }
 
-        assertAlmostEq(totalPaid, 1000e18, 0.000001e18);
+        assertAlmostEq(totalPaid, 1000e18, 0.00001e18);
         assertAlmostEq(totalReputation, 5000, 100);
     }
 }

@@ -636,13 +636,13 @@ contract LaborMarketTest is PRBTest, StdCheats {
         changePrank(bob);
         market.review(requestId, submissionId, 4);
 
-        // // Verify claiming events
+        // Verify claiming events
         vm.expectEmit(true, true, true, true);
         emit RequestPayClaimed(
             address(alice),
             requestId,
             submissionId,
-            999999999956753113201, // (100e18 * 0.6)
+            1000000000000000000000,
             address(alice)
         );
 

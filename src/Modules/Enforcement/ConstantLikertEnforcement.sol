@@ -83,7 +83,6 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
         score.avg = _getAvg(
             score.scores
         );
-        console.log("score.avg: %s", score.avg);
 
         // Update the cumulative total earned score with the submission's new average.
         unchecked {
@@ -163,16 +162,7 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
 
         uint256 requestId = _getRequestId(_submissionId);
 
-        console.log("calc score: %s", score);
-        console.log("requestTotalScore: %s", requestTotalScore[msg.sender][requestId]);
-        ///REMOVE
-        uint256 total = (score * 1e10) / requestTotalScore[msg.sender][requestId];
-        // console.log('score', score);
-        console.log("Enforcement: Percent of Pool Earned: %s", total);
-        // console.log("Percentage actually", (total / 100));
-        ///REMOVE
-
-        return total;
+        return (score * 1e10) / requestTotalScore[msg.sender][requestId];
     }
 
     /// @notice Gets the average of the scores given to a submission.
