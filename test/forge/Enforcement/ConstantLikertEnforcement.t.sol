@@ -309,7 +309,7 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
     }
 
     function randomLikert(uint256 salt) internal view returns (uint256) {
-        return (pseudoRandom(123, salt) + uint160(msg.sender)) % 5;
+        return (pseudoRandom(123, salt) + uint160(msg.sender) + uint256(salt)) % 5;
     }
 
     function test_ConstantLikertRandomReviews() public {

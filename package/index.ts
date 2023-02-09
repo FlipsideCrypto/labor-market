@@ -16,7 +16,7 @@ export const ReputationToken = {
     "abi": ReputationTokenABI
 }
 export const LaborMarket = {
-    "address": "0x2a1016382091AdB1C3832A45072Be7fE3D098BbA" as const,
+    "address": "0x2c02b0849c6c6e5e274f94179926bf7f3b50569e" as const,
     "abi": LaborMarketABI
 }
 export const LaborMarketNetwork = {
@@ -28,7 +28,7 @@ export const ReputationModule = {
     "abi": ReputationModuleABI
 }
 export const ConstantLikertEnforcement = {
-    "address": "0x1E885D4f3e104b0F32345522f70e933B4880E4b9" as const,
+    "address": "0x8D9A907D6Aa8e197AB39b7B00195Ad6956688aFC" as const,
     "abi": ConstantLikertEnforcementABI
 }
 /// NOTE: Currently PaymentModule is unused and operates the same as the PayCurve contract.
