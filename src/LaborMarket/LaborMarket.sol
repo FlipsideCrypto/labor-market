@@ -8,6 +8,13 @@ import { LaborMarketManager } from "./LaborMarketManager.sol";
 /// @dev Helper interfaces.
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+/**
+ * @title The LaborMarket contract is the core of the MetricsDAO protocol.
+ * @author @CHANCE @MasOnTheChain @thermohaline
+ * @notice This is a beta version subject to change.
+ * @dev This contract is responsible for managing all actions of requesters and providers
+ *      within the Labor Market ecosystem.
+ */
 
 contract LaborMarket is LaborMarketManager {
     /**
@@ -129,7 +136,7 @@ contract LaborMarket is LaborMarketManager {
 
         reputationModule.useReputation(_msgSender(), signalStake);
 
-        reviewPromise.total = _quantity;
+        reviewPromise.total += _quantity;
         reviewPromise.remainder = _quantity;
 
         emit ReviewSignal(_msgSender(), _requestId, _quantity, signalStake);

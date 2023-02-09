@@ -31,37 +31,37 @@ contract LaborMarketManager is
     ContextUpgradeable
 {
     /// @dev Performable actions.
-    bytes32 public constant HAS_SUBMITTED = keccak256("hasSubmitted");
+    bytes32 internal constant HAS_SUBMITTED = keccak256("hasSubmitted");
 
-    bytes32 public constant HAS_CLAIMED = keccak256("hasClaimed");
+    bytes32 internal constant HAS_CLAIMED = keccak256("hasClaimed");
 
-    bytes32 public constant HAS_CLAIMED_REMAINDER =
+    bytes32 internal constant HAS_CLAIMED_REMAINDER =
         keccak256("hasClaimedRemainder");
 
-    bytes32 public constant HAS_REVIEWED = keccak256("hasReviewed");
+    bytes32 internal constant HAS_REVIEWED = keccak256("hasReviewed");
     
-    bytes32 public constant HAS_SIGNALED = keccak256("hasSignaled");
+    bytes32 internal constant HAS_SIGNALED = keccak256("hasSignaled");
 
     /// @dev The network contract.
-    LaborMarketNetworkInterface public network;
+    LaborMarketNetworkInterface internal network;
 
     /// @dev The enforcement criteria.
-    EnforcementCriteriaInterface public enforcementCriteria;
+    EnforcementCriteriaInterface internal enforcementCriteria;
 
     /// @dev The payment curve.
-    PayCurveInterface public paymentCurve;
+    PayCurveInterface internal paymentCurve;
 
     /// @dev The reputation module.
-    ReputationModuleInterface public reputationModule;
+    ReputationModuleInterface internal reputationModule;
+
+    /// @dev The delegate badge.
+    IERC1155 internal delegateBadge;
+
+    /// @dev The maintainer badge.
+    IERC1155 internal maintainerBadge;
 
     /// @dev The configuration of the labor market.
     LaborMarketConfiguration public configuration;
-
-    /// @dev The delegate badge.
-    IERC1155 public delegateBadge;
-
-    /// @dev The maintainer badge.
-    IERC1155 public maintainerBadge;
 
     /// @dev Tracking the signals per service request.
     mapping(uint256 => uint256) public signalCount;
@@ -217,6 +217,8 @@ contract LaborMarketManager is
             configuration.owner == address(0) || _msgSender() == configuration.owner || _msgSender() == address(network),
             "LaborMarketManager::setConfiguration: Not owner or governor"
         );
+
+        require(serviceId == 0, "LaborMarketManager::setConfiguration: Market in use");
 
         network = LaborMarketNetworkInterface(_configuration.modules.network);
 

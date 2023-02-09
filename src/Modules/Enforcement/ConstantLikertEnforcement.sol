@@ -5,10 +5,8 @@ pragma solidity ^0.8.17;
 import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
 import {EnforcementCriteriaInterface} from "src/Modules/Enforcement/interfaces/EnforcementCriteriaInterface.sol";
 
-import { UD60x18, ud } from "@prb/math/src/UD60x18.sol";
-
 /**
- * @dev A contract that enforces a constant likert scale.
+ * @title A contract that enforces a constant likert scale.
  * @notice This contract takes in reviews on a 5 point Likert scale of SPAM, BAD, OK, GOOD, GREAT.
  *         Upon a review, the average score is calculated and the cumulative score is updated.
  *         Once it is time to claim, the ratio of a submission's average score to the cumulative
@@ -16,9 +14,8 @@ import { UD60x18, ud } from "@prb/math/src/UD60x18.sol";
  *         has earned. The earnings are linearly distributed to the submission's based on their average score.
  *         If two total submissions have an average score of 4 and 2, the first submission will earn 2/3 of 
  *         the total reward pool and the second submission will earn 1/3. Thus, rewards are linear.
- **/
-
-import "hardhat/console.sol";
+ * @dev Currently, we are scaling all numbers up most uints to 18 decimals for math precision.
+ */
 
 contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
     /// @dev Tracks the scores given to service submissions.
@@ -27,7 +24,6 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
 
     /// @dev Tracks the cumulative sum of average score.
     /// @dev Labor Market -> Request Id -> Total score
-    /// @dev Note: stored with 18 decimals.
     mapping(address => mapping(uint256 => uint256)) private requestTotalScore;
 
     /// @dev The Likert grading scale.
@@ -40,7 +36,6 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
     }
 
     /// @dev The scores given to a service submission.
-    /// @dev Note: uint256 stored with 18 decimals.
     struct Scores {
         uint256[] scores;
         uint256 avg;
@@ -78,8 +73,8 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
             requestTotalScore[msg.sender][requestId] -= score.avg;
         }
 
-        // Update the submission's scores
-        score.scores.push(_score * 1e18);
+        // Update the submission's scores on a 100 point scale.
+        score.scores.push(_score * 25);
         score.avg = _getAvg(
             score.scores
         );
@@ -105,7 +100,7 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
         override
         view
         returns (
-            uint256 share
+            uint256
         )
     {
         return _calculateShare(_submissionId);
@@ -122,7 +117,7 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
         override
         view
         returns (
-            uint256 share
+            uint256
         )
     {
         return _calculateShare(_submissionId);
