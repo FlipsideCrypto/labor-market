@@ -12,18 +12,33 @@ interface EnforcementCriteriaInterface {
             uint256
         );
 
-    function getShareOfPool(
-        uint256 _submissionId
-    ) 
-        external 
+    function getRewards(
+          address _laborMarket
+        , uint256 _submissionId
+        , bytes calldata
+    )
+        external
+        view
+        returns (
+            uint256,
+            uint256
+        );
+
+    function getPaymentReward(
+          address _laborMarket
+        , uint256 _submissionId
+        , bytes calldata
+    )
+        external
         view
         returns (
             uint256
         );
 
-    function getShareOfPoolWithData(
-          uint256 _submissionId
-        , bytes calldata _data
+    function getReputationReward(
+          address _laborMarket
+        , uint256 _submissionId
+        , bytes calldata
     )
         external
         view

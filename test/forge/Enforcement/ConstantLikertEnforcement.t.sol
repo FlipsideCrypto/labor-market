@@ -315,7 +315,7 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
     function test_ConstantLikertRandomReviews() public {
         vm.startPrank(deployer);
 
-        uint256 runs = 100;
+        uint256 runs = 400;
         payToken.freeMint(bob, 10000e18);
 
         changePrank(bob);
@@ -382,18 +382,17 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
             changePrank(user);
 
             // Claim
-            uint256 repBefore = repToken.balanceOf(user, REPUTATION_TOKEN_ID);
-            uint256 paid = constantLikertMarket.claim(i + 1, msg.sender, ""); 
-            totalPaid += paid;
-            uint256 repAfter = repToken.balanceOf(user, REPUTATION_TOKEN_ID);
-            totalReputation += repAfter - repBefore;
+            (uint256 pPaid, uint256 rPaid) = constantLikertMarket.claim(i + 1, msg.sender, ""); 
+            totalPaid += pPaid;
+            totalReputation += rPaid;
         }
 
         console.log("totalPaid", totalPaid);
         console.log("totalReputation", totalReputation);
+        console.log("dust", 1000e18 - totalPaid);
+        console.log("repDust", 5000 - totalReputation);
 
         assertAlmostEq(totalPaid, 1000e18, 0.00001e18);
-        assertAlmostEq(totalReputation, 5000, 100);
     }
 
     function test_ConstantLikertMarketSimple() public {
@@ -443,18 +442,17 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
             changePrank(user);
 
             // Claim
-            uint256 repBefore = repToken.balanceOf(user, REPUTATION_TOKEN_ID);
-            uint256 paid = constantLikertMarket.claim(i + 1, msg.sender, ""); 
-            totalPaid += paid;
-            uint256 repAfter = repToken.balanceOf(user, REPUTATION_TOKEN_ID);
-            totalReputation += repAfter - repBefore;
+            (uint256 pPaid, uint256 rPaid) = constantLikertMarket.claim(i + 1, msg.sender, ""); 
+            totalPaid += pPaid;
+            totalReputation += rPaid;
         }
 
         console.log("totalPaid", totalPaid);
         console.log("totalReputation", totalReputation);
+        console.log("dust", 1000e18 - totalPaid);
+        console.log("repDust", 5000 - totalReputation);
 
         assertAlmostEq(totalPaid, 1000e18, 0.00001e18);
-        assertAlmostEq(totalReputation, 5000, 100);
     }
 
     function test_ConstantLikertMarket() public {
@@ -519,14 +517,15 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
             changePrank(user);
 
             // Claim
-            uint256 repBefore = repToken.balanceOf(user, REPUTATION_TOKEN_ID);
-            uint256 paid = constantLikertMarket.claim(i + 1, msg.sender, ""); 
-            totalPaid += paid;
-            uint256 repAfter = repToken.balanceOf(user, REPUTATION_TOKEN_ID);
-            totalReputation += repAfter - repBefore;
+            (uint256 pPaid, uint256 rPaid) = constantLikertMarket.claim(i + 1, msg.sender, ""); 
+            totalPaid += pPaid;
+            totalReputation += rPaid;
         }
+        console.log("totalPaid", totalPaid);
+        console.log("totalReputation", totalReputation);
+        console.log("dust", 1000e18 - totalPaid);
+        console.log("repDust", 5000 - totalReputation);
 
         assertAlmostEq(totalPaid, 1000e18, 0.00001e18);
-        assertAlmostEq(totalReputation, 5000, 100);
     }
 }

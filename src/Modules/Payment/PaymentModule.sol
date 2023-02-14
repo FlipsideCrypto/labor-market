@@ -2,37 +2,49 @@
 
 pragma solidity 0.8.17;
 
-import { PayCurveInterface } from "./interfaces/PayCurveInterface.sol";
+// import { EnforcementCriteriaInterface2 } from "src/Modules/Enforcement/interfaces/EnforcementCriteriaInterface2.sol";
 
-contract PaymentModule {
-    function earned(
-          address payCurve
-        , uint256 x
-    ) 
-        public 
-        returns (
-            uint256
-        ) 
-    {
-        return PayCurveInterface(payCurve).curvePoint(x);
-    }
+// contract PaymentModule {
+//     function getRewards(
+//           address _laborMarket
+//         , uint256 _submissionId
+//     ) 
+//         external 
+//         view 
+//         returns (
+//               uint256 _pTokenReward
+//             , uint256 _rTokenReward
+//         )
+//     {
+//         return (
+//               getPaymentReward(_laborMarket, _submissionId)
+//             , getReputationReward(_laborMarket, _submissionId)
+//         );
+//     }
 
-    function claim(
-          address payCurve
-        , uint256 x
-    ) 
-        public 
-        returns (
-            uint256
-        ) 
-    {
-        uint256 amount = earned(
-              payCurve
-            , x
-        );
-        
-        return amount;
-    }
+//     function getPaymentReward(
+//           address _laborMarket
+//         , uint256 _submissionId
+//     ) 
+//         public 
+//         view 
+//         returns (
+//             uint256 _pTokenReward
+//         ) 
+//     {
 
-    function pay() public {}
-}
+//     }
+    
+//     function getReputationReward(
+//           address _laborMarket
+//         , uint256 _submissionId
+//     ) 
+//         public 
+//         view 
+//         returns (
+//               uint256 _rTokenReward
+//         ) 
+//     {
+
+//     }
+// }

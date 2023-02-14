@@ -286,9 +286,9 @@ contract ReputationModuleTest is PRBTest, StdCheats {
         uint256 requestId = market.submitRequest({
             _pToken: address(payToken),
             _pTokenQ: 100e18,
-            _signalExp: block.timestamp + 5 weeks,
+            _signalExp: block.timestamp + 4 weeks,
             _submissionExp: block.timestamp + 5 weeks,
-            _enforcementExp: block.timestamp + 5 weeks,
+            _enforcementExp: block.timestamp + 6 weeks,
             _requestUri: "ipfs://222"
         });
 
@@ -336,9 +336,9 @@ contract ReputationModuleTest is PRBTest, StdCheats {
         market.submitRequest({
             _pToken: address(payToken),
             _pTokenQ: 100e18,
-            _signalExp: block.timestamp + 100 weeks,
+            _signalExp: block.timestamp + 99 weeks,
             _submissionExp: block.timestamp + 100 weeks,
-            _enforcementExp: block.timestamp + 100 weeks,
+            _enforcementExp: block.timestamp + 101 weeks,
             _requestUri: "ipfs://222"
         });
 

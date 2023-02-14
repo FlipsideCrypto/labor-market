@@ -5,6 +5,7 @@ pragma solidity ^0.8.17;
 import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
 import {EnforcementCriteriaInterface} from "src/Modules/Enforcement/interfaces/EnforcementCriteriaInterface.sol";
 
+
 /**
  * @title A contract that enforces a constant likert scale.
  * @notice This contract takes in reviews on a 5 point Likert scale of SPAM, BAD, OK, GOOD, GREAT.
@@ -14,8 +15,8 @@ import {EnforcementCriteriaInterface} from "src/Modules/Enforcement/interfaces/E
  *         has earned. The earnings are linearly distributed to the submission's based on their average score.
  *         If two total submissions have an average score of 4 and 2, the first submission will earn 2/3 of 
  *         the total reward pool and the second submission will earn 1/3. Thus, rewards are linear.
- * @dev Currently, we are scaling all numbers up most uints to 18 decimals for math precision.
  */
+
 
 contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
     /// @dev Tracks the scores given to service submissions.
@@ -66,6 +67,9 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
 
         Scores storage score = submissionToScores[msg.sender][_submissionId];
 
+        // Utilize 4 decimals of precision.
+        _score = _score * 2500;
+
         uint256 requestId = _getRequestId(_submissionId);
 
         // Update the cumulative total earned score.
@@ -73,8 +77,7 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
             requestTotalScore[msg.sender][requestId] -= score.avg;
         }
 
-        // Update the submission's scores on a 100 point scale.
-        score.scores.push(_score * 25);
+        score.scores.push(_score);
         score.avg = _getAvg(
             score.scores
         );
@@ -91,26 +94,38 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
                         GETTERS
     //////////////////////////////////////////////////*/
 
-    /// @notice Returns the % of the total pool a submission has earned.
-    /// @param _submissionId The submission id.
-    function getShareOfPool(
-        uint256 _submissionId
+    function getRewards(
+          address _laborMarket
+        , uint256 _submissionId
+        , bytes calldata
     )
         external
         override
         view
         returns (
+            uint256,
             uint256
         )
     {
-        return _calculateShare(_submissionId);
+        uint256 requestId = _getRequestId(_submissionId);
+
+        return (
+            _calculateShare(
+                submissionToScores[_laborMarket][_submissionId].avg, 
+                requestTotalScore[_laborMarket][requestId], 
+                LaborMarketInterface(_laborMarket).getRequest(requestId).pTokenQ
+            ),
+            _calculateShare(
+                submissionToScores[_laborMarket][_submissionId].avg, 
+                requestTotalScore[_laborMarket][requestId], 
+                LaborMarketInterface(_laborMarket).getConfiguration().reputationParams.rewardPool
+            )
+        );
     }
 
-    /// @notice Returns the % of the total pool a submission has earned.
-    /// @dev This function is not used in this contract.
-    /// @param _submissionId The submission id.
-    function getShareOfPoolWithData(
-          uint256 _submissionId
+    function getPaymentReward(
+          address _laborMarket
+        , uint256 _submissionId
         , bytes calldata
     )
         external
@@ -120,7 +135,34 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
             uint256
         )
     {
-        return _calculateShare(_submissionId);
+        uint256 requestId = _getRequestId(_submissionId);
+
+        return _calculateShare(
+            submissionToScores[_laborMarket][_submissionId].avg, 
+            requestTotalScore[_laborMarket][requestId], 
+            LaborMarketInterface(_laborMarket).getRequest(requestId).pTokenQ
+        );
+    }
+
+    function getReputationReward(
+          address _laborMarket
+        , uint256 _submissionId
+        , bytes calldata
+    )
+        external
+        override
+        view
+        returns (
+            uint256
+        )
+    {
+        uint256 requestId = _getRequestId(_submissionId);
+
+        return _calculateShare(
+            submissionToScores[_laborMarket][_submissionId].avg, 
+            requestTotalScore[_laborMarket][requestId], 
+            LaborMarketInterface(_laborMarket).getConfiguration().reputationParams.rewardPool
+        );
     }
 
     /// @notice Get the remaining unclaimed.
@@ -143,9 +185,10 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
     //////////////////////////////////////////////////*/
 
     /// @notice Returns the % of the total pool a submission has earned.
-    /// @param _submissionId The submission id.
     function _calculateShare(
-        uint256 _submissionId
+          uint256 _userScore
+        , uint256 _totalCumulativeScore
+        , uint256 _totalPool
     )
         internal
         view
@@ -153,11 +196,7 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
             uint256
         )
     {
-        uint256 score = submissionToScores[msg.sender][_submissionId].avg;
-
-        uint256 requestId = _getRequestId(_submissionId);
-
-        return (score * 1e10) / requestTotalScore[msg.sender][requestId];
+        return (_userScore * _totalPool) / _totalCumulativeScore;
     }
 
     /// @notice Gets the average of the scores given to a submission.

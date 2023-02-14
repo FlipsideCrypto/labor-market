@@ -1063,7 +1063,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         // User claims reward
         // It is the only score for constant likert, so it is the only one that counts.
-        uint256 qClaimed = market.claim(submissionId, alice, "");
+        (uint256 qClaimed, uint256 rClaimed) = market.claim(submissionId, alice, "");
         assertAlmostEq(qClaimed, 1000e18, 0.0001e18);
 
         vm.stopPrank();
@@ -1264,7 +1264,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         // User claims reward
         // There is only submission so they should get 99.9% of the reward
-        uint256 qClaimed = market.claim(submissionId, alice, "");
+        (uint256 qClaimed, uint256 rClaimed) = market.claim(submissionId, alice, "");
         assertAlmostEq(qClaimed, 1000e18, 0.000001e18);
 
         // User claims reward again
