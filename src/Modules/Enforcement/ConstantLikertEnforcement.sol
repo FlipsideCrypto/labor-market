@@ -67,8 +67,8 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
 
         Scores storage score = submissionToScores[msg.sender][_submissionId];
 
-        // Utilize 4 decimals of precision.
-        _score = _score * 2500;
+        // Scores are on a scale of 100.
+        _score = _score * 25;
 
         uint256 requestId = _getRequestId(_submissionId);
 
