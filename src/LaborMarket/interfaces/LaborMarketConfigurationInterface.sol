@@ -15,7 +15,8 @@ interface LaborMarketConfigurationInterface {
 
     struct ReputationParams {
         uint256 rewardPool;
-        uint256 signalStake;
+        uint256 provideStake;
+        uint256 reviewStake;
         uint256 submitMin;
         uint256 submitMax;
     }
@@ -23,7 +24,6 @@ interface LaborMarketConfigurationInterface {
     struct Modules {
         address network;
         address enforcement;
-        address payment;
         address reputation;
     }
 

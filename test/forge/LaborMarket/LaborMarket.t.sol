@@ -25,8 +25,6 @@ import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/Reput
 
 import { ConstantLikertEnforcement } from "src/Modules/Enforcement/ConstantLikertEnforcement.sol";
 
-import {PayCurve} from "src/Modules/Payment/PayCurve.sol";
-
 import {LaborMarketConfigurationInterface} from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
 import {LaborMarketNetworkInterface} from "src/Network/interfaces/LaborMarketNetworkInterface.sol";
 
@@ -47,7 +45,6 @@ contract LaborMarketTest is PRBTest, StdCheats {
     LaborMarketNetwork public network;
 
     ConstantLikertEnforcement public enforcementCriteria;
-    PayCurve public payCurve;
 
     // Define the tokenIds for ERC1155
     uint256 private constant DELEGATE_TOKEN_ID = 0;
@@ -228,9 +225,6 @@ contract LaborMarketTest is PRBTest, StdCheats {
         // Create enforcement criteria
         enforcementCriteria = new ConstantLikertEnforcement();
 
-        // Create a new pay curve
-        payCurve = new PayCurve();
-
         // Create a new labor market configuration
         LaborMarketConfigurationInterface.LaborMarketConfiguration
             memory config = LaborMarketConfigurationInterface
@@ -240,8 +234,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),
-                        enforcement: address(enforcementCriteria),
-                        payment: address(payCurve)
+                        enforcement: address(enforcementCriteria)
                     }),
                     maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
@@ -257,7 +250,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
                     }),
                     reputationParams: LaborMarketConfigurationInterface.ReputationParams({
                         rewardPool: 5000,
-                        signalStake: 5,
+                        provideStake: 5,
+                        reviewStake: 5,
                         submitMin: 10,
                         submitMax: 10000e18
                     })
@@ -407,8 +401,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),
-                        enforcement: address(enforcementCriteria),
-                        payment: address(payCurve)
+                        enforcement: address(enforcementCriteria)
                     }),
                     maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
@@ -424,7 +417,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
                     }),
                     reputationParams: LaborMarketConfigurationInterface.ReputationParams({
                         rewardPool: 5000,
-                        signalStake: 5,
+                        provideStake: 5,
+                        reviewStake: 5,
                         submitMin: 10,
                         submitMax: 10000e18
                     })
@@ -486,7 +480,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         // Verify that Alice's reputation is locked
         assertEq(
             reputationModule.getAvailableReputation(address(market), alice),
-            (100e18 - market.getConfiguration().reputationParams.signalStake)
+            (100e18 - market.getConfiguration().reputationParams.provideStake)
         );
 
         // Fulfill the request
@@ -498,11 +492,11 @@ contract LaborMarketTest is PRBTest, StdCheats {
         market.signalReview(requestId, 3);
 
         // Verify that Maintainers's reputation is locked
-        uint256 signalStake = market.getConfiguration().reputationParams.signalStake;
+        uint256 provideStake = market.getConfiguration().reputationParams.provideStake;
 
         assertEq(
             reputationModule.getAvailableReputation(address(market), bob),
-            (1000e18 - signalStake * 3)
+            (1000e18 - provideStake * 3)
         );
 
         market.review(requestId, submissionId, 2);
@@ -510,7 +504,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         // Verify that the maintainer gets returned some reputation
         assertEq(
             reputationModule.getAvailableReputation(address(market), bob),
-            (1000e18 - signalStake * 2)
+            (1000e18 - provideStake * 2)
         );
 
         // Verify that Alice's reputation is unlocked
@@ -544,8 +538,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),
-                        enforcement: address(enforcementCriteria),
-                        payment: address(payCurve)
+                        enforcement: address(enforcementCriteria)
                     }),
                     maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
@@ -561,7 +554,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
                     }),
                     reputationParams: LaborMarketConfigurationInterface.ReputationParams({
                         rewardPool: 5000,
-                        signalStake: 5,
+                        provideStake: 5,
+                        reviewStake: 5,
                         submitMin: 10,
                         submitMax: 10000e18
                     })
@@ -718,8 +712,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),
-                        enforcement: address(enforcementCriteria),
-                        payment: address(payCurve)
+                        enforcement: address(enforcementCriteria)
                     }),
                     maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
@@ -735,7 +728,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
                     }),
                     reputationParams: LaborMarketConfigurationInterface.ReputationParams({
                         rewardPool: 5000,
-                        signalStake: 5,
+                        provideStake: 5,
+                        reviewStake: 5,
                         submitMin: 10,
                         submitMax: 10000e18
                     })
@@ -1055,8 +1049,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
         market.review(requestId, submissionId, 1);
 
         // Scores
-        assertEq(market.getSubmission(submissionId).scores[0], 3);
-        assertEq(market.getSubmission(submissionId).scores[1], 1);
+        assertEq(enforcementCriteria.getScores(address(market), submissionId)[0], 3 * 2500);
+        assertEq(enforcementCriteria.getScores(address(market), submissionId)[1], 1 * 2500);
 
         changePrank(alice);
         vm.warp(123 weeks);
@@ -1092,12 +1086,12 @@ contract LaborMarketTest is PRBTest, StdCheats {
         changePrank(bob);
         market.signalReview(requestId, 4);
 
-        uint256 signalStake = market.getConfiguration().reputationParams.signalStake;
+        uint256 reviewStake = market.getConfiguration().reputationParams.reviewStake;
 
         // 4e18 of rep should be locked
         assertEq(
             reputationModule.getAvailableReputation(address(market), bob),
-            1000e18 - signalStake * 4
+            1000e18 - reviewStake * 4
         );
 
         // A valid maintainer reviews the request
@@ -1106,7 +1100,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         // Should unlock 1e18 of rep
         assertEq(
             reputationModule.getAvailableReputation(address(market), bob),
-            1000e18 - signalStake * 3
+            1000e18 - reviewStake * 3
         );
 
         // Skip forward in time
@@ -1188,12 +1182,12 @@ contract LaborMarketTest is PRBTest, StdCheats {
         changePrank(bob);
         market.signalReview(requestId, 4);
 
-        uint256 signalStake = market.getConfiguration().reputationParams.signalStake;
+        uint256 reviewStake = market.getConfiguration().reputationParams.reviewStake;
 
         // 4e18 of rep should be locked
         assertEq(
             reputationModule.getAvailableReputation(address(market), bob),
-            1000e18 - signalStake * 4
+            1000e18 - reviewStake * 4
         );
 
         // A valid maintainer reviews the request
@@ -1202,7 +1196,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         // Should unlock 3/4 of rep staked
         assertEq(
             reputationModule.getAvailableReputation(address(market), bob),
-            1000e18 - signalStake * 3
+            1000e18 - reviewStake * 3
         );
 
         // Skip forward in time
@@ -1219,7 +1213,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         // Reviewer reclaims their signal stake again
         vm.expectRevert(
-            "LaborMarket::retrieveReputation: No reputation to retrieve"
+            "LaborMarket::retrieveReputation: Insufficient reviews"
         );
         market.retrieveReputation(requestId);
 
@@ -1256,8 +1250,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
         market.review(requestId, submissionId, 0);
 
         // Scores
-        assertEq(market.getSubmission(submissionId).scores[0], 2);
-        assertEq(market.getSubmission(submissionId).scores[1], 0);
+        assertEq(enforcementCriteria.getScores(address(market), submissionId)[0], 5000);
+        assertEq(enforcementCriteria.getScores(address(market), submissionId)[1], 0);
 
         changePrank(alice);
         vm.warp(123 weeks);
@@ -1272,6 +1266,60 @@ contract LaborMarketTest is PRBTest, StdCheats {
             "LaborMarket::claim: Already claimed"
         );
         market.claim(submissionId, alice, "");
+
+        vm.stopPrank();
+    }
+
+    function test_CanCreatePublicMarket() public {
+        vm.startPrank(deployer);
+
+        LaborMarketConfigurationInterface.LaborMarketConfiguration
+            memory config = LaborMarketConfigurationInterface
+                .LaborMarketConfiguration({
+                    marketUri: "ipfs://000",
+                    owner: address(deployer),
+                    modules: LaborMarketConfigurationInterface.Modules({
+                        network: address(network),
+                        reputation: address(reputationModule),
+                        enforcement: address(enforcementCriteria)
+                    }),
+                    maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
+                        token: address(repToken),
+                        tokenId: MAINTAINER_TOKEN_ID
+                    }),
+                    delegateBadge: LaborMarketConfigurationInterface.BadgePair({
+                        token: address(0),
+                        tokenId: DELEGATE_TOKEN_ID
+                    }),
+                    reputationBadge: LaborMarketConfigurationInterface.BadgePair({
+                        token: address(repToken),
+                        tokenId: REPUTATION_TOKEN_ID
+                    }),
+                    reputationParams: LaborMarketConfigurationInterface.ReputationParams({
+                        rewardPool: 5000,
+                        provideStake: 5,
+                        reviewStake: 5,
+                        submitMin: 10,
+                        submitMax: 10000e18
+                    })
+                });
+
+        // Create a market
+        market = LaborMarket(
+            network.createLaborMarket({
+                _implementation: address(marketImplementation),
+                _configuration: config
+            })
+        );
+
+        address noob = address(0xDEAD);
+
+        repToken.leaderMint(noob, REPUTATION_TOKEN_ID, 1000e18, "0x");
+        payToken.freeMint(noob, 100000e18);
+
+        changePrank(noob);
+        payToken.approve(address(market), 100000e18);
+        uint256 requestId = createSimpleRequest(market);
 
         vm.stopPrank();
     }

@@ -16,6 +16,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  *      within the Labor Market ecosystem.
  */
 
+
 contract LaborMarket is LaborMarketManager {
     /**
      * @notice Creates a service request.
@@ -25,6 +26,7 @@ contract LaborMarket is LaborMarketManager {
      * @param _submissionExp The submission deadline expiration.
      * @param _enforcementExp The enforcement deadline expiration.
      * @param _requestUri The uri of the service request data.
+     * @return requestId The id of the service request.
      * Requirements:
      * - A user has to be conform to the reputational restrictions imposed by the labor market.
      * - Caller has to have approved the LaborMarket contract to transfer the payment token.
@@ -43,14 +45,8 @@ contract LaborMarket is LaborMarketManager {
             uint256 requestId
         ) 
     {
-        require(
-            _signalExp < _submissionExp,
-            "LaborMarket::submitRequest: Signal must expire before submission"
-        );
-        require(
-            _submissionExp < _enforcementExp,
-            "LaborMarket::submitRequest: Submission must expire before enforcement"
-        );
+        /// @dev Ensure the timestamps are valid.
+        _validateTimestamps(_signalExp, _submissionExp, _enforcementExp);
 
         unchecked {
             ++serviceId;
@@ -111,7 +107,7 @@ contract LaborMarket is LaborMarketManager {
             "LaborMarket::signal: Already signaled"
         );
 
-        reputationModule.useReputation(_msgSender(), configuration.reputationParams.signalStake);
+        reputationModule.useReputation(_msgSender(), configuration.reputationParams.provideStake);
 
         hasPerformed[_requestId][_msgSender()][HAS_SIGNALED] = true;
 
@@ -119,7 +115,7 @@ contract LaborMarket is LaborMarketManager {
             ++signalCount[_requestId];
         }
 
-        emit RequestSignal(_msgSender(), _requestId, configuration.reputationParams.signalStake);
+        emit RequestSignal(_msgSender(), _requestId, configuration.reputationParams.provideStake);
     }
 
     /**
@@ -141,20 +137,21 @@ contract LaborMarket is LaborMarketManager {
             "LaborMarket::signalReview: Already signaled"
         );
 
-        uint256 signalStake = _quantity * configuration.reputationParams.signalStake;
+        uint256 reviewStake = _quantity * configuration.reputationParams.reviewStake;
 
-        reputationModule.useReputation(_msgSender(), signalStake);
+        reputationModule.useReputation(_msgSender(), reviewStake);
 
         reviewPromise.total += _quantity;
         reviewPromise.remainder = _quantity;
 
-        emit ReviewSignal(_msgSender(), _requestId, _quantity, signalStake);
+        emit ReviewSignal(_msgSender(), _requestId, _quantity, reviewStake);
     }
 
     /**
      * @notice Allows a service provider to fulfill a service request.
      * @param _requestId The id of the service request being fulfilled.
      * @param _uri The uri of the service submission data.
+     * @return submissionId The id of the service submission.
      */
     function provide(
           uint256 _requestId
@@ -188,13 +185,12 @@ contract LaborMarket is LaborMarketManager {
             requestId: _requestId,
             timestamp: block.timestamp,
             uri: _uri,
-            scores: new uint256[](0),
             reviewed: false
         });
 
         hasPerformed[_requestId][_msgSender()][HAS_SUBMITTED] = true;
 
-        reputationModule.mintReputation(_msgSender(), configuration.reputationParams.signalStake);
+        reputationModule.mintReputation(_msgSender(), configuration.reputationParams.provideStake);
 
         emit RequestFulfilled(_msgSender(), _requestId, serviceId, _uri);
 
@@ -236,8 +232,6 @@ contract LaborMarket is LaborMarketManager {
 
         enforcementCriteria.review(_submissionId, _score);
 
-        serviceSubmissions[_submissionId].scores.push(_score);
-
         if (!serviceSubmissions[_submissionId].reviewed)
             serviceSubmissions[_submissionId].reviewed = true;
 
@@ -249,7 +243,7 @@ contract LaborMarket is LaborMarketManager {
 
         reputationModule.mintReputation(
             _msgSender(),
-            configuration.reputationParams.signalStake
+            configuration.reputationParams.reviewStake
         );
 
         emit RequestReviewed(_msgSender(), _requestId, _submissionId, _score);
@@ -344,7 +338,8 @@ contract LaborMarket is LaborMarketManager {
             !hasPerformed[_requestId][_msgSender()][HAS_CLAIMED_REMAINDER],
             "LaborMarket::claimRemainder: Already claimed"
         );
-        uint256 totalClaimable = enforcementCriteria.getRemainder(_requestId);
+        
+        uint256 totalClaimable = enforcementCriteria.getRemainder(address(this), _requestId);
 
         hasPerformed[_requestId][_msgSender()][HAS_CLAIMED_REMAINDER] = true;
 
@@ -366,11 +361,6 @@ contract LaborMarket is LaborMarketManager {
         external
     {
         require(
-            reviewSignals[_requestId][_msgSender()].remainder > 0,
-            "LaborMarket::retrieveReputation: No reputation to retrieve"
-        );
-
-        require(
             block.timestamp >
                 serviceRequests[serviceSubmissions[serviceId].requestId].enforcementExp,
             "LaborMarket::retrieveReputation: Not enforcement deadline"
@@ -386,7 +376,7 @@ contract LaborMarket is LaborMarketManager {
 
         reputationModule.mintReputation(
             _msgSender(),
-            configuration.reputationParams.signalStake * reviewPromise.remainder
+            configuration.reputationParams.reviewStake * reviewPromise.remainder
         );
 
         reviewPromise.total = 0;
@@ -412,12 +402,16 @@ contract LaborMarket is LaborMarketManager {
             signalCount[_requestId] < 1,
             "LaborMarket::withdrawRequest: Already active"
         );
+
         address pToken = serviceRequests[_requestId].pToken;
-        uint256 amount = serviceRequests[_requestId].pTokenQ;
+        uint256 pTokenQ = serviceRequests[_requestId].pTokenQ;
 
         delete serviceRequests[_requestId];
 
-        IERC20(pToken).transfer(_msgSender(), amount);
+        IERC20(pToken).transfer(
+            _msgSender(),
+            pTokenQ
+        );
 
         emit RequestWithdrawn(_requestId);
     }
@@ -453,14 +447,9 @@ contract LaborMarket is LaborMarketManager {
             signalCount[_requestId] < 1,
             "LaborMarket::editRequest: Already active"
         );
-        require(
-            _signalExp < _submissionExp,
-            "LaborMarket::editRequest: Signal must expire before submission"
-        );
-        require(
-            _submissionExp < _enforcementExp,
-            "LaborMarket::editRequest: Submission must expire before enforcement"
-        );
+
+        /// @dev Ensure the timestamps are valid.
+        _validateTimestamps(_signalExp, _submissionExp, _enforcementExp);
 
         IERC20 pToken = IERC20(_pToken);
 

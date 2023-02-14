@@ -47,7 +47,8 @@ interface EnforcementCriteriaInterface {
         );
 
     function getRemainder(
-        uint256 _requestId
+          address _laborMarket
+        , uint256 _requestId
     ) 
         external 
         view 

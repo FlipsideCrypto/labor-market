@@ -24,8 +24,6 @@ import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/Reput
 
 import { ConstantLikertEnforcement } from "src/Modules/Enforcement/ConstantLikertEnforcement.sol";
 
-import {PayCurve} from "src/Modules/Payment/PayCurve.sol";
-
 import {LaborMarketConfigurationInterface} from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
 import {LaborMarketNetworkInterface} from "src/Network/interfaces/LaborMarketNetworkInterface.sol";
 
@@ -46,8 +44,6 @@ contract ReputationModuleTest is PRBTest, StdCheats {
     LaborMarketFactory public factory;
 
     LaborMarketNetwork public network;
-
-    PayCurve public payCurve;
 
     // Define the tokenIds for ERC1155
     uint256 private constant DELEGATE_TOKEN_ID = 0;
@@ -125,9 +121,6 @@ contract ReputationModuleTest is PRBTest, StdCheats {
         // Deploy a new reputation module
         reputationModule = new ReputationModule(address(network));
 
-        // Create a new pay curve
-        payCurve = new PayCurve();
-
         // Initialize reputation and roles
         address[] memory delegates = new address[](1);
         delegates[0] = address(reputationModule);
@@ -152,10 +145,6 @@ contract ReputationModuleTest is PRBTest, StdCheats {
 
         enforcement = new ConstantLikertEnforcement();
 
-        // Create a new pay curve
-        payCurve = new PayCurve();
-
-
         // Create a new labor market configuration for likert
         LaborMarketConfigurationInterface.LaborMarketConfiguration
             memory likertConfig = LaborMarketConfigurationInterface
@@ -165,8 +154,7 @@ contract ReputationModuleTest is PRBTest, StdCheats {
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),
-                        enforcement: address(enforcement),
-                        payment: address(payCurve)
+                        enforcement: address(enforcement)
                     }),
                     maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
@@ -182,7 +170,8 @@ contract ReputationModuleTest is PRBTest, StdCheats {
                     }),
                     reputationParams: LaborMarketConfigurationInterface.ReputationParams({
                         rewardPool: 5000,
-                        signalStake: 5,
+                        provideStake: 5,
+                        reviewStake: 5,
                         submitMin: 5,
                         submitMax: 10000e18
                     })

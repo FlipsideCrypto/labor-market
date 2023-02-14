@@ -9,13 +9,9 @@ import { ERC1155HolderUpgradeable } from "@openzeppelin/contracts-upgradeable/to
 import { ERC721HolderUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
 import { Delegatable, DelegatableCore } from "delegatable/Delegatable.sol";
 
-/// @dev Helpers.
-import { StringsUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
-
 /// @dev Helper interfaces.
 import { LaborMarketNetworkInterface } from "../Network/interfaces/LaborMarketNetworkInterface.sol";
 import { EnforcementCriteriaInterface } from "../Modules/Enforcement/interfaces/EnforcementCriteriaInterface.sol";
-import { PayCurveInterface } from "../Modules/Payment/interfaces/PayCurveInterface.sol";
 import { ReputationModuleInterface } from "../Modules/Reputation/interfaces/ReputationModuleInterface.sol";
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 
@@ -47,9 +43,6 @@ contract LaborMarketManager is
 
     /// @dev The enforcement criteria.
     EnforcementCriteriaInterface internal enforcementCriteria;
-
-    /// @dev The payment curve.
-    PayCurveInterface internal paymentCurve;
 
     /// @dev The reputation module.
     ReputationModuleInterface internal reputationModule;
@@ -154,6 +147,7 @@ contract LaborMarketManager is
     /// @notice Gates the permissions to create new requests.
     modifier onlyDelegate() {
         require(
+            address(delegateBadge) == address(0) ||
             delegateBadge.balanceOf(
                 _msgSender(),
                 configuration.delegateBadge.tokenId
@@ -227,9 +221,6 @@ contract LaborMarketManager is
             _configuration.modules.enforcement
         );
 
-        /// @dev Configure the Labor Market pay curve.
-        paymentCurve = PayCurveInterface(_configuration.modules.payment);
-
         /// @dev Configure the Labor Market reputation module.
         reputationModule = ReputationModuleInterface(
             _configuration.modules.reputation
@@ -248,6 +239,35 @@ contract LaborMarketManager is
     /*//////////////////////////////////////////////////////////////
                                 GETTERS
     //////////////////////////////////////////////////////////////*/
+
+    /**
+     * @notice Allows a service provider to signal their intent to perform a service.
+     * @param _submissionId The id of the service submission.
+     * @param _data The data to be used in the enforcement criteria.
+     */
+    function getRewards(
+          uint256 _submissionId
+        , bytes calldata _data
+    )
+        external
+        view
+        returns (
+              uint256 pTokenClaimed
+            , uint256 rTokenClaimed
+        )
+    {
+        address provider = serviceSubmissions[_submissionId].serviceProvider;
+        
+        if (hasPerformed[_submissionId][provider][HAS_CLAIMED]) {
+            return (0, 0);
+        }
+
+        return enforcementCriteria.getRewards(
+              address(this)
+            , _submissionId
+            , _data
+        );
+    }
 
     /**
      * @notice Returns the service request data.
@@ -294,6 +314,29 @@ contract LaborMarketManager is
     /*//////////////////////////////////////////////////////////////
                             INTERNAL GETTERS
     //////////////////////////////////////////////////////////////*/
+    
+    /**
+     * @dev Checks if the timestamps are valid.
+     * @param _signalExp The expiration of the signal period.
+     * @param _submissionExp The expiration of the submission period.
+     * @param _enforcementExp The expiration of the enforcement period.
+     */
+    function _validateTimestamps(
+        uint256 _signalExp,
+        uint256 _submissionExp,
+        uint256 _enforcementExp
+    )
+        internal
+        view
+    {
+        require(
+               block.timestamp < _signalExp 
+            && _signalExp < _submissionExp 
+            && _submissionExp < _enforcementExp,
+            "LaborMarket::expirations: Invalid expirations"
+        );
+    }
+
 
     /**
      * @dev Delegatable ETH support

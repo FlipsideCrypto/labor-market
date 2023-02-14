@@ -21,11 +21,11 @@ import {EnforcementCriteriaInterface} from "src/Modules/Enforcement/interfaces/E
 contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
     /// @dev Tracks the scores given to service submissions.
     /// @dev Labor Market -> Submission Id -> Scores
-    mapping(address => mapping(uint256 => Scores)) private submissionToScores;
+    mapping(address => mapping(uint256 => Scores)) public submissionToScores;
 
     /// @dev Tracks the cumulative sum of average score.
     /// @dev Labor Market -> Request Id -> Total score
-    mapping(address => mapping(uint256 => uint256)) private requestTotalScore;
+    mapping(address => mapping(uint256 => uint256)) public requestTotalScore;
 
     /// @dev The Likert grading scale.
     enum Likert {
@@ -166,18 +166,42 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
     }
 
     /// @notice Get the remaining unclaimed.
-    /// @dev This function is not used in this contract.
+    /// @param _laborMarket The labor market the request is in.
+    /// @param _requestId The request to get the remaining unclaimed for.
+    /// @return unclaimed Total that can be reclaimed by the requester.
     function getRemainder(
-        uint256
+          address _laborMarket
+        , uint256 _requestId
     )
         external
         override
-        pure
+        view
         returns (
             uint256
         )
     {
+        LaborMarketInterface.ServiceRequest memory request = LaborMarketInterface(_laborMarket).getRequest(_requestId);
+
+        /// @dev If the enforcement exp passed and the request total score is 0, return the total pool.
+        if (
+            block.timestamp > request.enforcementExp && 
+            requestTotalScore[_laborMarket][_requestId] == 0
+        ) return request.pTokenQ;
+
         return 0;
+    }
+
+    function getScores(
+          address _laborMarket
+        , uint256 _submissionId
+    )
+        external
+        view
+        returns (
+            uint256[] memory
+        )
+    {
+        return submissionToScores[_laborMarket][_submissionId].scores;
     }
 
     /*////////////////////////////////////////////////// 
