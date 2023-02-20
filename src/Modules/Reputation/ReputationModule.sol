@@ -18,11 +18,11 @@ contract ReputationModule is
     /// @dev The Labor Market Network permissioned to make actions.
     address public network;
 
-    /// @dev The decay configuration of a given reputation token.
-    mapping(address => mapping(uint256 => DecayConfig)) public decayConfig;
-
     /// @dev The configuration for a given Labor Market.
     mapping(address => MarketReputationConfig) public marketRepConfig;
+
+    /// @dev The decay configuration of a given reputation token.
+    mapping(address => mapping(uint256 => DecayConfig)) public decayConfig;
 
     /// @dev The decay and freezing state for an account for a given reputation token.
     mapping(address => mapping(uint256 => mapping(address => ReputationAccountInfo))) public accountInfo;
@@ -73,11 +73,13 @@ contract ReputationModule is
         override
         external
     {
+        /// @dev Only the network can call this function when configuring a market.
         require(
             _msgSender() == network, 
             "ReputationModule: Only network can call this."
         );
 
+        /// @dev Configure the market to use the given reputation token.
         marketRepConfig[_laborMarket] = MarketReputationConfig({
               reputationToken: _reputationToken
             , reputationTokenId: _reputationTokenId
@@ -102,6 +104,7 @@ contract ReputationModule is
         external
         override
     {
+        /// @dev Revokes reputation from the account.
         _revokeReputation(
             marketRepConfig[_msgSender()].reputationToken,
             marketRepConfig[_msgSender()].reputationTokenId,
@@ -128,11 +131,19 @@ contract ReputationModule is
         external
         override
     {   
+        /// @dev The sender must be the account.
+        require(
+            _msgSender() == _account,
+            "ReputationModule: Only the account can freeze reputation."
+        );
+
+        /// @dev The frozenUntilEpoch must be in the future.
         require(
             _frozenUntilEpoch > block.timestamp,
             "ReputationModule: Cannot retroactively freeze reputation."
         );
 
+        /// @dev Apply pending decay to the account.
         _revokeReputation(
             _reputationToken,
             _reputationTokenId,
@@ -140,6 +151,7 @@ contract ReputationModule is
             0
         );
 
+        /// @dev Freeze the account's reputation.
         accountInfo[_reputationToken][_reputationTokenId][_account].frozenUntilEpoch = _frozenUntilEpoch;
     }
 
@@ -160,11 +172,13 @@ contract ReputationModule is
     {
         MarketReputationConfig memory config = marketRepConfig[_msgSender()];
 
+        /// @dev Market must be initialized with the Reputation Module.
         require(
             config.reputationToken != address(0), 
             "ReputationModule: This Labor Market has not been initialized."
         );
 
+        /// @dev Mint the reputation.
         BadgerOrganizationInterface(config.reputationToken).leaderMint(
             _account,
             config.reputationTokenId,
@@ -172,6 +186,7 @@ contract ReputationModule is
             ""
         );
 
+        /// @dev Emit the event.
         emit ReputationBalanceChange(
             _account,
             config.reputationToken,
@@ -201,14 +216,17 @@ contract ReputationModule is
         external
         override
     {
+        /// @dev Require the caller to be the network.
         require(_msgSender() == network, "ReputationModule: Only network can call this.");
 
+        /// @dev Set the decay configuration.
         decayConfig[_reputationToken][_reputationTokenId] = DecayConfig({
               decayRate: _decayRate
             , decayInterval: _decayInterval
             , decayStartEpoch: _decayStartEpoch
         });
 
+        /// @dev Emit the event.
         emit ReputationDecayConfigured(
             _reputationToken
             , _reputationTokenId
@@ -236,11 +254,14 @@ contract ReputationModule is
             uint256 _availableReputation
         )
     {
+        /// @dev Get the market's reputation parameters.
         MarketReputationConfig memory config = marketRepConfig[_laborMarket];
         ReputationAccountInfo memory info = accountInfo[config.reputationToken][config.reputationTokenId][_account];
 
+        /// @dev If the account's reputation is frozen, return 0.
         if (info.frozenUntilEpoch > block.timestamp) return 0;
 
+        /// @dev Get the amount of reputation that has decayed.
         uint256 decayed = _getReputationDecay(
             config.reputationToken,
             config.reputationTokenId,
@@ -248,11 +269,13 @@ contract ReputationModule is
             info.lastDecayEpoch
         );
 
+        /// @dev Get the amount of reputation that is available.
         _availableReputation = IERC1155(config.reputationToken).balanceOf(
             _account,
             config.reputationTokenId
         );
 
+        /// @dev Return the available reputation, or 0 if it is less than the decayed amount.
         return _availableReputation > decayed ? _availableReputation - decayed : 0;
     }
 
@@ -316,18 +339,22 @@ contract ReputationModule is
     )
         internal
     {
+        /// @dev Get the balance of the account.
         uint256 balance = IERC1155(_reputationToken).balanceOf(
             _account,
             _reputationTokenId
         );
 
+        /// @dev Require the account to have enough reputation to use.
         require(
             balance >= _amount,
             "ReputationModule: Not enough reputation to use."
         );
 
+        /// @dev Load the account info.
         ReputationAccountInfo storage info = accountInfo[_reputationToken][_reputationTokenId][_account];
 
+        /// @dev Get the amount of reputation that has decayed.
         uint256 decay = _getReputationDecay(
             _reputationToken, 
             _reputationTokenId,
@@ -335,23 +362,26 @@ contract ReputationModule is
             info.lastDecayEpoch
         );
 
-        // If decay is more than the balance, just take all balance.
-        uint256 amount = _amount + decay;
-        if (amount > balance) amount = balance;
+        /// @dev If decay is more than the balance, use balance.
+        _amount += decay;
+        if (_amount > balance) 
+            _amount = balance;
 
+        /// @dev Set the last decay epoch.
         info.lastDecayEpoch = block.timestamp;
 
+        /// @dev Revoke the reputation.
         BadgerOrganizationInterface(_reputationToken).revoke(
             _account,
             _reputationTokenId,
-            amount
+            _amount
         );
 
         emit ReputationBalanceChange(
             _account,
             _reputationToken,
             _reputationTokenId,
-            int256(amount) * -1
+            int256(_amount) * -1
         );
     }
 
@@ -379,12 +409,13 @@ contract ReputationModule is
 
         /// @dev Get the most recent epoch to start decay from.
         uint256 startEpoch = decay.decayStartEpoch;
+
         if (_frozenUntilEpoch > startEpoch) 
             startEpoch = decay.decayStartEpoch;
         if (_lastDecayEpoch > startEpoch) 
             startEpoch = _lastDecayEpoch;
         
-
+        /// @dev If the start epoch is in the future, the decay rate is 0, or decay hasn't started, return 0.
         if (
             startEpoch > block.timestamp ||
             decay.decayStartEpoch == 0 ||
@@ -393,6 +424,7 @@ contract ReputationModule is
             return 0;
         }
 
+        /// @dev Return the amount of decay.
         return (block.timestamp - startEpoch) /
             decay.decayInterval * decay.decayRate;
     }

@@ -76,14 +76,6 @@ contract LaborMarketTest is PRBTest, StdCheats {
     address private delegate =
         address(uint160(uint256(keccak256("DELEGATOOOR"))));
 
-    // Events
-    /// @dev Announces when a new Labor Market is created through the protocol Factory.
-    event LaborMarketCreated(
-          address indexed marketAddress
-        , address indexed owner
-        , address indexed implementation
-    );
-
     /// @notice emitted when labor market parameters are updated.
     event LaborMarketConfigured(
         LaborMarketConfigurationInterface.LaborMarketConfiguration indexed configuration
@@ -126,15 +118,15 @@ contract LaborMarketTest is PRBTest, StdCheats {
           address indexed fulfiller
         , uint256 indexed requestId
         , uint256 indexed submissionId
-        , string _uri
+        , string uri
     );
 
     /// @notice emitted when a service submission is reviewed
     event RequestReviewed(
-          address reviewer
+          address indexed reviewer
         , uint256 indexed requestId
         , uint256 indexed submissionId
-        , uint256 indexed reviewScore
+        , uint256 reviewScore
     );
 
     /// @notice emitted when a service submission is claimed.
@@ -152,6 +144,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
         , uint256 indexed requestId
         , uint256 remainderAmount
     );
+
+
     /*//////////////////////////////////////////////////////////////
                         HELPER FUNCTIONALITY
     //////////////////////////////////////////////////////////////*/
@@ -294,8 +288,6 @@ contract LaborMarketTest is PRBTest, StdCheats {
         changePrank(deployer);
         repToken.leaderMint(delegate, DELEGATE_TOKEN_ID, 1, "0x");
 
-        bool isDelegate = repToken.isDelegate(1, address(reputationModule));
-
         vm.stopPrank();
     }
 
@@ -378,7 +370,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         // Skip to enforcement deadline
         vm.warp(5 weeks);
-        market.claim(submissionId, address(alice), "");
+        market.claim(submissionId, address(alice));
     }
 
     function test_CreateMultipleMarkets() public {
@@ -428,10 +420,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
         for (uint256 i; i <= 10; ++i) {
             changePrank(deployer);
             vm.expectEmit(false, true, true, true);
-            emit LaborMarketCreated(
-                address(market),
-                deployer,
-                address(marketImplementation)
+            emit LaborMarketConfigured(
+                config
             );
             market = LaborMarket(
                 network.createLaborMarket({
@@ -455,7 +445,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
             changePrank(alice);
             vm.warp(block.timestamp + 5 weeks);
-            market.claim(submissionId, msg.sender, "");
+            market.claim(submissionId, msg.sender);
         }
         vm.stopPrank();
     }
@@ -518,7 +508,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         // Skip to enforcement deadline
         vm.warp(5 weeks);
-        market.claim(submissionId, msg.sender, "");
+        market.claim(submissionId, msg.sender);
         
         // Verify that Alice received a reputation reward
         assertGt(
@@ -563,10 +553,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         // Verify market creation event
         vm.expectEmit(false, true, true, true);
-        emit LaborMarketCreated(
-            address(market),
-            deployer,
-            address(marketImplementation)
+        emit LaborMarketConfigured(
+            config
         );
 
         // Create a market
@@ -604,7 +592,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         uint256 requestId = createSimpleRequest(market);
 
         // Verify signaling events
-        vm.expectEmit(true, true, true, false);
+        vm.expectEmit(true, true, false, false);
         emit RequestSignal(address(alice), requestId, 5);
 
         changePrank(alice);
@@ -624,8 +612,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
         uint256 submissionId = market.provide(requestId, "IPFS://333");
 
         // Verify reviewing events
-        vm.expectEmit(true, true, true, true);
-        emit RequestReviewed(address(bob), requestId, submissionId, 4);
+        vm.expectEmit(true, true, false, false);
+        emit RequestReviewed(address(bob), requestId, submissionId, 2);
 
         changePrank(bob);
         market.review(requestId, submissionId, 4);
@@ -642,7 +630,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         changePrank(alice);
         vm.warp(block.timestamp + 5 weeks);
-        market.claim(submissionId, address(alice), "");
+        market.claim(submissionId, address(alice));
 
         // // Verify withdrawing request event
         changePrank(bob);
@@ -822,11 +810,11 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         // User claims reward
         changePrank(alice);
-        market.claim(submissionId, msg.sender, "");
+        market.claim(submissionId, msg.sender);
 
         // User tries to claim same reward again
         vm.expectRevert("LaborMarket::claim: Already claimed");
-        market.claim(submissionId, msg.sender, "");
+        market.claim(submissionId, msg.sender);
 
         vm.stopPrank();
     }
@@ -875,7 +863,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         // User attempts to claim the reward, we expect a revert
         changePrank(alice);
         vm.expectRevert("LaborMarket::claim: Not reviewed");
-        market.claim(submissionId, msg.sender, "");
+        market.claim(submissionId, msg.sender);
 
         vm.stopPrank();
     }
@@ -903,7 +891,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         // User claims reward
         changePrank(evilUser);
         vm.expectRevert("LaborMarket::claim: Not provider");
-        market.claim(submissionId, msg.sender, "");
+        market.claim(submissionId, msg.sender);
 
         vm.stopPrank();
     }
@@ -1057,7 +1045,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         // User claims reward
         // It is the only score for constant likert, so it is the only one that counts.
-        (uint256 qClaimed, uint256 rClaimed) = market.claim(submissionId, alice, "");
+        (uint256 qClaimed, )= market.claim(submissionId, alice);
         assertAlmostEq(qClaimed, 1000e18, 0.0001e18);
 
         vm.stopPrank();
@@ -1258,14 +1246,14 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         // User claims reward
         // There is only submission so they should get 99.9% of the reward
-        (uint256 qClaimed, uint256 rClaimed) = market.claim(submissionId, alice, "");
+        (uint256 qClaimed, ) = market.claim(submissionId, alice);
         assertAlmostEq(qClaimed, 1000e18, 0.000001e18);
 
         // User claims reward again
         vm.expectRevert(
             "LaborMarket::claim: Already claimed"
         );
-        market.claim(submissionId, alice, "");
+        market.claim(submissionId, alice);
 
         vm.stopPrank();
     }
@@ -1319,7 +1307,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         changePrank(noob);
         payToken.approve(address(market), 100000e18);
-        uint256 requestId = createSimpleRequest(market);
+        createSimpleRequest(market);
 
         vm.stopPrank();
     }

@@ -8,14 +8,6 @@ import { LaborMarketManager } from "./LaborMarketManager.sol";
 /// @dev Helper interfaces.
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-/**
- * @title The LaborMarket contract is the core of the MetricsDAO protocol.
- * @author @CHANCE @MasOnTheChain @thermohaline
- * @notice This is a beta version subject to change.
- * @dev This contract is responsible for managing all actions of requesters and providers
- *      within the Labor Market ecosystem.
- */
-
 
 contract LaborMarket is LaborMarketManager {
     /**
@@ -27,6 +19,7 @@ contract LaborMarket is LaborMarketManager {
      * @param _enforcementExp The enforcement deadline expiration.
      * @param _requestUri The uri of the service request data.
      * @return requestId The id of the service request.
+     *
      * Requirements:
      * - A user has to be conform to the reputational restrictions imposed by the labor market.
      * - Caller has to have approved the LaborMarket contract to transfer the payment token.
@@ -46,7 +39,10 @@ contract LaborMarket is LaborMarketManager {
         ) 
     {
         /// @dev Ensure the timestamps are valid.
-        _validateTimestamps(_signalExp, _submissionExp, _enforcementExp);
+        require(
+            _isValidTimestamps(_signalExp, _submissionExp, _enforcementExp),
+            "LaborMarket::submitRequest: Invalid timestamps"
+        );
 
         unchecked {
             ++serviceId;
@@ -246,6 +242,7 @@ contract LaborMarket is LaborMarketManager {
             configuration.reputationParams.reviewStake
         );
 
+
         emit RequestReviewed(_msgSender(), _requestId, _submissionId, _score);
     }
 
@@ -253,14 +250,12 @@ contract LaborMarket is LaborMarketManager {
      * @notice Allows a service provider to claim payment for a service submission.
      * @param _submissionId The id of the service providers submission.
      * @param _to The address to send the payment to.
-     * @param _data The data to send with the payment.
      * @return pTokenClaimed The amount of pTokens claimed.
      * @return rTokenClaimed The amount of rTokens claimed.
      */
     function claim(
           uint256 _submissionId
         , address _to
-        , bytes calldata _data
     ) 
         external 
         returns (
@@ -294,8 +289,7 @@ contract LaborMarket is LaborMarketManager {
 
         (pTokenClaimed, rTokenClaimed) = enforcementCriteria.getRewards(
             address(this),
-            _submissionId,
-            _data
+            _submissionId
         );
 
         hasPerformed[_submissionId][_msgSender()][HAS_CLAIMED] = true;
@@ -439,17 +433,23 @@ contract LaborMarket is LaborMarketManager {
     )
         external
     {
+        /// @dev Ensure the requester is the sender.
         require(
             serviceRequests[_requestId].serviceRequester == _msgSender(),
             "LaborMarket::editRequest: Not requester"
         );
+
+        /// @dev Ensure there have been no signals.
         require(
             signalCount[_requestId] < 1,
             "LaborMarket::editRequest: Already active"
         );
 
         /// @dev Ensure the timestamps are valid.
-        _validateTimestamps(_signalExp, _submissionExp, _enforcementExp);
+        require(
+            _isValidTimestamps(_signalExp, _submissionExp, _enforcementExp),
+            "LaborMarket::editRequest: Invalid timestamps"
+        );
 
         IERC20 pToken = IERC20(_pToken);
 

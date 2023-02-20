@@ -373,7 +373,7 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
             changePrank(user);
 
             // Claim
-            (uint256 pPaid, uint256 rPaid) = constantLikertMarket.claim(i + 1, msg.sender, ""); 
+            (uint256 pPaid, uint256 rPaid) = constantLikertMarket.claim(i + 1, msg.sender); 
             totalPaid += pPaid;
             totalReputation += rPaid;
         }
@@ -433,7 +433,7 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
             changePrank(user);
 
             // Claim
-            (uint256 pPaid, uint256 rPaid) = constantLikertMarket.claim(i + 1, msg.sender, ""); 
+            (uint256 pPaid, uint256 rPaid) = constantLikertMarket.claim(i + 1, msg.sender); 
             totalPaid += pPaid;
             totalReputation += rPaid;
         }
@@ -508,7 +508,7 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
             changePrank(user);
 
             // Claim
-            (uint256 pPaid, uint256 rPaid) = constantLikertMarket.claim(i + 1, msg.sender, ""); 
+            (uint256 pPaid, uint256 rPaid) = constantLikertMarket.claim(i + 1, msg.sender); 
             totalPaid += pPaid;
             totalReputation += rPaid;
         }

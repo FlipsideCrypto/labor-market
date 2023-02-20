@@ -45,6 +45,7 @@ contract ReputationModuleTest is PRBTest, StdCheats {
 
     LaborMarketNetwork public network;
 
+
     // Define the tokenIds for ERC1155
     uint256 private constant DELEGATE_TOKEN_ID = 0;
     uint256 private constant REPUTATION_TOKEN_ID = 1;
@@ -333,17 +334,50 @@ contract ReputationModuleTest is PRBTest, StdCheats {
 
         // // A valid user signals
         changePrank(newGuy);
-        uint256 balanceBefore = repToken.balanceOf(address(newGuy), REPUTATION_TOKEN_ID);
 
         vm.warp(10 weeks);
-        uint256 expectedDecay = reputationModule.getPendingDecay(
-            address(market),
-            address(newGuy)
-        );
 
         assertEq(
             reputationModule.getAvailableReputation(address(market), address(newGuy)),
             0
+        );
+
+        vm.stopPrank();
+    }
+
+    function test_CanFreezeReputation() public {
+        vm.startPrank(deployer);
+
+        network.setReputationDecay(
+            address(reputationModule),
+            address(repToken),
+            REPUTATION_TOKEN_ID,
+            10,
+            5000,
+            block.timestamp
+        );
+
+        changePrank(bob);
+
+        uint256 balanceBefore = reputationModule.getAvailableReputation(address(market), address(bob));
+
+        reputationModule.freezeReputation(
+            address(bob),
+            address(repToken),
+            REPUTATION_TOKEN_ID,
+            1000000
+        );
+
+        assertEq(
+            reputationModule.getAvailableReputation(address(market), address(bob)),
+            0
+        );
+
+        vm.warp(300 weeks);
+
+        assertLt(
+            reputationModule.getAvailableReputation(address(market), address(bob)),
+            balanceBefore
         );
 
         vm.stopPrank();

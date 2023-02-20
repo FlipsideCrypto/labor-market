@@ -15,7 +15,6 @@ interface EnforcementCriteriaInterface {
     function getRewards(
           address _laborMarket
         , uint256 _submissionId
-        , bytes calldata
     )
         external
         view
@@ -27,7 +26,6 @@ interface EnforcementCriteriaInterface {
     function getPaymentReward(
           address _laborMarket
         , uint256 _submissionId
-        , bytes calldata
     )
         external
         view
@@ -38,7 +36,6 @@ interface EnforcementCriteriaInterface {
     function getReputationReward(
           address _laborMarket
         , uint256 _submissionId
-        , bytes calldata
     )
         external
         view

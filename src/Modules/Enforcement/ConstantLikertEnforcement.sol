@@ -97,7 +97,6 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
     function getRewards(
           address _laborMarket
         , uint256 _submissionId
-        , bytes calldata
     )
         external
         override
@@ -126,7 +125,6 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
     function getPaymentReward(
           address _laborMarket
         , uint256 _submissionId
-        , bytes calldata
     )
         external
         override
@@ -147,7 +145,6 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
     function getReputationReward(
           address _laborMarket
         , uint256 _submissionId
-        , bytes calldata
     )
         external
         override
@@ -215,7 +212,7 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
         , uint256 _totalPool
     )
         internal
-        view
+        pure
         returns (
             uint256
         )

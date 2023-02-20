@@ -4,10 +4,8 @@ pragma solidity ^0.8.17;
 
 /// @dev Core dependencies.
 import { LaborMarketInterface } from "./interfaces/LaborMarketInterface.sol";
-import { ContextUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { ERC1155HolderUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/utils/ERC1155HolderUpgradeable.sol";
-import { ERC721HolderUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
-import { Delegatable, DelegatableCore } from "delegatable/Delegatable.sol";
+import { Delegatable } from "delegatable/Delegatable.sol";
 
 /// @dev Helper interfaces.
 import { LaborMarketNetworkInterface } from "../Network/interfaces/LaborMarketNetworkInterface.sol";
@@ -17,14 +15,11 @@ import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 
 /// @dev Supported interfaces.
 import { IERC1155ReceiverUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155ReceiverUpgradeable.sol";
-import { IERC721ReceiverUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
 
 contract LaborMarketManager is
     LaborMarketInterface,
     ERC1155HolderUpgradeable,
-    ERC721HolderUpgradeable,
-    Delegatable("LaborMarket", "v1.0.0"),
-    ContextUpgradeable
+    Delegatable("LaborMarket", "v1.0.0")
 {
     /// @dev Performable actions.
     bytes32 internal constant HAS_SUBMITTED = keccak256("hasSubmitted");
@@ -122,10 +117,10 @@ contract LaborMarketManager is
 
     /// @notice emitted when a service submission is reviewed
     event RequestReviewed(
-          address reviewer
+          address indexed reviewer
         , uint256 indexed requestId
         , uint256 indexed submissionId
-        , uint256 indexed reviewScore
+        , uint256 reviewScore
     );
 
     /// @notice emitted when a service submission is claimed.
@@ -208,7 +203,9 @@ contract LaborMarketManager is
         public
     {
         require(
-            configuration.owner == address(0) || _msgSender() == configuration.owner || _msgSender() == address(network),
+            configuration.owner == address(0) || 
+            _msgSender() == configuration.owner || 
+            _msgSender() == address(network),
             "LaborMarketManager::setConfiguration: Not owner or governor"
         );
 
@@ -241,19 +238,19 @@ contract LaborMarketManager is
     //////////////////////////////////////////////////////////////*/
 
     /**
-     * @notice Allows a service provider to signal their intent to perform a service.
+     * @notice Gets the amount of pending rewards for a submission.
      * @param _submissionId The id of the service submission.
-     * @param _data The data to be used in the enforcement criteria.
+     * @return pTokenToClaim The amount of pTokens to be claimed.
+     * @return rTokenToClaim The amount of rTokens to be claimed.
      */
     function getRewards(
-          uint256 _submissionId
-        , bytes calldata _data
+        uint256 _submissionId
     )
         external
         view
         returns (
-              uint256 pTokenClaimed
-            , uint256 rTokenClaimed
+              uint256 pTokenToClaim
+            , uint256 rTokenToClaim
         )
     {
         address provider = serviceSubmissions[_submissionId].serviceProvider;
@@ -265,7 +262,6 @@ contract LaborMarketManager is
         return enforcementCriteria.getRewards(
               address(this)
             , _submissionId
-            , _data
         );
     }
 
@@ -312,6 +308,19 @@ contract LaborMarketManager is
     }
 
     /*//////////////////////////////////////////////////////////////
+                            INTERNAL SETTERS
+    //////////////////////////////////////////////////////////////*/
+
+    function _setRequest(
+        uint256 _requestId,
+        ServiceRequest memory _request
+    )
+        internal
+    {
+        serviceRequests[_requestId] = _request;
+    }
+
+    /*//////////////////////////////////////////////////////////////
                             INTERNAL GETTERS
     //////////////////////////////////////////////////////////////*/
     
@@ -321,47 +330,19 @@ contract LaborMarketManager is
      * @param _submissionExp The expiration of the submission period.
      * @param _enforcementExp The expiration of the enforcement period.
      */
-    function _validateTimestamps(
+    function _isValidTimestamps(
         uint256 _signalExp,
         uint256 _submissionExp,
         uint256 _enforcementExp
     )
         internal
         view
+        returns (bool)
     {
-        require(
-               block.timestamp < _signalExp 
+        return (
+            block.timestamp < _signalExp 
             && _signalExp < _submissionExp 
-            && _submissionExp < _enforcementExp,
-            "LaborMarket::expirations: Invalid expirations"
+            && _submissionExp < _enforcementExp
         );
-    }
-
-
-    /**
-     * @dev Delegatable ETH support
-     */
-    function _msgSender()
-        internal
-        view
-        virtual
-        override(DelegatableCore, ContextUpgradeable)
-        returns (
-            address sender
-        )
-    {
-        if (msg.sender == address(this)) {
-            bytes memory array = msg.data;
-            uint256 index = msg.data.length;
-            assembly {
-                sender := and(
-                    mload(add(array, index)),
-                    0xffffffffffffffffffffffffffffffffffffffff
-                )
-            }
-        } else {
-            sender = msg.sender;
-        }
-        return sender;
     }
 }
