@@ -17,8 +17,8 @@ import {EnforcementCriteriaInterface} from "src/Modules/Enforcement/interfaces/E
  *         the total reward pool and the second submission will earn 1/3. Thus, rewards are linear.
  */
 
-
 contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
+
     /// @dev Tracks the scores given to service submissions.
     /// @dev Labor Market -> Submission Id -> Scores
     mapping(address => mapping(uint256 => Scores)) public submissionToScores;
@@ -46,54 +46,55 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
                         SETTERS
     //////////////////////////////////////////////////*/
 
-    /// @notice Allows a maintainer to review a submission.
-    /// @param _submissionId The submission to review.
-    /// @param _score The score to give the submission.
-    /// @return The average score of the submission.
+    /**
+     * See {EnforcementCriteriaInterface.review}
+     */
     function review(
           uint256 _submissionId
         , uint256 _score
     )
         external
         override
-        returns (
-            uint256
-        )
     {
         require(
             _score <= uint256(Likert.GREAT),
             "ConstantLikertEnforcement::review: Invalid score"
         );
 
+        /// @dev Load the submissions score state.
         Scores storage score = submissionToScores[msg.sender][_submissionId];
 
-        // Scores are on a scale of 100.
-        _score = _score * 25;
-
+        /// @dev Get the request id.
         uint256 requestId = _getRequestId(_submissionId);
 
-        // Update the cumulative total earned score.
+        /// @dev Remove the current score from the cumulative total.
         unchecked {
             requestTotalScore[msg.sender][requestId] -= score.avg;
         }
 
+        /// @dev Convert scores to a scale of 100.
+        _score = _score * 25;
+
+        /// @dev Store the score and update the average.
         score.scores.push(_score);
         score.avg = _getAvg(
             score.scores
         );
 
-        // Update the cumulative total earned score with the submission's new average.
+        /// @dev Update the cumulative total earned score with the submission's new average.
         unchecked {
             requestTotalScore[msg.sender][requestId] += score.avg;
         }
-
-        return _score;
     }
 
     /*////////////////////////////////////////////////// 
                         GETTERS
     //////////////////////////////////////////////////*/
 
+    
+    /**
+     * See {EnforcementCriteriaInterface.getRewards}
+     */
     function getRewards(
           address _laborMarket
         , uint256 _submissionId
@@ -122,6 +123,10 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
         );
     }
 
+    
+    /**
+     * See {EnforcementCriteriaInterface.getPaymentReward}
+     */
     function getPaymentReward(
           address _laborMarket
         , uint256 _submissionId
@@ -142,6 +147,9 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
         );
     }
 
+    /**
+     * See {EnforcementCriteriaInterface.getReputationReward}
+     */
     function getReputationReward(
           address _laborMarket
         , uint256 _submissionId
@@ -162,10 +170,9 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
         );
     }
 
-    /// @notice Get the remaining unclaimed.
-    /// @param _laborMarket The labor market the request is in.
-    /// @param _requestId The request to get the remaining unclaimed for.
-    /// @return unclaimed Total that can be reclaimed by the requester.
+    /**
+     * See {EnforcementCriteriaInterface.getRemainder}
+     */
     function getRemainder(
           address _laborMarket
         , uint256 _requestId
@@ -188,6 +195,12 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
         return 0;
     }
 
+    /**
+     * @notice Gets the scores given to a submission.
+     * @param _laborMarket The labor market the submission is in.
+     * @param _submissionId The submission to get the scores for.
+     * @return The scores given to a submission.
+     */
     function getScores(
           address _laborMarket
         , uint256 _submissionId
@@ -205,7 +218,12 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
                         INTERNAL
     //////////////////////////////////////////////////*/
 
-    /// @notice Returns the % of the total pool a submission has earned.
+    /**
+     * @notice Calculates the share of the total pool a user is entitled to.
+     * @param _userScore The user's score.
+     * @param _totalCumulativeScore The total cumulative score of all submissions.
+     * @param _totalPool The total pool of tokens to distribute.
+     */
     function _calculateShare(
           uint256 _userScore
         , uint256 _totalCumulativeScore
@@ -220,9 +238,11 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
         return (_userScore * _totalPool) / _totalCumulativeScore;
     }
 
-    /// @notice Gets the average of the scores given to a submission.
-    /// @param _scores The scores given to a submission.
-    /// @return The average of the scores.
+    /** 
+     * @notice Gets the average of the scores given to a submission.
+     * @param _scores The scores given to a submission.
+     * @return The average of the scores.
+     */ 
     function _getAvg(
         uint256[] memory _scores
     )
@@ -242,9 +262,11 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
         return cumulativeScore / qScores;
     }
 
-    /// @notice Get the request id of a submission.
-    /// @param _submissionId The submission id.
-    /// @return The request id.
+    /**
+     * @notice Gets the request id of a submission.
+     * @param _submissionId The submission id.
+     * @return The request id.
+     */
     function _getRequestId(
         uint256 _submissionId
     )

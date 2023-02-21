@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.17;
 
-import { LaborMarketConfigurationInterface } from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
+import { LaborMarketVersionsInterface } from "./LaborMarketVersionsInterface.sol";
 
 interface LaborMarketNetworkInterface {
 
@@ -12,8 +12,8 @@ interface LaborMarketNetworkInterface {
         external;
 
     function setNetworkRoles(
-          LaborMarketConfigurationInterface.BadgePair memory _governorBadge
-        , LaborMarketConfigurationInterface.BadgePair memory _creatorBadge
+          LaborMarketVersionsInterface.BadgePair memory _governorBadge
+        , LaborMarketVersionsInterface.BadgePair memory _creatorBadge
     ) 
         external;
 

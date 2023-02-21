@@ -22,12 +22,12 @@ import {LaborMarketVersions} from "src/Network/LaborMarketVersions.sol";
 import {ReputationModule} from "src/Modules/Reputation/ReputationModule.sol";
 import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/ReputationModuleInterface.sol";
 
-import {ConstantLikertEnforcement} from "src/Modules/Enforcement/ConstantLikertEnforcement.sol";
+import {VariableLikertEnforcement} from "src/Modules/Enforcement/VariableLikertEnforcement.sol";
 
 import {LaborMarketConfigurationInterface} from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
 import {LaborMarketNetworkInterface} from "src/Network/interfaces/LaborMarketNetworkInterface.sol";
 
-contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
+contract VariableLikertEnforcementTest is PRBTest, StdCheats {
     Badger public badger;
     BadgerOrganization public badgerMaster;
 
@@ -43,7 +43,7 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
 
     LaborMarketNetwork public network;
 
-    ConstantLikertEnforcement public constantLikertEnforcement;
+    VariableLikertEnforcement public enforcement;
 
     // Define the tokenIds for ERC1155
     uint256 private constant DELEGATE_TOKEN_ID = 0;
@@ -55,92 +55,16 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
     uint256 private constant REPUTATION_DECAY_RATE = 0;
     uint256 private constant REPUTATION_DECAY_INTERVAL = 0;
 
-    // Deployer
+    uint256[] private RANGES;
+    uint256[] private WEIGHTS;
+
     address private deployer = address(0xDe);
-
-    // Maintainer
     address private bob = address(0x1);
-
-    // Maintainer 2
     address private bobert = address(0x11);
-
     address private grader1 = address(0x111);
-
     address private grader2 = address(0x222);
-
-    // User
     address private alice = address(0x2);
-
-    // Evil user
-    address private evilUser =
-        address(uint160(uint256(keccak256("EVIL_USER"))));
-
-    // Alt delegate
-    address private delegate =
-        address(uint160(uint256(keccak256("DELEGATOOOR"))));
-
-    // Events
-    event LaborMarketConfigured(
-        LaborMarketConfigurationInterface.LaborMarketConfiguration indexed configuration
-    );
-
-    event RequestWithdrawn(uint256 indexed requestId);
-
-    event LaborMarketCreated(
-        address indexed marketAddress,
-        address indexed owner,
-        address indexed implementation
-    );
-
-    event RequestCreated(
-        address indexed requester,
-        uint256 indexed requestId,
-        string indexed uri,
-        address pToken,
-        uint256 pTokenQ,
-        uint256 signalExp,
-        uint256 submissionExp,
-        uint256 enforcementExp
-    );
-
-    event RequestSignal(
-        address indexed signaler,
-        uint256 indexed requestId,
-        uint256 signalAmount
-    );
-
-    event ReviewSignal(
-        address indexed signaler,
-        uint256 indexed quantity,
-        uint256 signalAmount
-    );
-
-    event RequestFulfilled(
-        address indexed fulfiller,
-        uint256 indexed requestId,
-        uint256 indexed submissionId,
-        string _uri
-    );
-
-    event RequestReviewed(
-        address reviewer,
-        uint256 indexed requestId,
-        uint256 indexed submissionId,
-        uint256 indexed reviewScore
-    );
-
-    event RequestPayClaimed(
-        address indexed claimer,
-        uint256 indexed submissionId,
-        uint256 indexed payAmount,
-        address to
-    );
-
-    event RemainderClaimed(
-        address indexed claimer,
-        uint256 indexed requestId,
-        uint256 remainderAmount
-    );
+    address private delegate = address(0x3);
 
     /*//////////////////////////////////////////////////////////////
                         HELPER FUNCTIONALITY
@@ -211,9 +135,15 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
         repToken.leaderMint(address(deployer), CREATOR_TOKEN_ID, 1, "0x");
 
         // Create enforcement criteria
-        constantLikertEnforcement = new ConstantLikertEnforcement();
+        enforcement = new VariableLikertEnforcement();
 
-        bytes32 constantLikertKey = "";
+        RANGES.push(0); RANGES.push(24); RANGES.push(44); RANGES.push(69); RANGES.push(89);
+        WEIGHTS.push(0); WEIGHTS.push(25); WEIGHTS.push(75); WEIGHTS.push(100); WEIGHTS.push(200);
+
+        bytes32 key = "aggressive";
+
+        // Set the buckets
+        enforcement.setBuckets(key, RANGES, WEIGHTS);
 
         // Create a new labor market configuration for constant likert
         LaborMarketConfigurationInterface.LaborMarketConfiguration
@@ -224,8 +154,8 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),
-                        enforcement: address(constantLikertEnforcement),
-                        enforcementKey: constantLikertKey
+                        enforcement: address(enforcement),
+                        enforcementKey: key
                     }),
                     maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
@@ -306,7 +236,7 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
         return (pseudoRandom(123, salt) + uint160(msg.sender) + uint256(salt)) % 5;
     }
 
-    function test_ConstantLikertRandomReviews() public {
+    function test_VariableLikertRandomReviews() public {
         vm.startPrank(deployer);
 
         uint256 runs = 400;
@@ -389,7 +319,7 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
         assertAlmostEq(totalPaid, 1000e18, 0.00001e18);
     }
 
-    function test_ConstantLikertMarketSimple() public {
+    function test_VariableLikertMarketSimple() public {
         vm.startPrank(deployer);
 
         payToken.freeMint(bob, 10000e18);
@@ -449,7 +379,7 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
         assertAlmostEq(totalPaid, 1000e18, 0.00001e18);
     }
 
-    function test_ConstantLikertMarket() public {
+    function test_VariableLikertMarketBase() public {
         vm.startPrank(deployer);
 
         payToken.freeMint(bob, 10000e18);
@@ -458,8 +388,7 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
         // Create a request
         uint256 requestId = createSimpleRequest(constantLikertMarket);
 
-        // Signal the request on 112 accounts
-        for (uint256 i = requestId; i < 113; i++) {
+        for (uint256 i = requestId + 1; i < requestId + 11; i++) {
             address user = address(uint160(1337 + i));
 
             // Mint required tokens
@@ -472,29 +401,66 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
             constantLikertMarket.provide(requestId, "NaN");
         }
 
-        // Have bob review the submissions
         changePrank(bob);
+        constantLikertMarket.signalReview(requestId, 10);
 
-        // The reviewer signals the requestId
-        constantLikertMarket.signalReview(requestId, 113);
+        changePrank(bobert);
+        constantLikertMarket.signalReview(requestId, 10);
+
+        changePrank(delegate);
+        constantLikertMarket.signalReview(requestId, 10);
+
+        changePrank(grader1);
+        constantLikertMarket.signalReview(requestId, 10);
+
+        changePrank(grader2);
+        constantLikertMarket.signalReview(requestId, 10);
 
         // The reviewer reviews the submissions
-        for (uint256 i = requestId; i < 113; i++) {
-            if (i < 67) {
-                // SPAM
-                constantLikertMarket.review(requestId, i + 1, 0);
-            } else if (i < 100) {
-                // BAD
-                constantLikertMarket.review(requestId, i + 1, 1);
-            } else if (i < 105) {
-                // OK
-                constantLikertMarket.review(requestId, i + 1, 2);
-            } else if (i < 110) {
-                // GOOD
-                constantLikertMarket.review(requestId, i + 1, 3);
-            } else {
-                // GREAT
-                constantLikertMarket.review(requestId, i + 1, 4);
+        for (uint256 i = requestId + 1; i < requestId + 11; i++) {
+            if (i == requestId + 1) {
+                constantLikertMarket.review(requestId, i, 4);
+            }
+            if (i == requestId + 2) {
+                constantLikertMarket.review(requestId, i, 4);
+                changePrank(bobert);
+                constantLikertMarket.review(requestId, i, 4);
+            }
+            if (i == requestId + 3) {
+                constantLikertMarket.review(requestId, i, 4);
+                changePrank(bob);
+                constantLikertMarket.review(requestId, i, 4);
+                changePrank(grader1);
+                constantLikertMarket.review(requestId, i, 3);
+            }
+            if (i == requestId + 4) {
+                constantLikertMarket.review(requestId, i, 3);
+            }
+            if (i == requestId + 5) {
+                constantLikertMarket.review(requestId, i, 3);
+                changePrank(bobert);
+                constantLikertMarket.review(requestId, i, 2);
+            }
+            if (i == requestId + 6) {
+                constantLikertMarket.review(requestId, i, 2);
+            }
+            if (i == requestId + 7) {
+                constantLikertMarket.review(requestId, i, 2);
+                changePrank(bob);
+                constantLikertMarket.review(requestId, i, 1);
+            }
+            if (i == requestId + 8) {
+                constantLikertMarket.review(requestId, i, 1);
+            }
+            if (i == requestId + 9) {
+                constantLikertMarket.review(requestId, i, 1);
+                changePrank(bobert);
+                constantLikertMarket.review(requestId, i, 0);
+                changePrank(grader1);
+                constantLikertMarket.review(requestId, i, 0);
+            }
+            if (i == requestId + 10) {
+                constantLikertMarket.review(requestId, i, 0);
             }
         }
 
@@ -506,14 +472,15 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
         vm.warp(5 weeks);
 
         // Claim rewards
-        for (uint256 i = requestId; i < 113; i++) {
+        for (uint256 i = requestId + 1; i < requestId + 11; i++) {
             address user = address(uint160(1337 + i));
             changePrank(user);
 
             // Claim
-            (uint256 pPaid, uint256 rPaid) = constantLikertMarket.claim(i + 1, msg.sender); 
+            (uint256 pPaid, uint256 rPaid) = constantLikertMarket.claim(i, msg.sender); 
             totalPaid += pPaid;
             totalReputation += rPaid;
+            console.log("paid [%s]: %s", i, pPaid);
         }
         console.log("totalPaid", totalPaid);
         console.log("totalReputation", totalReputation);

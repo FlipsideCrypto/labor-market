@@ -56,6 +56,9 @@ contract LaborMarketTest is PRBTest, StdCheats {
     uint256 private constant REPUTATION_DECAY_RATE = 0;
     uint256 private constant REPUTATION_DECAY_INTERVAL = 0;
 
+    // uint16[] private constant RANGES = [25, 45, 70, 90, 100];
+    // uint16[] private constant WEIGHTS = [0, 25, 75, 100, 200];
+
     // Deployer
     address private deployer = address(0xDe);
 
@@ -216,6 +219,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
         repToken.leaderMint(address(deployer), GOVERNOR_TOKEN_ID, 1, "0x");
         repToken.leaderMint(address(deployer), CREATOR_TOKEN_ID, 1, "0x");
 
+        bytes32 criteria = "";
+
         // Create enforcement criteria
         enforcementCriteria = new ConstantLikertEnforcement();
 
@@ -228,7 +233,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),
-                        enforcement: address(enforcementCriteria)
+                        enforcement: address(enforcementCriteria),
+                        enforcementKey: criteria
                     }),
                     maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
@@ -384,6 +390,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
         */
         vm.startPrank(deployer);
 
+        bytes32 criteria = "";
+
         // Example configuration
         LaborMarketConfigurationInterface.LaborMarketConfiguration
             memory config = LaborMarketConfigurationInterface
@@ -393,7 +401,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),
-                        enforcement: address(enforcementCriteria)
+                        enforcement: address(enforcementCriteria),
+                        enforcementKey: criteria
                     }),
                     maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
@@ -520,6 +529,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
     function test_VerifyAllEmittedEvents() public {
         vm.startPrank(deployer);
 
+        bytes32 criteria = "";
+
         LaborMarketConfigurationInterface.LaborMarketConfiguration
             memory config = LaborMarketConfigurationInterface
                 .LaborMarketConfiguration({
@@ -528,7 +539,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),
-                        enforcement: address(enforcementCriteria)
+                        enforcement: address(enforcementCriteria),
+                        enforcementKey: criteria
                     }),
                     maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
@@ -692,6 +704,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
     function test_CanOnlyInitializeOnce() public {
         vm.startPrank(deployer);
 
+       bytes32 criteria = "";
+
         LaborMarketConfigurationInterface.LaborMarketConfiguration
             memory config = LaborMarketConfigurationInterface
                 .LaborMarketConfiguration({
@@ -700,7 +714,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),
-                        enforcement: address(enforcementCriteria)
+                        enforcement: address(enforcementCriteria),
+                        enforcementKey: criteria
                     }),
                     maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
@@ -1261,6 +1276,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
     function test_CanCreatePublicMarket() public {
         vm.startPrank(deployer);
 
+        bytes32 criteria = "";
+
         LaborMarketConfigurationInterface.LaborMarketConfiguration
             memory config = LaborMarketConfigurationInterface
                 .LaborMarketConfiguration({
@@ -1269,7 +1286,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),
-                        enforcement: address(enforcementCriteria)
+                        enforcement: address(enforcementCriteria),
+                        enforcementKey: criteria
                     }),
                     maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),

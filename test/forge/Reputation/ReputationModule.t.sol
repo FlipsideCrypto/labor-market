@@ -146,6 +146,8 @@ contract ReputationModuleTest is PRBTest, StdCheats {
 
         enforcement = new ConstantLikertEnforcement();
 
+        bytes32 criteria = "";
+
         // Create a new labor market configuration for likert
         LaborMarketConfigurationInterface.LaborMarketConfiguration
             memory likertConfig = LaborMarketConfigurationInterface
@@ -155,7 +157,8 @@ contract ReputationModuleTest is PRBTest, StdCheats {
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
                         reputation: address(reputationModule),
-                        enforcement: address(enforcement)
+                        enforcement: address(enforcement),
+                        enforcementKey: criteria
                     }),
                     maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),

@@ -23,8 +23,9 @@ interface LaborMarketConfigurationInterface {
 
     struct Modules {
         address network;
-        address enforcement;
         address reputation;
+        address enforcement;
+        bytes32 enforcementKey;
     }
 
     struct BadgePair {

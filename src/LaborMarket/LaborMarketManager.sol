@@ -12,6 +12,7 @@ import { LaborMarketNetworkInterface } from "../Network/interfaces/LaborMarketNe
 import { EnforcementCriteriaInterface } from "../Modules/Enforcement/interfaces/EnforcementCriteriaInterface.sol";
 import { ReputationModuleInterface } from "../Modules/Reputation/interfaces/ReputationModuleInterface.sol";
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @dev Supported interfaces.
 import { IERC1155ReceiverUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155ReceiverUpgradeable.sol";
@@ -311,13 +312,154 @@ contract LaborMarketManager is
                             INTERNAL SETTERS
     //////////////////////////////////////////////////////////////*/
 
-    function _setRequest(
-        uint256 _requestId,
-        ServiceRequest memory _request
+    function _claim(
+          uint256 _requestId
+        , uint256 _submissionId
+        , address _to
+    )
+        internal
+        returns (
+            uint256 pTokenClaimed,
+            uint256 rTokenClaimed
+        )
+    {
+        /// @dev Provider has claimed this submission.
+        hasPerformed[_submissionId][_msgSender()][HAS_CLAIMED] = true;
+
+        /// @dev Get the rewards.
+        (pTokenClaimed, rTokenClaimed) = enforcementCriteria.getRewards(
+            address(this),
+            _submissionId
+        );
+
+        /// @dev Transfer the pTokens.
+        IERC20(
+            serviceRequests[_requestId].pToken
+        ).transfer(
+            _to,
+           pTokenClaimed
+        );
+
+        /// @dev Mint the rToken reward.
+        reputationModule.mintReputation(
+            _msgSender(), 
+            rTokenClaimed
+        );
+
+        emit RequestPayClaimed(_msgSender(), _requestId, _submissionId, pTokenClaimed, _to);
+    }
+
+    /**
+     * @notice Allows a service provider to fulfill a service request.
+     */
+    function _provide(
+          uint256 _requestId
+        , string calldata _uri
     )
         internal
     {
-        serviceRequests[_requestId] = _request;
+         /// @dev Increment the submission count and service ID.
+        unchecked {
+            ++serviceId;
+            ++serviceRequests[_requestId].submissionCount;
+        }
+
+        /// @dev Set the submission.
+        serviceSubmissions[serviceId] = ServiceSubmission({
+            serviceProvider: _msgSender(),
+            requestId: _requestId,
+            timestamp: block.timestamp,
+            uri: _uri,
+            reviewed: false
+        });
+
+        /// @dev Provider has submitted.
+        hasPerformed[_requestId][_msgSender()][HAS_SUBMITTED] = true;
+
+        /// @dev Use the user's reputation.
+        reputationModule.mintReputation(_msgSender(), configuration.reputationParams.provideStake);
+
+        emit RequestFulfilled(_msgSender(), _requestId, serviceId, _uri);
+    }
+
+    /**
+     * @notice Facilitates the review of a service submission.
+     */
+    function _review(
+          uint256 _requestId
+        , uint256 _submissionId
+        , uint256 _score
+    )
+        internal
+    {
+        /// @dev Set the submission's review state.
+        if (!serviceSubmissions[_submissionId].reviewed)
+            serviceSubmissions[_submissionId].reviewed = true;
+
+        /// @dev Maintainer has reviewed this submission.
+        hasPerformed[_submissionId][_msgSender()][HAS_REVIEWED] = true;
+
+        /// @dev Review the submission.
+        enforcementCriteria.review(_submissionId, _score);
+
+        /// @dev Decrement the maintainer's review signal.
+        unchecked {
+            --reviewSignals[_requestId][_msgSender()].remainder;
+        }
+
+        /// @dev Use the maintainer's reputation.
+        reputationModule.mintReputation(
+            _msgSender(),
+            configuration.reputationParams.reviewStake
+        );
+
+        emit RequestReviewed(_msgSender(), _requestId, _submissionId, _score);
+    }
+
+    /**
+     * @notice Facilitates the state changing of a request.
+     */
+    function _setRequest(
+          uint256 _serviceId
+        , address _pToken
+        , uint256 _pTokenQ
+        , uint256 _signalExp
+        , uint256 _submissionExp
+        , uint256 _enforcementExp
+        , string calldata _requestUri
+    )
+        internal
+    {
+        IERC20 pToken = IERC20(_pToken);
+
+        /// @dev Keep accounting in mind for ERC20s with transfer fees.
+        uint256 pTokenBefore = pToken.balanceOf(address(this));
+
+        pToken.transferFrom(_msgSender(), address(this), _pTokenQ);
+
+        uint256 pTokenAfter = pToken.balanceOf(address(this));
+
+        serviceRequests[_serviceId] = ServiceRequest({
+            serviceRequester: _msgSender(),
+            pToken: _pToken,
+            pTokenQ: (pTokenAfter - pTokenBefore),
+            signalExp: _signalExp,
+            submissionExp: _submissionExp,
+            enforcementExp: _enforcementExp,
+            submissionCount: 0,
+            uri: _requestUri
+        });
+
+        emit RequestConfigured(
+            _msgSender(),
+            _serviceId,
+            _requestUri,
+            _pToken,
+            _pTokenQ,
+            _signalExp,
+            _submissionExp,
+            _enforcementExp
+        );
     }
 
     /*//////////////////////////////////////////////////////////////
