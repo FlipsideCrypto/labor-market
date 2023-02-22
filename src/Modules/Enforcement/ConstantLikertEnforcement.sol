@@ -5,7 +5,6 @@ pragma solidity ^0.8.17;
 import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
 import {EnforcementCriteriaInterface} from "src/Modules/Enforcement/interfaces/EnforcementCriteriaInterface.sol";
 
-
 /**
  * @title A contract that enforces a constant likert scale.
  * @notice This contract takes in reviews on a 5 point Likert scale of SPAM, BAD, OK, GOOD, GREAT.
@@ -25,7 +24,15 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
 
     /// @dev Tracks the cumulative sum of average score.
     /// @dev Labor Market -> Request Id -> Total score
-    mapping(address => mapping(uint256 => uint256)) public requestTotalScore;
+    mapping(address => mapping(uint256 => uint256)) public totalAvgSum;
+
+    /// @dev The scores given to a service submission.
+    struct Scores {
+        uint256 reviewCount;
+        uint256 reviewSum;
+        uint256 avg;
+        bool qualified;
+    }
 
     /// @dev The Likert grading scale.
     enum Likert {
@@ -34,12 +41,6 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
         OK,
         GOOD,
         GREAT
-    }
-
-    /// @dev The scores given to a service submission.
-    struct Scores {
-        uint256[] scores;
-        uint256 avg;
     }
 
     /*////////////////////////////////////////////////// 
@@ -61,30 +62,11 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
             "ConstantLikertEnforcement::review: Invalid score"
         );
 
-        /// @dev Load the submissions score state.
-        Scores storage score = submissionToScores[msg.sender][_submissionId];
-
-        /// @dev Get the request id.
-        uint256 requestId = _getRequestId(_submissionId);
-
-        /// @dev Remove the current score from the cumulative total.
-        unchecked {
-            requestTotalScore[msg.sender][requestId] -= score.avg;
-        }
-
-        /// @dev Convert scores to a scale of 100.
-        _score = _score * 25;
-
-        /// @dev Store the score and update the average.
-        score.scores.push(_score);
-        score.avg = _getAvg(
-            score.scores
+        _review(
+            msg.sender,
+            _submissionId,
+            _score
         );
-
-        /// @dev Update the cumulative total earned score with the submission's new average.
-        unchecked {
-            requestTotalScore[msg.sender][requestId] += score.avg;
-        }
     }
 
     /*////////////////////////////////////////////////// 
@@ -112,12 +94,12 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
         return (
             _calculateShare(
                 submissionToScores[_laborMarket][_submissionId].avg, 
-                requestTotalScore[_laborMarket][requestId], 
+                totalAvgSum[_laborMarket][requestId], 
                 LaborMarketInterface(_laborMarket).getRequest(requestId).pTokenQ
             ),
             _calculateShare(
                 submissionToScores[_laborMarket][_submissionId].avg, 
-                requestTotalScore[_laborMarket][requestId], 
+                totalAvgSum[_laborMarket][requestId], 
                 LaborMarketInterface(_laborMarket).getConfiguration().reputationParams.rewardPool
             )
         );
@@ -142,7 +124,7 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
 
         return _calculateShare(
             submissionToScores[_laborMarket][_submissionId].avg, 
-            requestTotalScore[_laborMarket][requestId], 
+            totalAvgSum[_laborMarket][requestId], 
             LaborMarketInterface(_laborMarket).getRequest(requestId).pTokenQ
         );
     }
@@ -165,7 +147,7 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
 
         return _calculateShare(
             submissionToScores[_laborMarket][_submissionId].avg, 
-            requestTotalScore[_laborMarket][requestId], 
+            totalAvgSum[_laborMarket][requestId], 
             LaborMarketInterface(_laborMarket).getConfiguration().reputationParams.rewardPool
         );
     }
@@ -189,34 +171,44 @@ contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
         /// @dev If the enforcement exp passed and the request total score is 0, return the total pool.
         if (
             block.timestamp > request.enforcementExp && 
-            requestTotalScore[_laborMarket][_requestId] == 0
+            totalAvgSum[_laborMarket][_requestId] == 0
         ) return request.pTokenQ;
 
         return 0;
     }
 
-    /**
-     * @notice Gets the scores given to a submission.
-     * @param _laborMarket The labor market the submission is in.
-     * @param _submissionId The submission to get the scores for.
-     * @return The scores given to a submission.
-     */
-    function getScores(
-          address _laborMarket
-        , uint256 _submissionId
-    )
-        external
-        view
-        returns (
-            uint256[] memory
-        )
-    {
-        return submissionToScores[_laborMarket][_submissionId].scores;
-    }
-
     /*////////////////////////////////////////////////// 
                         INTERNAL
     //////////////////////////////////////////////////*/
+
+    function _review(
+          address _laborMarket
+        , uint256 _submissionId
+        , uint256 _score
+    )
+        internal
+    {
+        /// @dev Get the request id.
+        uint256 requestId = _getRequestId(_submissionId);
+
+        /// @dev Load the submissions score state.
+        Scores storage score = submissionToScores[_laborMarket][_submissionId];
+
+        /// @dev Remove the current score from the cumulative total.
+        unchecked {
+            score.reviewCount++;
+            score.reviewSum += _score * 25; /// @dev Scale the score to 100.
+            totalAvgSum[_laborMarket][requestId] -= score.avg;
+        }
+
+        /// @dev Update the average.
+        score.avg = score.reviewSum / score.reviewCount;
+
+        /// @dev Update the cumulative total earned score with the submission's new average.
+        unchecked {
+            totalAvgSum[_laborMarket][requestId] += score.avg;
+        }
+    }
 
     /**
      * @notice Calculates the share of the total pool a user is entitled to.

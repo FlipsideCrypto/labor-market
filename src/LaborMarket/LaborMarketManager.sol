@@ -369,8 +369,7 @@ contract LaborMarketManager is
             serviceProvider: _msgSender(),
             requestId: _requestId,
             timestamp: block.timestamp,
-            uri: _uri,
-            reviewed: false
+            uri: _uri
         });
 
         /// @dev Provider has submitted.
@@ -392,10 +391,6 @@ contract LaborMarketManager is
     )
         internal
     {
-        /// @dev Set the submission's review state.
-        if (!serviceSubmissions[_submissionId].reviewed)
-            serviceSubmissions[_submissionId].reviewed = true;
-
         /// @dev Maintainer has reviewed this submission.
         hasPerformed[_submissionId][_msgSender()][HAS_REVIEWED] = true;
 

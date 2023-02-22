@@ -21,7 +21,6 @@ interface LaborMarketInterface is LaborMarketConfigurationInterface {
         uint256 requestId;
         uint256 timestamp;
         string uri;
-        bool reviewed;
     }
 
     struct ReviewPromise {

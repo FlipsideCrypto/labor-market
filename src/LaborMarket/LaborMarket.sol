@@ -236,12 +236,6 @@ contract LaborMarket is LaborMarketManager {
             "LaborMarket::claim: Already claimed"
         );
 
-        /// @dev Require the submission has been reviewed.
-        require(
-            serviceSubmissions[_submissionId].reviewed,
-            "LaborMarket::claim: Not reviewed"
-        );
-
         /// @dev Require the provider is the sender.
         require(
             serviceSubmissions[_submissionId].serviceProvider == _msgSender(),

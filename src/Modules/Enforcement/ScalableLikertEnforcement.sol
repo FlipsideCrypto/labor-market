@@ -5,6 +5,8 @@ pragma solidity ^0.8.17;
 import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
 import {EnforcementCriteriaInterface} from "src/Modules/Enforcement/interfaces/EnforcementCriteriaInterface.sol";
 
+import "hardhat/console.sol";
+
 /**
  * @title A contract that enforces a scalable likert scale.
  * @notice This contract takes in reviews on a 5 point Likert scale of SPAM, BAD, OK, GOOD, GREAT.
@@ -18,7 +20,7 @@ import {EnforcementCriteriaInterface} from "src/Modules/Enforcement/interfaces/E
  */
 
 
-contract VariableLikertEnforcement is EnforcementCriteriaInterface {
+contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
     /// @dev Tracks the scores given to service submissions.
     /// @dev Labor Market -> Submission Id -> Scores
     mapping(address => mapping(uint256 => Scores)) public submissionToScores;
@@ -43,6 +45,14 @@ contract VariableLikertEnforcement is EnforcementCriteriaInterface {
         uint256 qualifyingCount;
     }
 
+    /// @dev The scores given to a service submission.
+    struct Scores {
+        uint256 reviewCount;
+        uint256 reviewSum;
+        uint256 scaledAvg;
+        bool qualified;
+    }
+
     /// @dev The Likert grading scale.
     enum Likert {
         SPAM,
@@ -50,14 +60,6 @@ contract VariableLikertEnforcement is EnforcementCriteriaInterface {
         OK,
         GOOD,
         GREAT
-    }
-
-    /// @dev The scores given to a service submission.
-    struct Scores {
-        uint256 reviewCount;
-        uint256 reviewSum;
-        uint256 scaledAvg;
-        bool qualified;
     }
 
     /*////////////////////////////////////////////////// 
@@ -253,17 +255,14 @@ contract VariableLikertEnforcement is EnforcementCriteriaInterface {
     )
         internal
     {
-        /// @dev Get the request id.
-        uint256 requestId = _getRequestId(_submissionId);
-
         /// @dev Load the submissions score state and the request data.
         Scores storage score = submissionToScores[_laborMarket][_submissionId];
-        RequestData storage request = requestData[_laborMarket][requestId];
+        RequestData storage request = requestData[_laborMarket][_getRequestId(_submissionId)];
 
         /// @dev Set the score data and remove the scaled average from the cumulative total.
         unchecked {
             score.reviewCount++;
-            score.reviewSum += _score * 25;
+            score.reviewSum += _score * 25; /// @dev Scale the score to 100.
             request.scaledAvgSum -= score.scaledAvg;
         }
 
