@@ -315,12 +315,11 @@ contract ScalableLikertEnforcementTest is PRBTest, StdCheats {
             totalReputation += rPaid;
         }
 
-        console.log("totalPaid", totalPaid);
-        console.log("totalReputation", totalReputation);
-        console.log("dust", ptokenQ - totalPaid);
-        console.log("repDust", 5000 - totalReputation);
+        console.log("pTokenDust %s / %s", ptokenQ - totalPaid, ptokenQ);
+        console.log("rTokenDust %s / %s", 5000 - totalReputation, 5000);
 
         assertAlmostEq(totalPaid, ptokenQ, 1e8);
+        assertAlmostEq(totalReputation, 5000, 100);
     }
 
     function test_ScalableLikertMarketSimple() public {
@@ -375,12 +374,11 @@ contract ScalableLikertEnforcementTest is PRBTest, StdCheats {
             totalReputation += rPaid;
         }
 
-        console.log("totalPaid", totalPaid);
-        console.log("totalReputation", totalReputation);
-        console.log("dust", 1000e18 - totalPaid);
-        console.log("repDust", 5000 - totalReputation);
+        console.log("pTokenDust %s / %s", 1000e18 - totalPaid, 1000e18);
+        console.log("rTokenDust %s / %s", 5000 - totalReputation, 5000);
 
         assertAlmostEq(totalPaid, 1000e18, 1e6);
+        assertAlmostEq(totalReputation, 5000, 100);
     }
 
     function test_ScalableLikertMarketBase() public {
@@ -485,12 +483,12 @@ contract ScalableLikertEnforcementTest is PRBTest, StdCheats {
             totalPaid += pPaid;
             totalReputation += rPaid;
         }
-        console.log("totalPaid", totalPaid);
-        console.log("totalReputation", totalReputation);
-        console.log("dust", 1000e18 - totalPaid);
-        console.log("repDust", 5000 - totalReputation);
+
+        console.log("pTokenDust %s / %s", 1000e18 - totalPaid, 1000e18);
+        console.log("rTokenDust %s / %s", 5000 - totalReputation, 5000);
 
         assertAlmostEq(totalPaid, 1000e18, 1e6);
+        assertAlmostEq(totalReputation, 5000, 100);
     }
 
         function test_CanReclaimUnusedPayment() public {

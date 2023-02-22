@@ -1329,4 +1329,140 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         vm.stopPrank();
     }
+
+    function test_CanEditRequest() public {
+        vm.startPrank(bob);
+
+        uint256 balanceBefore = payToken.balanceOf(address(bob));
+
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
+
+        payToken.approve(address(market), 100000e18);
+
+        market.editRequest(
+            requestId,
+            address(payToken),
+            50e18,
+            block.timestamp + 1 hours,
+            block.timestamp + 1 days,
+            block.timestamp + 1 weeks,
+            "ipfs://222"
+        );
+
+        (
+            address serviceRequester,
+            address pToken,
+            uint256 pTokenQ,
+            uint256 signalExp,
+            uint256 submissionExp,
+            uint256 enforcementExp,
+            uint256 submissionCount,
+            string memory uri
+        ) = market.serviceRequests(requestId);
+
+        uint256 balanceAfter = payToken.balanceOf(address(bob));
+
+        assertEq(pTokenQ, 50e18);
+        assertEq(balanceAfter, balanceBefore - 50e18);
+
+        vm.stopPrank();
+    }
+
+    function test_CantEditRequestAfterSignal() public {
+        vm.startPrank(bob);
+
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
+
+        // A valid user signals
+        changePrank(alice);
+        market.signal(requestId);
+
+        changePrank(bob);
+        // User tries to edit the request
+        vm.expectRevert(
+            "LaborMarket::editRequest: Already active"
+        );
+        market.editRequest(
+            requestId,
+            address(payToken),
+            50e18,
+            block.timestamp + 1 hours,
+            block.timestamp + 1 days,
+            block.timestamp + 1 weeks,
+            "ipfs://222"
+        );
+
+        vm.stopPrank();
+    }
+
+    function test_CannotEditIfNotRequester() public {
+        vm.startPrank(bob);
+
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
+
+        // Other user tries to edit the request
+        changePrank(alice);
+        vm.expectRevert(
+            "LaborMarket::editRequest: Not requester"
+        );
+        market.editRequest(
+            requestId + 1,
+            address(payToken),
+            50e18,
+            block.timestamp + 1 hours,
+            block.timestamp + 1 days,
+            block.timestamp + 1 weeks,
+            "ipfs://222"
+        );
+
+        vm.stopPrank();
+    }
+
+    function test_RequestCannotHaveInvalidTimestamps() public {
+        vm.startPrank(bob);
+
+        // Create a request
+        vm.expectRevert(
+            "LaborMarket::submitRequest: Invalid timestamps"
+        );
+        market.submitRequest(
+            address(payToken),
+            50e18,
+            block.timestamp - 1,
+            block.timestamp + 1 days,
+            block.timestamp + 1 weeks,
+            "ipfs://222"
+        );
+
+        // Create a request
+        vm.expectRevert(
+            "LaborMarket::submitRequest: Invalid timestamps"
+        );
+        market.submitRequest(
+            address(payToken),
+            50e18,
+            block.timestamp + 1 days,
+            block.timestamp + 1 hours,
+            block.timestamp + 1 weeks,
+            "ipfs://222"
+        );
+
+        // Create a request
+        vm.expectRevert(
+            "LaborMarket::submitRequest: Invalid timestamps"
+        );
+        market.submitRequest(
+            address(payToken),
+            50e18,
+            block.timestamp + 1 hours,
+            block.timestamp + 1 weeks,
+            block.timestamp + 1 days,
+            "ipfs://222"
+        );
+
+        vm.stopPrank();
+    }
 }

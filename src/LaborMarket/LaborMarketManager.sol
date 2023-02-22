@@ -194,15 +194,18 @@ contract LaborMarketManager is
     /**
      * @notice Allows a network governor to set the configuration.
      * @param _configuration The new configuration.
+     *
      * Requirements:
      * - The caller must be the owner of the market or a 
      *   governor at the network level.
+     * - The market must not have been used.
      */
     function setConfiguration(
         LaborMarketConfiguration calldata _configuration
     )
         public
     {
+        /// @dev The caller must be the owner or a governor.
         require(
             configuration.owner == address(0) || 
             _msgSender() == configuration.owner || 
@@ -210,6 +213,7 @@ contract LaborMarketManager is
             "LaborMarketManager::setConfiguration: Not owner or governor"
         );
 
+        /// @dev The market must not be in use.
         require(serviceId == 0, "LaborMarketManager::setConfiguration: Market in use");
 
         network = LaborMarketNetworkInterface(_configuration.modules.network);
@@ -256,6 +260,7 @@ contract LaborMarketManager is
     {
         address provider = serviceSubmissions[_submissionId].serviceProvider;
         
+        /// @dev The provider must have not claimed rewards.
         if (hasPerformed[_submissionId][provider][HAS_CLAIMED]) {
             return (0, 0);
         }
@@ -350,38 +355,6 @@ contract LaborMarketManager is
     }
 
     /**
-     * @notice Allows a service provider to fulfill a service request.
-     */
-    function _provide(
-          uint256 _requestId
-        , string calldata _uri
-    )
-        internal
-    {
-         /// @dev Increment the submission count and service ID.
-        unchecked {
-            ++serviceId;
-            ++serviceRequests[_requestId].submissionCount;
-        }
-
-        /// @dev Set the submission.
-        serviceSubmissions[serviceId] = ServiceSubmission({
-            serviceProvider: _msgSender(),
-            requestId: _requestId,
-            timestamp: block.timestamp,
-            uri: _uri
-        });
-
-        /// @dev Provider has submitted.
-        hasPerformed[_requestId][_msgSender()][HAS_SUBMITTED] = true;
-
-        /// @dev Use the user's reputation.
-        reputationModule.mintReputation(_msgSender(), configuration.reputationParams.provideStake);
-
-        emit RequestFulfilled(_msgSender(), _requestId, serviceId, _uri);
-    }
-
-    /**
      * @notice Facilitates the review of a service submission.
      */
     function _review(
@@ -430,10 +403,13 @@ contract LaborMarketManager is
         /// @dev Keep accounting in mind for ERC20s with transfer fees.
         uint256 pTokenBefore = pToken.balanceOf(address(this));
 
+        /// @dev Transfer the pTokens to the contract.
         pToken.transferFrom(_msgSender(), address(this), _pTokenQ);
 
+        /// @dev Get the pToken balance after the transfer.
         uint256 pTokenAfter = pToken.balanceOf(address(this));
 
+        /// @dev Set the service request.
         serviceRequests[_serviceId] = ServiceRequest({
             serviceRequester: _msgSender(),
             pToken: _pToken,

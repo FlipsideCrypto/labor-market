@@ -21,8 +21,8 @@ contract LaborMarket is LaborMarketManager {
      * @return requestId The id of the service request.
      *
      * Requirements:
-     * - A user has to be conform to the reputational restrictions imposed by the labor market.
      * - Caller has to have approved the LaborMarket contract to transfer the payment token.
+     * - Timestamps must be valid and chronological.
      */
     function submitRequest(
           address _pToken
@@ -66,6 +66,11 @@ contract LaborMarket is LaborMarketManager {
     /**
      * @notice Signals interest in fulfilling a service request.
      * @param _requestId The id of the service request.
+     *
+     * Requirements:
+     * - A user has to be conform to the reputational restrictions imposed by the labor market.
+     * - The signal deadline has not passed.
+     * - The user has not already signaled.
      */
     function signal(
         uint256 _requestId
@@ -106,6 +111,10 @@ contract LaborMarket is LaborMarketManager {
      * @notice Signals interest in reviewing a submission.
      * @param _requestId The id of the request a maintainer would like to review.
      * @param _quantity The amount of submissions a maintainer is willing to review.
+     *
+     * Requirements:
+     * - The maintainer has to have signaled.
+     * - The maintainer has to have enough rToken for the signal quantity.
      */
     function signalReview(
           uint256 _requestId
@@ -140,6 +149,11 @@ contract LaborMarket is LaborMarketManager {
      * @param _requestId The id of the service request being fulfilled.
      * @param _uri The uri of the service submission data.
      * @return submissionId The id of the service submission.
+     *
+     * Requirements: 
+     * - The provider has to have signaled.
+     * - The submission deadline has not passed.
+     * - The provider has not already submitted.
      */
     function provide(
           uint256 _requestId
@@ -168,7 +182,27 @@ contract LaborMarket is LaborMarketManager {
             "LaborMarket::provide: Already submitted"
         );
 
-        _provide(_requestId, _uri);
+        /// @dev Increment the submission count and service ID.
+        unchecked {
+            ++serviceId;
+            ++serviceRequests[_requestId].submissionCount;
+        }
+
+        /// @dev Set the submission.
+        serviceSubmissions[serviceId] = ServiceSubmission({
+            serviceProvider: _msgSender(),
+            requestId: _requestId,
+            timestamp: block.timestamp,
+            uri: _uri
+        });
+
+        /// @dev Provider has submitted.
+        hasPerformed[_requestId][_msgSender()][HAS_SUBMITTED] = true;
+
+        /// @dev Use the user's reputation.
+        reputationModule.mintReputation(_msgSender(), configuration.reputationParams.provideStake);
+
+        emit RequestFulfilled(_msgSender(), _requestId, serviceId, _uri);
 
         return serviceId;
     }
@@ -178,6 +212,12 @@ contract LaborMarket is LaborMarketManager {
      * @param _requestId The id of the service request being fulfilled.
      * @param _submissionId The id of the service providers submission.
      * @param _score The score of the service submission.
+     *
+     * Requirements:
+     * - The enforcement deadline has not passed.
+     * - The maintainer has signaled.
+     * - The maintainer has not already reviewed this submission.
+     * - The maintainer is not the submission provider.
      */
     function review(
           uint256 _requestId
@@ -219,6 +259,10 @@ contract LaborMarket is LaborMarketManager {
      * @param _to The address to send the payment to.
      * @return pTokenClaimed The amount of pTokens claimed.
      * @return rTokenClaimed The amount of rTokens claimed.
+     * 
+     * Requirements:
+     * - The submission has not already been claimed.
+     * - The provider is the sender.
      */
     function claim(
           uint256 _submissionId
@@ -258,6 +302,11 @@ contract LaborMarket is LaborMarketManager {
     /**
      * @notice Allows a service requester to claim the remainder of funds not allocated to service providers.
      * @param _requestId The id of the service request.
+     *
+     * Requirements:
+     * - The requester is the sender.
+     * - The enforcement deadline has passed.
+     * - The requester has not claimed the remainder.
      */
     function claimRemainder(
         uint256 _requestId
@@ -300,12 +349,17 @@ contract LaborMarket is LaborMarketManager {
     /**
      * @notice Allows a maintainer to retrieve reputation that is stuck in review signals.
      * @param _requestId The id of the service request.
+     *
+     * Requirements:
+     * - The enforcement deadline has passed.
+     * - The maintainer has reviewed all possible submissions.
      */
     function retrieveReputation(
         uint256 _requestId
     ) 
         external
     {
+        /// @dev Require the enforcement deadline has passed.
         require(
             block.timestamp >
                 serviceRequests[serviceSubmissions[serviceId].requestId].enforcementExp,
@@ -314,17 +368,20 @@ contract LaborMarket is LaborMarketManager {
 
         ReviewPromise storage reviewPromise = reviewSignals[_requestId][_msgSender()];
 
+        /// @dev Require the maintainer has signaled.
         require(
             reviewPromise.total >=
             serviceRequests[_requestId].submissionCount,
             "LaborMarket::retrieveReputation: Insufficient reviews"
         );
 
+        /// @dev Transfer the reputation.
         reputationModule.mintReputation(
             _msgSender(),
             configuration.reputationParams.reviewStake * reviewPromise.remainder
         );
 
+        /// @dev Reset the review promise.
         reviewPromise.total = 0;
         reviewPromise.remainder = 0;
     }
@@ -353,6 +410,7 @@ contract LaborMarket is LaborMarketManager {
             "LaborMarket::withdrawRequest: Already active"
         );
 
+        /// @dev Get the pToken and pToken quantity.
         address pToken = serviceRequests[_requestId].pToken;
         uint256 pTokenQ = serviceRequests[_requestId].pTokenQ;
 
@@ -370,6 +428,7 @@ contract LaborMarket is LaborMarketManager {
 
     /**
      * @notice Allows a service requester to edit a request.
+     * @dev Refunds the previous pToken and transfers in the new pToken.
      * @param _requestId The id of the service requesters request.
      * @param _pToken The address of the payment token.
      * @param _pTokenQ The quantity of payment tokens.
@@ -379,7 +438,9 @@ contract LaborMarket is LaborMarketManager {
      * @param _requestUri The uri of the request.
      *
      * Requirements:
+     * - The requester is the sender.
      * - The request must not have been signaled.
+     * - The timestamps are valid.
      */
     function editRequest(
           uint256 _requestId
@@ -410,11 +471,10 @@ contract LaborMarket is LaborMarketManager {
             "LaborMarket::editRequest: Invalid timestamps"
         );
 
-        IERC20 pToken = IERC20(_pToken);
-
         /// @dev Refund the prior payment token.
-        pToken.transferFrom(
-            address(this),
+        IERC20(
+            serviceRequests[_requestId].pToken
+        ).transfer(
             _msgSender(),
             serviceRequests[_requestId].pTokenQ
         );

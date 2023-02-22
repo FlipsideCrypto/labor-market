@@ -11,6 +11,7 @@ import "hardhat-preprocessor";
 import "hardhat-abi-exporter";
 import "hardhat-contract-sizer";
 import "hardhat-finder";
+import "hardhat-docgen";
 import { HardhatUserConfig } from "hardhat/config";
 import { task } from "hardhat/config";
 
@@ -88,7 +89,12 @@ const config: HardhatUserConfig = {
   contractSizer: {
     alphaSort: false,
     disambiguatePaths: true,
-    runOnCompile: true,
+    runOnCompile: true
+  },
+  docgen: {
+    path: './docs',
+    clear: true,
+    runOnCompile: true
   },
   etherscan: {
     apiKey: {

@@ -5,18 +5,16 @@ pragma solidity ^0.8.17;
 import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
 import {EnforcementCriteriaInterface} from "src/Modules/Enforcement/interfaces/EnforcementCriteriaInterface.sol";
 
-import "hardhat/console.sol";
-
 /**
- * @title A contract that enforces a scalable likert scale.
- * @notice This contract takes in reviews on a 5 point Likert scale of SPAM, BAD, OK, GOOD, GREAT.
+ * @title Scalable Likert Enforcement
+ * @notice A contract that enforces a scalable likert scale.
+ * @dev This contract takes in reviews on a 5 point Likert scale of SPAM, BAD, OK, GOOD, GREAT.
  *         Upon a review, the average score is calculated and the cumulative score is updated with
  *         the score multiplied by it's bucket multiplier.
- *         Once it is time to claim, the ratio of a submission's average score to the cumulative
+ *         Once it is time to claim, the ratio of a submission's average scaled score to the cumulative
  *         score is calculated. This ratio represents the % of the total reward pool that a submission
- *         has earned. The earnings are linearly distributed to the submission's based on their average score.
- *         If two total submissions have an average score of 4 and 2, the first submission will earn 2/3 of 
- *         the total reward pool and the second submission will earn 1/3. Thus, rewards are linear.
+ *         has earned. The earnings are distributed to the submission's based on their average score and
+ *         where it falls on the bucket criteria.
  */
 
 
@@ -33,7 +31,7 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
     /// @dev Labor Market -> Buckets
     mapping(bytes32 => Buckets) internal bucketCriteria;
 
-    /// @dev The relevant scoring critera for a request.
+    /// @dev The relevant scoring criteria for a request.
     struct Buckets {
         uint256[] ranges;
         uint256[] weights;

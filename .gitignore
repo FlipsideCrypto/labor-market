@@ -17,4 +17,5 @@ cache
 artifacts
 cache_hardhat
 abis/
+docs
 out
