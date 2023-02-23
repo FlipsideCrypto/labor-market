@@ -21,11 +21,11 @@ import {EnforcementCriteriaInterface} from "src/Modules/Enforcement/interfaces/E
 contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
     /// @dev Tracks the scores given to service submissions.
     /// @dev Labor Market -> Submission Id -> Scores
-    mapping(address => mapping(uint256 => Scores)) public submissionToScores;
+    mapping(address => mapping(uint256 => Score)) public submissionToScore;
 
     /// @dev Tracks the cumulative sum of average score.
     /// @dev Labor Market -> Request Id -> Total score
-    mapping(address => mapping(uint256 => RequestData)) public requestData;
+    mapping(address => mapping(uint256 => Request)) public requests;
 
     /// @dev Tracks the bucket criteria for a labor market.
     /// @dev Labor Market -> Buckets
@@ -38,16 +38,16 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
     }
 
     /// @dev The relevant storage data for a request.
-    struct RequestData {
+    struct Request {
         uint256 scaledAvgSum;
         uint256 qualifyingCount;
     }
 
     /// @dev The scores given to a service submission.
-    struct Scores {
+    struct Score {
         uint256 reviewCount;
         uint256 reviewSum;
-        uint256 scaledAvg;
+        uint256 avg;
         bool qualified;
     }
 
@@ -155,13 +155,13 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
 
         return (
             _calculateShare(
-                submissionToScores[_laborMarket][_submissionId].scaledAvg, 
-                requestData[_laborMarket][requestId].scaledAvgSum, 
+                submissionToScore[_laborMarket][_submissionId].avg, 
+                requests[_laborMarket][requestId].scaledAvgSum, 
                 LaborMarketInterface(_laborMarket).getRequest(requestId).pTokenQ
             ),
             _calculateShare(
-                submissionToScores[_laborMarket][_submissionId].scaledAvg, 
-                requestData[_laborMarket][requestId].scaledAvgSum, 
+                submissionToScore[_laborMarket][_submissionId].avg, 
+                requests[_laborMarket][requestId].scaledAvgSum, 
                 LaborMarketInterface(_laborMarket).getConfiguration().reputationParams.rewardPool
             )
         );
@@ -185,8 +185,8 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
         uint256 requestId = _getRequestId(_submissionId);
 
         return _calculateShare(
-            submissionToScores[_laborMarket][_submissionId].scaledAvg, 
-            requestData[_laborMarket][requestId].scaledAvgSum, 
+            submissionToScore[_laborMarket][_submissionId].avg, 
+            requests[_laborMarket][requestId].scaledAvgSum, 
             LaborMarketInterface(_laborMarket).getRequest(requestId).pTokenQ
         );
     }
@@ -208,8 +208,8 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
         uint256 requestId = _getRequestId(_submissionId);
 
         return _calculateShare(
-            submissionToScores[_laborMarket][_submissionId].scaledAvg, 
-            requestData[_laborMarket][requestId].scaledAvgSum, 
+            submissionToScore[_laborMarket][_submissionId].avg, 
+            requests[_laborMarket][requestId].scaledAvgSum, 
             LaborMarketInterface(_laborMarket).getConfiguration().reputationParams.rewardPool
         );
     }
@@ -236,7 +236,7 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
         /// @dev If the enforcement exp passed and the request total score is 0, return the total pool.
         if (
             block.timestamp > request.enforcementExp && 
-            requestData[_laborMarket][_requestId].qualifyingCount == 0
+            requests[_laborMarket][_requestId].qualifyingCount == 0
         ) return request.pTokenQ;
 
         return 0;
@@ -254,32 +254,32 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
         internal
     {
         /// @dev Load the submissions score state and the request data.
-        Scores storage score = submissionToScores[_laborMarket][_submissionId];
-        RequestData storage request = requestData[_laborMarket][_getRequestId(_submissionId)];
+        Score storage score = submissionToScore[_laborMarket][_submissionId];
+        Request storage request = requests[_laborMarket][_getRequestId(_submissionId)];
 
         /// @dev Set the score data and remove the scaled average from the cumulative total.
         unchecked {
             score.reviewCount++;
             score.reviewSum += _score * 25; /// @dev Scale the score to 100.
-            request.scaledAvgSum -= score.scaledAvg;
+            request.scaledAvgSum -= score.avg;
         }
 
         /// @dev Get the scaled average.
         uint256 avg = score.reviewSum / score.reviewCount;
-        score.scaledAvg = avg * _getBucketWeight(_laborMarket, avg);
+        score.avg = avg * _getBucketWeight(_laborMarket, avg);
 
         /// @dev Add the scaled score to the cumulative total.
-        request.scaledAvgSum += score.scaledAvg;
+        request.scaledAvgSum += score.avg;
 
         /// @dev Is there a better way to handle this?
         /// @dev If not qualified, increment the number of qualifying scores and mark score as qualified.
-        if (score.scaledAvg > 0 && !score.qualified) {
+        if (score.avg > 0 && !score.qualified) {
             score.qualified = true;
             request.qualifyingCount++;
         }
 
         /// @dev If qualified, decrement number of scores and set score as qualified.
-        if (score.scaledAvg == 0 && score.qualified) {
+        if (score.avg == 0 && score.qualified) {
             score.qualified = false;
             request.qualifyingCount--;
         }
@@ -308,6 +308,10 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
 
         /// @dev Loop through the buckets from the end and return the first weight that the range is less than the score.
         uint256 i = buckets.ranges.length;
+
+        /// @dev If the buckets are not configured, utilize a scalable likert scale.
+        if (i == 0) return 1;
+
         for (i; i > 0; i--) {
             if (_score > buckets.ranges[i - 1]) return buckets.weights[i - 1];
         }
@@ -332,34 +336,10 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
             uint256
         )
     {
-        return (_userScore * _totalPool) / _totalCumulativeScore;
-    }
-
-    /**
-     * @notice Gets weighted average of a submission's scores.
-     * @param _scores The scores to calculate the weighted average of.
-     * @return The weighted average of the scores and the weight applied.
-     */
-    function _getWeightedAverage(
-        uint256[] memory _scores
-    )
-        internal
-        view
-        returns (
-            uint256
-        )
-    {
-        uint256 cumulativeScore;
-        uint256 qScores = _scores.length;
-
-        for (uint256 i; i < qScores; ++i) {
-            cumulativeScore += _scores[i];
-        }
-
         return (
-            cumulativeScore * 
-            _getBucketWeight(msg.sender, cumulativeScore / qScores) / 
-            qScores
+            _totalCumulativeScore > 0 ?
+            _userScore * _totalPool / _totalCumulativeScore :
+            0
         );
     }
 

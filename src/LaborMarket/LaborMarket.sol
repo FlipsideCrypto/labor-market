@@ -33,21 +33,26 @@ contract LaborMarket is LaborMarketManager {
         , string calldata _requestUri
     ) 
         external 
-        onlyDelegate 
         returns (
             uint256 requestId
         ) 
     {
-        /// @dev Increment the service id.
-        unchecked {
-            ++serviceId;
-        }
+        /// @dev Ensure the caller is approved to create a request.
+        require(
+            isDelegate(_msgSender()), 
+            "LaborMarket::submitRequest: Not a delegate"
+        );
 
         /// @dev Ensure the timestamps are valid.
         require(
             _isValidTimestamps(_signalExp, _submissionExp, _enforcementExp),
             "LaborMarket::submitRequest: Invalid timestamps"
         );
+
+        /// @dev Increment the service id.
+        unchecked {
+            ++serviceId;
+        }
 
         /// @dev Set the request.
         _setRequest(
@@ -68,16 +73,21 @@ contract LaborMarket is LaborMarketManager {
      * @param _requestId The id of the service request.
      *
      * Requirements:
-     * - A user has to be conform to the reputational restrictions imposed by the labor market.
+     * - A user has to have the reputation balance necessary for this request.
      * - The signal deadline has not passed.
      * - The user has not already signaled.
      */
     function signal(
         uint256 _requestId
     ) 
-        external 
-        permittedParticipant 
+        external  
     {
+        /// @dev Require the caller is a permitted participant.
+        require(
+            isPermittedParticipant(_msgSender()), 
+            "LaborMarket::signal: Not a permitted participant"
+        );
+
         /// @dev Require the signal deadline has not passed.
         require(
             block.timestamp <= serviceRequests[_requestId].signalExp,
@@ -120,11 +130,16 @@ contract LaborMarket is LaborMarketManager {
           uint256 _requestId
         , uint256 _quantity
     ) 
-        external 
-        onlyMaintainer 
+        external  
     {
         ReviewPromise storage reviewPromise = reviewSignals[_requestId][_msgSender()];
 
+        /// @dev Require the caller is a maintainer.
+        require(
+            isMaintainer(_msgSender()),
+            "LaborMarket::signalReview: Not a maintainer"
+        );
+        
         /// @dev Require the maintainer has no outstanding review signals.
         require(
             reviewPromise.remainder == 0,
@@ -250,7 +265,24 @@ contract LaborMarket is LaborMarketManager {
             "LaborMarket::review: Cannot review own submission"
         );
 
-        _review(_requestId, _submissionId, _score);
+        /// @dev Decrement the maintainer's review signal.
+        unchecked {
+            --reviewSignals[_requestId][_msgSender()].remainder;
+        }
+
+        /// @dev Maintainer has reviewed this submission.
+        hasPerformed[_submissionId][_msgSender()][HAS_REVIEWED] = true;
+
+        /// @dev Review the submission.
+        enforcementCriteria.review(_submissionId, _score);
+
+        /// @dev Use the maintainer's reputation.
+        reputationModule.mintReputation(
+            _msgSender(),
+            configuration.reputationParams.reviewStake
+        );
+
+        emit RequestReviewed(_msgSender(), _requestId, _submissionId, _score);
     }
 
     /**
@@ -263,6 +295,7 @@ contract LaborMarket is LaborMarketManager {
      * Requirements:
      * - The submission has not already been claimed.
      * - The provider is the sender.
+     * - The enforcement deadline has passed.
      */
     function claim(
           uint256 _submissionId
@@ -296,7 +329,30 @@ contract LaborMarket is LaborMarketManager {
             "LaborMarket::claim: Not enforcement deadline"
         );
 
-        return _claim(requestId, _submissionId, _to);
+        /// @dev Provider has claimed this submission.
+        hasPerformed[_submissionId][_msgSender()][HAS_CLAIMED] = true;
+
+        /// @dev Get the rewards.
+        (pTokenClaimed, rTokenClaimed) = enforcementCriteria.getRewards(
+            address(this),
+            _submissionId
+        );
+
+        /// @dev Transfer the pTokens.
+        IERC20(
+            serviceRequests[requestId].pToken
+        ).transfer(
+            _to,
+           pTokenClaimed
+        );
+
+        /// @dev Mint the rToken reward.
+        reputationModule.mintReputation(
+            _msgSender(), 
+            rTokenClaimed
+        );
+
+        emit RequestPayClaimed(_msgSender(), requestId, _submissionId, pTokenClaimed, _to);
     }
 
     /**
@@ -387,11 +443,12 @@ contract LaborMarket is LaborMarketManager {
     }
 
     /**
-     * @notice Allows a service requester to withdraw a request.
+     * @notice Allows a service requester to withdraw a request and refund the pToken.
      * @param _requestId The id of the service requesters request.
      *
      * Requirements:
      * - The request must not have been signaled.
+     * - The request creator is the sender.
      */
     function withdrawRequest(
         uint256 _requestId

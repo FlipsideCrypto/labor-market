@@ -365,7 +365,6 @@ contract ReputationModuleTest is PRBTest, StdCheats {
         uint256 balanceBefore = reputationModule.getAvailableReputation(address(market), address(bob));
 
         reputationModule.freezeReputation(
-            address(bob),
             address(repToken),
             REPUTATION_TOKEN_ID,
             1000000

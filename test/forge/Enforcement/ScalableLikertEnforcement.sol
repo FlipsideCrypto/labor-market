@@ -8,9 +8,9 @@ import {PRBTest} from "prb-test/PRBTest.sol";
 
 // Contracts
 import {PaymentToken} from "../Helpers/HelperTokens.sol";
-import { BadgerOrganization } from "src/Modules/Badger/BadgerOrganization.sol";
-import { Badger } from "src/Modules/Badger/Badger.sol";
-import { BadgerScoutInterface } from "src/Modules/Badger/interfaces/BadgerScoutInterface.sol";
+import {BadgerOrganization} from "src/Modules/Badger/BadgerOrganization.sol";
+import {Badger} from "src/Modules/Badger/Badger.sol";
+import {BadgerScoutInterface} from "src/Modules/Badger/interfaces/BadgerScoutInterface.sol";
 
 import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
 import {LaborMarket} from "src/LaborMarket/LaborMarket.sol";
@@ -482,6 +482,7 @@ contract ScalableLikertEnforcementTest is PRBTest, StdCheats {
             (uint256 pPaid, uint256 rPaid) = market.claim(i, msg.sender); 
             totalPaid += pPaid;
             totalReputation += rPaid;
+            console.log("pPaid %s", pPaid);
         }
 
         console.log("pTokenDust %s / %s", 1000e18 - totalPaid, 1000e18);
@@ -557,7 +558,7 @@ contract ScalableLikertEnforcementTest is PRBTest, StdCheats {
 
         // Have bob review a submission
         market.signalReview(requestId, 1);
-        market.review(requestId, 5, 1);
+        market.review(requestId, 5, 0);
 
         changePrank(grader1);
         market.signalReview(requestId, 1);

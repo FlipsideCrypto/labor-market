@@ -115,28 +115,21 @@ contract ReputationModule is
 
     /**
      * @notice Lock and freeze reputation for an account, avoiding decay.
-     * @param _account The account to freeze reputation for.
      * @param _reputationToken The address of the reputation token.
      * @param _reputationTokenId The ID of the reputation token.
      * @param _frozenUntilEpoch The epoch until which the reputation is frozen.
+     *
      * Requirements:
      * - The frozenUntilEpoch must be in the future.
      */
     function freezeReputation(
-          address _account
-        , address _reputationToken
+          address _reputationToken
         , uint256 _reputationTokenId
         , uint256 _frozenUntilEpoch
     )
         external
         override
     {   
-        /// @dev The sender must be the account.
-        require(
-            _msgSender() == _account,
-            "ReputationModule: Only the account can freeze reputation."
-        );
-
         /// @dev The frozenUntilEpoch must be in the future.
         require(
             _frozenUntilEpoch > block.timestamp,
@@ -147,12 +140,12 @@ contract ReputationModule is
         _revokeReputation(
             _reputationToken,
             _reputationTokenId,
-            _account,
+            _msgSender(),
             0
         );
 
         /// @dev Freeze the account's reputation.
-        accountInfo[_reputationToken][_reputationTokenId][_account].frozenUntilEpoch = _frozenUntilEpoch;
+        accountInfo[_reputationToken][_reputationTokenId][_msgSender()].frozenUntilEpoch = _frozenUntilEpoch;
     }
 
     /**
@@ -304,24 +297,6 @@ contract ReputationModule is
             accountInfo[config.reputationToken][config.reputationTokenId][_account].frozenUntilEpoch,
             accountInfo[config.reputationToken][config.reputationTokenId][_account].lastDecayEpoch
         );
-    }
-
-    /**
-     * @notice Get the ERC1155 token address and ID for a given Labor Market.
-     * @param _laborMarket The Labor Market to check.
-     * @return The ERC1155 token address and ID for a given Labor Market.
-     */
-    function getMarketReputationConfig(
-        address _laborMarket
-    )
-        external
-        view
-        override
-        returns (
-            MarketReputationConfig memory
-        )
-    {
-        return marketRepConfig[_laborMarket];
     }
 
     /**

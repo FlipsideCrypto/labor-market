@@ -158,6 +158,15 @@ contract LaborMarketVersions is
         );
     }
 
+    /**
+     * @notice Allows a network governor to set the configuration.
+     * @param _configuration The new configuration.
+     *
+     * Requirements:
+     * - The caller must be the owner of the market or a 
+     *   governor at the network level.
+     * - The market must not have been used.
+     */
     function setMarketConfiguration(
           address _marketAddress
         , LaborMarketConfiguration memory _configuration

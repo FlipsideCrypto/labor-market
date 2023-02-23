@@ -65,7 +65,7 @@ interface EnforcementCriteriaInterface {
         );
 
     /** 
-     *  @notice Get the remaining unclaimed.
+     *  @notice Get the remaining pToken not allocated.
      *  @param _laborMarket The labor market the request is in.
      *  @param _requestId The request to get the remaining unclaimed for.
      *  @return unclaimed Total that can be reclaimed by the requester.

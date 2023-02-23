@@ -23,7 +23,7 @@ import {LaborMarketVersions} from "src/Network/LaborMarketVersions.sol";
 import {ReputationModule} from "src/Modules/Reputation/ReputationModule.sol";
 import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/ReputationModuleInterface.sol";
 
-import { ConstantLikertEnforcement } from "src/Modules/Enforcement/ConstantLikertEnforcement.sol";
+import { ScalableLikertEnforcement } from "src/Modules/Enforcement/ScalableLikertEnforcement.sol";
 
 import {LaborMarketConfigurationInterface} from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
 import {LaborMarketNetworkInterface} from "src/Network/interfaces/LaborMarketNetworkInterface.sol";
@@ -44,7 +44,10 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
     LaborMarketNetwork public network;
 
-    ConstantLikertEnforcement public enforcementCriteria;
+    ScalableLikertEnforcement public enforcementCriteria;
+
+    uint256[] private RANGES;
+    uint256[] private WEIGHTS;
 
     // Define the tokenIds for ERC1155
     uint256 private constant DELEGATE_TOKEN_ID = 0;
@@ -219,10 +222,13 @@ contract LaborMarketTest is PRBTest, StdCheats {
         repToken.leaderMint(address(deployer), GOVERNOR_TOKEN_ID, 1, "0x");
         repToken.leaderMint(address(deployer), CREATOR_TOKEN_ID, 1, "0x");
 
+        RANGES.push(0); RANGES.push(24); RANGES.push(44); RANGES.push(69); RANGES.push(89);
+        WEIGHTS.push(0); WEIGHTS.push(25); WEIGHTS.push(75); WEIGHTS.push(100); WEIGHTS.push(200);
         bytes32 criteria = "";
 
+
         // Create enforcement criteria
-        enforcementCriteria = new ConstantLikertEnforcement();
+        enforcementCriteria = new ScalableLikertEnforcement();
 
         // Create a new labor market configuration
         LaborMarketConfigurationInterface.LaborMarketConfiguration
@@ -672,7 +678,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         // Try to signal the request and expect it to revert
         vm.expectRevert(
-            "LaborMarket::permittedParticipant: Not permitted participant"
+            "LaborMarket::signal: Not a permitted participant"
         );
         market.signal(requestId);
         vm.stopPrank();
@@ -689,13 +695,13 @@ contract LaborMarketTest is PRBTest, StdCheats {
         market.signal(requestId);
 
         // A user tries to signal for review and we expect it to revert
-        vm.expectRevert("LaborMarket::onlyMaintainer: Not maintainer");
+        vm.expectRevert("LaborMarket::signalReview: Not a maintainer");
         market.signalReview(requestId, 3);
 
         // We also expect a revert if a random address tries to review
         changePrank(evilUser);
 
-        vm.expectRevert("LaborMarket::onlyMaintainer: Not maintainer");
+        vm.expectRevert("LaborMarket::signalReview: Not a maintainer");
         market.signalReview(requestId, 3);
 
         vm.stopPrank();
@@ -823,6 +829,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         // Skip time
         vm.warp(5 weeks);
 
+        
         // User claims reward
         changePrank(alice);
         market.claim(submissionId, msg.sender);
@@ -1052,14 +1059,13 @@ contract LaborMarketTest is PRBTest, StdCheats {
         market.review(requestId, submissionId, 1);
 
         // Scores
-        (, , uint256 submissionAvg, ) = enforcementCriteria.submissionToScores(address(market), submissionId);
+        (, , uint256 submissionAvg, ) = enforcementCriteria.submissionToScore(address(market), submissionId);
         assertEq(submissionAvg, 50);
 
         changePrank(alice);
         vm.warp(123 weeks);
 
         // User claims reward
-        // It is the only score for constant likert, so it is the only one that counts.
         (uint256 qClaimed, )= market.claim(submissionId, alice);
         assertAlmostEq(qClaimed, 1000e18, 0.0001e18);
 
@@ -1253,7 +1259,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         market.review(requestId, submissionId, 0);
 
         // Scores
-        (, , uint256 submissionAvg, ) = enforcementCriteria.submissionToScores(address(market), submissionId);
+        (, , uint256 submissionAvg, ) = enforcementCriteria.submissionToScore(address(market), submissionId);
         assertEq(submissionAvg, 25); // 2*25 + 0*25 / 2
 
         changePrank(alice);

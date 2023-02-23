@@ -11,6 +11,7 @@ typechain-types
 # Forge files
 .gas-snapshot
 broadcast
+report
 
 # Hardhat files
 cache

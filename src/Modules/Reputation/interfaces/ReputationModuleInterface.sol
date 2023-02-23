@@ -39,8 +39,7 @@ interface ReputationModuleInterface {
         external;
 
     function freezeReputation(
-          address _account
-        , address _reputationToken
+          address _reputationToken
         , uint256 _reputationTokenId
         , uint256 _frozenUntilEpoch
     )
@@ -74,14 +73,5 @@ interface ReputationModuleInterface {
         view
         returns (
             uint256
-        );
-
-    function getMarketReputationConfig(
-        address _laborMarket
-    )
-        external
-        view
-        returns (
-            MarketReputationConfig memory
         );
 }

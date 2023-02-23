@@ -20,8 +20,6 @@ import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/Reput
 
 import {ConstantLikertEnforcement} from "src/Modules/Enforcement/ConstantLikertEnforcement.sol";
 
-import {PayCurve} from "src/Modules/Payment/PayCurve.sol";
-
 import {LaborMarketConfigurationInterface} from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
 import {LaborMarketNetworkInterface} from "src/Network/interfaces/LaborMarketNetworkInterface.sol";
 
@@ -45,7 +43,6 @@ contract DeployProtocol is Script {
     LaborMarketNetwork public network;
 
     ConstantLikertEnforcement public constantLikertEnforcement;
-    PayCurve public payCurve;
 
     address public capacityToken = address(0);
 
@@ -78,9 +75,6 @@ contract DeployProtocol is Script {
 
         // Create enforcement criteria
         constantLikertEnforcement = new ConstantLikertEnforcement();
-
-        // Create a new pay curve
-        payCurve = new PayCurve();
 
         vm.stopBroadcast();
     }

@@ -27,9 +27,14 @@ contract LaborMarketFactory is
     {}
 
     /**
-     * @notice Allows an individual to deploy a new Labor Market given they meet the version funding requirements.
+     * @notice Allows an individual to deploy a new Labor Market given they meet version and badge requirements.
      * @param _implementation The address of the implementation to be used.
      * @param _configuration The struct containing the config of the Market being created.
+     * @return laborMarketAddress The address of the newly created Labor Market.
+     * 
+     * Requirements:
+     * - The caller must be a creator.
+     * - The caller must have a valid license key.
      */
     function createLaborMarket( 
           address _implementation

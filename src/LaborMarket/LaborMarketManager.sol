@@ -34,6 +34,10 @@ contract LaborMarketManager is
     
     bytes32 internal constant HAS_SIGNALED = keccak256("hasSignaled");
 
+    /*//////////////////////////////////////////////////////////////
+                            STATE
+    //////////////////////////////////////////////////////////////*/
+
     /// @dev The network contract.
     LaborMarketNetworkInterface internal network;
 
@@ -70,6 +74,10 @@ contract LaborMarketManager is
 
     /// @dev The service request id counter.
     uint256 public serviceId;
+
+    /*//////////////////////////////////////////////////////////////
+                            EVENTS
+    //////////////////////////////////////////////////////////////*/
 
     /// @notice emitted when labor market parameters are updated.
     event LaborMarketConfigured(
@@ -140,45 +148,9 @@ contract LaborMarketManager is
         , uint256 remainderAmount
     );
 
-    /// @notice Gates the permissions to create new requests.
-    modifier onlyDelegate() {
-        require(
-            address(delegateBadge) == address(0) ||
-            delegateBadge.balanceOf(
-                _msgSender(),
-                configuration.delegateBadge.tokenId
-            ) > 0,
-            "LaborMarket::onlyDelegate: Not delegate"
-        );
-        _;
-    }
-
-    /// @notice Gates the permissions to review submissions.
-    modifier onlyMaintainer() {
-        require(
-            maintainerBadge.balanceOf(
-                _msgSender(),
-                configuration.maintainerBadge.tokenId
-            ) > 0,
-            "LaborMarket::onlyMaintainer: Not maintainer"
-        );
-        _;
-    }
-
-    /// @notice Gates the permissions to provide submissions based on reputation.
-    modifier permittedParticipant() {
-        uint256 availableRep = reputationModule.getAvailableReputation(
-            address(this),
-            _msgSender()
-        );
-
-        require((
-                availableRep >= configuration.reputationParams.submitMin &&
-                availableRep < configuration.reputationParams.submitMax
-            ), "LaborMarket::permittedParticipant: Not permitted participant"
-        );
-        _;
-    }
+    /*//////////////////////////////////////////////////////////////
+                            SETTERS
+    //////////////////////////////////////////////////////////////*/
 
     /// @notice Initialize the labor market.
     function initialize(
@@ -271,6 +243,59 @@ contract LaborMarketManager is
         );
     }
 
+    /// @notice Gets the delegate eligibility of a caller.
+    /// @param _account The account to check.
+    /// @return Whether the account is a delegate.
+    function isDelegate(address _account) 
+        public 
+        view 
+        returns (
+            bool
+        ) 
+    {
+        return (
+            address(delegateBadge) == address(0) ||
+            delegateBadge.balanceOf(_account, configuration.delegateBadge.tokenId) > 0
+        );
+    }
+
+    /// @notice Gets the maintainer eligibility of a caller.
+    /// @param _account The account to check.
+    /// @return Whether the account is a maintainer.
+    function isMaintainer(address _account) 
+        public 
+        view 
+        returns (
+            bool
+        ) 
+    {
+        return (
+            address(maintainerBadge) == address(0) ||
+            maintainerBadge.balanceOf(_account, configuration.maintainerBadge.tokenId) > 0
+        );
+    }
+
+    /// @notice Gets the eligibility of a caller to submit a service request.
+    /// @param _account The account to check.
+    /// @return Whether the account is eligible to submit a service request.
+    function isPermittedParticipant(address _account)
+        public
+        view
+        returns (
+            bool
+        )
+    {
+        uint256 availableRep = reputationModule.getAvailableReputation(
+            address(this),
+            _account
+        );
+
+        return (
+            availableRep >= configuration.reputationParams.submitMin &&
+            availableRep < configuration.reputationParams.submitMax
+        );
+    }
+
     /**
      * @notice Returns the service request data.
      * @param _requestId The id of the service requesters request.
@@ -316,73 +341,6 @@ contract LaborMarketManager is
     /*//////////////////////////////////////////////////////////////
                             INTERNAL SETTERS
     //////////////////////////////////////////////////////////////*/
-
-    function _claim(
-          uint256 _requestId
-        , uint256 _submissionId
-        , address _to
-    )
-        internal
-        returns (
-            uint256 pTokenClaimed,
-            uint256 rTokenClaimed
-        )
-    {
-        /// @dev Provider has claimed this submission.
-        hasPerformed[_submissionId][_msgSender()][HAS_CLAIMED] = true;
-
-        /// @dev Get the rewards.
-        (pTokenClaimed, rTokenClaimed) = enforcementCriteria.getRewards(
-            address(this),
-            _submissionId
-        );
-
-        /// @dev Transfer the pTokens.
-        IERC20(
-            serviceRequests[_requestId].pToken
-        ).transfer(
-            _to,
-           pTokenClaimed
-        );
-
-        /// @dev Mint the rToken reward.
-        reputationModule.mintReputation(
-            _msgSender(), 
-            rTokenClaimed
-        );
-
-        emit RequestPayClaimed(_msgSender(), _requestId, _submissionId, pTokenClaimed, _to);
-    }
-
-    /**
-     * @notice Facilitates the review of a service submission.
-     */
-    function _review(
-          uint256 _requestId
-        , uint256 _submissionId
-        , uint256 _score
-    )
-        internal
-    {
-        /// @dev Maintainer has reviewed this submission.
-        hasPerformed[_submissionId][_msgSender()][HAS_REVIEWED] = true;
-
-        /// @dev Review the submission.
-        enforcementCriteria.review(_submissionId, _score);
-
-        /// @dev Decrement the maintainer's review signal.
-        unchecked {
-            --reviewSignals[_requestId][_msgSender()].remainder;
-        }
-
-        /// @dev Use the maintainer's reputation.
-        reputationModule.mintReputation(
-            _msgSender(),
-            configuration.reputationParams.reviewStake
-        );
-
-        emit RequestReviewed(_msgSender(), _requestId, _submissionId, _score);
-    }
 
     /**
      * @notice Facilitates the state changing of a request.
