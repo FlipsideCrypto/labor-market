@@ -17,7 +17,6 @@ import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "hardhat/console.sol";
 
 contract LaborMarketVersions is
     LaborMarketVersionsInterface,
@@ -37,7 +36,7 @@ contract LaborMarketVersions is
     IERC1155 public governorBadge;
 
     /// @dev The address interface of the Creator Badge.
-    IERC1155 creatorBadge;
+    IERC1155 public creatorBadge;
 
     /// @dev The token ID of the Governor Badge.
     uint256 public governorTokenId;
@@ -159,6 +158,15 @@ contract LaborMarketVersions is
         );
     }
 
+    /**
+     * @notice Allows a network governor to set the configuration.
+     * @param _configuration The new configuration.
+     *
+     * Requirements:
+     * - The caller must be the owner of the market or a 
+     *   governor at the network level.
+     * - The market must not have been used.
+     */
     function setMarketConfiguration(
           address _marketAddress
         , LaborMarketConfiguration memory _configuration

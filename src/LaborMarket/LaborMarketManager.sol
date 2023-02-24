@@ -4,64 +4,57 @@ pragma solidity ^0.8.17;
 
 /// @dev Core dependencies.
 import { LaborMarketInterface } from "./interfaces/LaborMarketInterface.sol";
-import { ContextUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { ERC1155HolderUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/utils/ERC1155HolderUpgradeable.sol";
-import { ERC721HolderUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
-import { Delegatable, DelegatableCore } from "delegatable/Delegatable.sol";
-
-/// @dev Helpers.
-import { StringsUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
+import { Delegatable } from "delegatable/Delegatable.sol";
 
 /// @dev Helper interfaces.
 import { LaborMarketNetworkInterface } from "../Network/interfaces/LaborMarketNetworkInterface.sol";
 import { EnforcementCriteriaInterface } from "../Modules/Enforcement/interfaces/EnforcementCriteriaInterface.sol";
-import { PayCurveInterface } from "../Modules/Payment/interfaces/PayCurveInterface.sol";
 import { ReputationModuleInterface } from "../Modules/Reputation/interfaces/ReputationModuleInterface.sol";
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @dev Supported interfaces.
 import { IERC1155ReceiverUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155ReceiverUpgradeable.sol";
-import { IERC721ReceiverUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
 
 contract LaborMarketManager is
     LaborMarketInterface,
     ERC1155HolderUpgradeable,
-    ERC721HolderUpgradeable,
-    Delegatable("LaborMarket", "v1.0.0"),
-    ContextUpgradeable
+    Delegatable("LaborMarket", "v1.0.0")
 {
     /// @dev Performable actions.
-    bytes32 public constant HAS_SUBMITTED = keccak256("hasSubmitted");
+    bytes32 internal constant HAS_SUBMITTED = keccak256("hasSubmitted");
 
-    bytes32 public constant HAS_CLAIMED = keccak256("hasClaimed");
+    bytes32 internal constant HAS_CLAIMED = keccak256("hasClaimed");
 
-    bytes32 public constant HAS_CLAIMED_REMAINDER =
+    bytes32 internal constant HAS_CLAIMED_REMAINDER =
         keccak256("hasClaimedRemainder");
 
-    bytes32 public constant HAS_REVIEWED = keccak256("hasReviewed");
+    bytes32 internal constant HAS_REVIEWED = keccak256("hasReviewed");
     
-    bytes32 public constant HAS_SIGNALED = keccak256("hasSignaled");
+    bytes32 internal constant HAS_SIGNALED = keccak256("hasSignaled");
+
+    /*//////////////////////////////////////////////////////////////
+                            STATE
+    //////////////////////////////////////////////////////////////*/
 
     /// @dev The network contract.
-    LaborMarketNetworkInterface public network;
+    LaborMarketNetworkInterface internal network;
 
     /// @dev The enforcement criteria.
-    EnforcementCriteriaInterface public enforcementCriteria;
-
-    /// @dev The payment curve.
-    PayCurveInterface public paymentCurve;
+    EnforcementCriteriaInterface internal enforcementCriteria;
 
     /// @dev The reputation module.
-    ReputationModuleInterface public reputationModule;
+    ReputationModuleInterface internal reputationModule;
+
+    /// @dev The delegate badge.
+    IERC1155 internal delegateBadge;
+
+    /// @dev The maintainer badge.
+    IERC1155 internal maintainerBadge;
 
     /// @dev The configuration of the labor market.
     LaborMarketConfiguration public configuration;
-
-    /// @dev The delegate badge.
-    IERC1155 public delegateBadge;
-
-    /// @dev The maintainer badge.
-    IERC1155 public maintainerBadge;
 
     /// @dev Tracking the signals per service request.
     mapping(uint256 => uint256) public signalCount;
@@ -81,6 +74,10 @@ contract LaborMarketManager is
 
     /// @dev The service request id counter.
     uint256 public serviceId;
+
+    /*//////////////////////////////////////////////////////////////
+                            EVENTS
+    //////////////////////////////////////////////////////////////*/
 
     /// @notice emitted when labor market parameters are updated.
     event LaborMarketConfigured(
@@ -129,10 +126,10 @@ contract LaborMarketManager is
 
     /// @notice emitted when a service submission is reviewed
     event RequestReviewed(
-          address reviewer
+          address indexed reviewer
         , uint256 indexed requestId
         , uint256 indexed submissionId
-        , uint256 indexed reviewScore
+        , uint256 reviewScore
     );
 
     /// @notice emitted when a service submission is claimed.
@@ -151,44 +148,9 @@ contract LaborMarketManager is
         , uint256 remainderAmount
     );
 
-    /// @notice Gates the permissions to create new requests.
-    modifier onlyDelegate() {
-        require(
-            delegateBadge.balanceOf(
-                _msgSender(),
-                configuration.delegateBadge.tokenId
-            ) > 0,
-            "LaborMarket::onlyDelegate: Not delegate"
-        );
-        _;
-    }
-
-    /// @notice Gates the permissions to review submissions.
-    modifier onlyMaintainer() {
-        require(
-            maintainerBadge.balanceOf(
-                _msgSender(),
-                configuration.maintainerBadge.tokenId
-            ) > 0,
-            "LaborMarket::onlyMaintainer: Not maintainer"
-        );
-        _;
-    }
-
-    /// @notice Gates the permissions to provide submissions based on reputation.
-    modifier permittedParticipant() {
-        uint256 availableRep = reputationModule.getAvailableReputation(
-            address(this),
-            _msgSender()
-        );
-
-        require((
-                availableRep >= configuration.reputationParams.submitMin &&
-                availableRep < configuration.reputationParams.submitMax
-            ), "LaborMarket::permittedParticipant: Not permitted participant"
-        );
-        _;
-    }
+    /*//////////////////////////////////////////////////////////////
+                            SETTERS
+    //////////////////////////////////////////////////////////////*/
 
     /// @notice Initialize the labor market.
     function initialize(
@@ -204,19 +166,27 @@ contract LaborMarketManager is
     /**
      * @notice Allows a network governor to set the configuration.
      * @param _configuration The new configuration.
+     *
      * Requirements:
      * - The caller must be the owner of the market or a 
      *   governor at the network level.
+     * - The market must not have been used.
      */
     function setConfiguration(
         LaborMarketConfiguration calldata _configuration
     )
         public
     {
+        /// @dev The caller must be the owner or a governor.
         require(
-            configuration.owner == address(0) || _msgSender() == configuration.owner || _msgSender() == address(network),
+            configuration.owner == address(0) || 
+            _msgSender() == configuration.owner || 
+            _msgSender() == address(network),
             "LaborMarketManager::setConfiguration: Not owner or governor"
         );
+
+        /// @dev The market must not be in use.
+        require(serviceId == 0, "LaborMarketManager::setConfiguration: Market in use");
 
         network = LaborMarketNetworkInterface(_configuration.modules.network);
 
@@ -224,9 +194,6 @@ contract LaborMarketManager is
         enforcementCriteria = EnforcementCriteriaInterface(
             _configuration.modules.enforcement
         );
-
-        /// @dev Configure the Labor Market pay curve.
-        paymentCurve = PayCurveInterface(_configuration.modules.payment);
 
         /// @dev Configure the Labor Market reputation module.
         reputationModule = ReputationModuleInterface(
@@ -246,6 +213,88 @@ contract LaborMarketManager is
     /*//////////////////////////////////////////////////////////////
                                 GETTERS
     //////////////////////////////////////////////////////////////*/
+
+    /**
+     * @notice Gets the amount of pending rewards for a submission.
+     * @param _submissionId The id of the service submission.
+     * @return pTokenToClaim The amount of pTokens to be claimed.
+     * @return rTokenToClaim The amount of rTokens to be claimed.
+     */
+    function getRewards(
+        uint256 _submissionId
+    )
+        external
+        view
+        returns (
+              uint256 pTokenToClaim
+            , uint256 rTokenToClaim
+        )
+    {
+        address provider = serviceSubmissions[_submissionId].serviceProvider;
+        
+        /// @dev The provider must have not claimed rewards.
+        if (hasPerformed[_submissionId][provider][HAS_CLAIMED]) {
+            return (0, 0);
+        }
+
+        return enforcementCriteria.getRewards(
+              address(this)
+            , _submissionId
+        );
+    }
+
+    /// @notice Gets the delegate eligibility of a caller.
+    /// @param _account The account to check.
+    /// @return Whether the account is a delegate.
+    function isDelegate(address _account) 
+        public 
+        view 
+        returns (
+            bool
+        ) 
+    {
+        return (
+            address(delegateBadge) == address(0) ||
+            delegateBadge.balanceOf(_account, configuration.delegateBadge.tokenId) > 0
+        );
+    }
+
+    /// @notice Gets the maintainer eligibility of a caller.
+    /// @param _account The account to check.
+    /// @return Whether the account is a maintainer.
+    function isMaintainer(address _account) 
+        public 
+        view 
+        returns (
+            bool
+        ) 
+    {
+        return (
+            address(maintainerBadge) == address(0) ||
+            maintainerBadge.balanceOf(_account, configuration.maintainerBadge.tokenId) > 0
+        );
+    }
+
+    /// @notice Gets the eligibility of a caller to submit a service request.
+    /// @param _account The account to check.
+    /// @return Whether the account is eligible to submit a service request.
+    function isPermittedParticipant(address _account)
+        public
+        view
+        returns (
+            bool
+        )
+    {
+        uint256 availableRep = reputationModule.getAvailableReputation(
+            address(this),
+            _account
+        );
+
+        return (
+            availableRep >= configuration.reputationParams.submitMin &&
+            availableRep < configuration.reputationParams.submitMax
+        );
+    }
 
     /**
      * @notice Returns the service request data.
@@ -290,33 +339,81 @@ contract LaborMarketManager is
     }
 
     /*//////////////////////////////////////////////////////////////
-                            INTERNAL GETTERS
+                            INTERNAL SETTERS
     //////////////////////////////////////////////////////////////*/
 
     /**
-     * @dev Delegatable ETH support
+     * @notice Facilitates the state changing of a request.
      */
-    function _msgSender()
+    function _setRequest(
+          uint256 _serviceId
+        , address _pToken
+        , uint256 _pTokenQ
+        , uint256 _signalExp
+        , uint256 _submissionExp
+        , uint256 _enforcementExp
+        , string calldata _requestUri
+    )
+        internal
+    {
+        IERC20 pToken = IERC20(_pToken);
+
+        /// @dev Keep accounting in mind for ERC20s with transfer fees.
+        uint256 pTokenBefore = pToken.balanceOf(address(this));
+
+        /// @dev Transfer the pTokens to the contract.
+        pToken.transferFrom(_msgSender(), address(this), _pTokenQ);
+
+        /// @dev Get the pToken balance after the transfer.
+        uint256 pTokenAfter = pToken.balanceOf(address(this));
+
+        /// @dev Set the service request.
+        serviceRequests[_serviceId] = ServiceRequest({
+            serviceRequester: _msgSender(),
+            pToken: _pToken,
+            pTokenQ: (pTokenAfter - pTokenBefore),
+            signalExp: _signalExp,
+            submissionExp: _submissionExp,
+            enforcementExp: _enforcementExp,
+            submissionCount: 0,
+            uri: _requestUri
+        });
+
+        emit RequestConfigured(
+            _msgSender(),
+            _serviceId,
+            _requestUri,
+            _pToken,
+            _pTokenQ,
+            _signalExp,
+            _submissionExp,
+            _enforcementExp
+        );
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                            INTERNAL GETTERS
+    //////////////////////////////////////////////////////////////*/
+    
+    /**
+     * @dev Checks if the timestamps are valid.
+     * @param _signalExp The expiration of the signal period.
+     * @param _submissionExp The expiration of the submission period.
+     * @param _enforcementExp The expiration of the enforcement period.
+     */
+    function _isValidTimestamps(
+        uint256 _signalExp,
+        uint256 _submissionExp,
+        uint256 _enforcementExp
+    )
         internal
         view
-        virtual
-        override(DelegatableCore, ContextUpgradeable)
-        returns (
-            address sender
-        )
+        returns (bool)
     {
-        if (msg.sender == address(this)) {
-            bytes memory array = msg.data;
-            uint256 index = msg.data.length;
-            assembly {
-                sender := and(
-                    mload(add(array, index)),
-                    0xffffffffffffffffffffffffffffffffffffffff
-                )
-            }
-        } else {
-            sender = msg.sender;
-        }
-        return sender;
+        return (
+            block.timestamp < _signalExp 
+            && _signalExp < _submissionExp 
+            && _submissionExp < _enforcementExp
+        );
     }
 }

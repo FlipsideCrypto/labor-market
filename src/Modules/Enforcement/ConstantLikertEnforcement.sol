@@ -3,15 +3,36 @@
 pragma solidity ^0.8.17;
 
 import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
+import {EnforcementCriteriaInterface} from "src/Modules/Enforcement/interfaces/EnforcementCriteriaInterface.sol";
 
-contract ConstantLikertEnforcement {
+/**
+ * @title A contract that enforces a constant likert scale.
+ * @notice This contract takes in reviews on a 5 point Likert scale of SPAM, BAD, OK, GOOD, GREAT.
+ *         Upon a review, the average score is calculated and the cumulative score is updated.
+ *         Once it is time to claim, the ratio of a submission's average score to the cumulative
+ *         score is calculated. This ratio represents the % of the total reward pool that a submission
+ *         has earned. The earnings are linearly distributed to the submission's based on their average score.
+ *         If two total submissions have an average score of 4 and 2, the first submission will earn 2/3 of 
+ *         the total reward pool and the second submission will earn 1/3. Thus, rewards are linear.
+ */
+
+contract ConstantLikertEnforcement is EnforcementCriteriaInterface {
+
     /// @dev Tracks the scores given to service submissions.
     /// @dev Labor Market -> Submission Id -> Scores
-    mapping(address => mapping(uint256 => Scores)) private submissionToScores;
+    mapping(address => mapping(uint256 => Scores)) public submissionToScores;
 
-    /// @dev Tracks the cumulative sum of average grades.
-    /// @dev Labor Market -> Request Id -> Total Grade
-    mapping(address => mapping(uint256 => uint256)) private requestTotalGrade;
+    /// @dev Tracks the cumulative sum of average score.
+    /// @dev Labor Market -> Request Id -> Total score
+    mapping(address => mapping(uint256 => uint256)) public totalAvgSum;
+
+    /// @dev The scores given to a service submission.
+    struct Scores {
+        uint256 reviewCount;
+        uint256 reviewSum;
+        uint256 avg;
+        bool qualified;
+    }
 
     /// @dev The Likert grading scale.
     enum Likert {
@@ -22,167 +43,198 @@ contract ConstantLikertEnforcement {
         GREAT
     }
 
-    /// @dev The scores given to a service submission.
-    struct Scores {
-        uint256[] scores;
-        uint256 avg;
-    }
-
-    constructor() {}
-
     /*////////////////////////////////////////////////// 
                         SETTERS
     //////////////////////////////////////////////////*/
 
-    /// @notice Allows a maintainer to review a submission.
-    /// @param _submissionId The submission to review.
-    /// @param _score The score to give the submission.
-    /// @return The average score of the submission.
+    /**
+     * See {EnforcementCriteriaInterface.review}
+     */
     function review(
           uint256 _submissionId
         , uint256 _score
     )
         external
-        returns (
-            uint256
-        )
+        override
     {
         require(
             _score <= uint256(Likert.GREAT),
-            "ConstantLikertEnforcementCriteria::review: Invalid score"
+            "ConstantLikertEnforcement::review: Invalid score"
         );
 
-        Scores storage score = submissionToScores[msg.sender][_submissionId];
-
-        uint256 requestId = getRequestId(_submissionId);
-
-        // Update the cumulative total earned grade.
-        unchecked {
-            requestTotalGrade[msg.sender][requestId] -= score.avg;
-        }
-
-        // Update the submission's scores
-        score.scores.push(_score);
-        score.avg = _getAvg(
-            score.scores
+        _review(
+            msg.sender,
+            _submissionId,
+            _score
         );
-
-        // Update the cumulative total earned grade with the submission's new average.
-        unchecked {
-            requestTotalGrade[msg.sender][requestId] += score.avg;
-        }
-
-        return _score;
     }
 
     /*////////////////////////////////////////////////// 
                         GETTERS
     //////////////////////////////////////////////////*/
 
-    /// @notice Returns the point on the payment curve for a submission.
-    function verify(
-          uint256 _submissionId
-        , uint256 _total
+    
+    /**
+     * See {EnforcementCriteriaInterface.getRewards}
+     */
+    function getRewards(
+          address _laborMarket
+        , uint256 _submissionId
     )
         external
+        override
         view
         returns (
-            uint256 x
+            uint256,
+            uint256
         )
     {
-        uint256 score = submissionToScores[msg.sender][_submissionId].avg;
+        uint256 requestId = _getRequestId(_submissionId);
 
-        uint256 requestId = getRequestId(_submissionId);
-
-        /// @dev The ratio of the submission's average grade to the total grade times the total pool.
-        x = (score * _total) / requestTotalGrade[msg.sender][requestId];
-
-        return sqrt(x);
+        return (
+            _calculateShare(
+                submissionToScores[_laborMarket][_submissionId].avg, 
+                totalAvgSum[_laborMarket][requestId], 
+                LaborMarketInterface(_laborMarket).getRequest(requestId).pTokenQ
+            ),
+            _calculateShare(
+                submissionToScores[_laborMarket][_submissionId].avg, 
+                totalAvgSum[_laborMarket][requestId], 
+                LaborMarketInterface(_laborMarket).getConfiguration().reputationParams.rewardPool
+            )
+        );
     }
 
-    /// @notice Get the request id of a submission.
-    /// @param _submissionId The submission id.
-    /// @return The request id.
-    function getRequestId(
-        uint256 _submissionId
+    
+    /**
+     * See {EnforcementCriteriaInterface.getPaymentReward}
+     */
+    function getPaymentReward(
+          address _laborMarket
+        , uint256 _submissionId
     )
-        internal
+        external
+        override
         view
         returns (
             uint256
         )
     {
-        return 
-            LaborMarketInterface(msg.sender)
-                .getSubmission(_submissionId)
-                .requestId;
+        uint256 requestId = _getRequestId(_submissionId);
+
+        return _calculateShare(
+            submissionToScores[_laborMarket][_submissionId].avg, 
+            totalAvgSum[_laborMarket][requestId], 
+            LaborMarketInterface(_laborMarket).getRequest(requestId).pTokenQ
+        );
     }
 
-    /// @notice Returns the sqrt of a number.
-    /// @param x The number to take the sqrt of.
-    /// @return result The sqrt of x.
-    function sqrt(
-        uint256 x
-    ) 
-        internal 
-        pure 
+    /**
+     * See {EnforcementCriteriaInterface.getReputationReward}
+     */
+    function getReputationReward(
+          address _laborMarket
+        , uint256 _submissionId
+    )
+        external
+        override
+        view
         returns (
-            uint256 result
-        ) 
+            uint256
+        )
     {
-        // Stolen from prbmath
-        if (x == 0) {
-            return 0;
-        }
+        uint256 requestId = _getRequestId(_submissionId);
 
-        // Set the initial guess to the least power of two that is greater than or equal to sqrt(x).
-        uint256 xAux = uint256(x);
-        result = 1;
-        if (xAux >= 0x100000000000000000000000000000000) {
-            xAux >>= 128;
-            result <<= 64;
-        }
-        if (xAux >= 0x10000000000000000) {
-            xAux >>= 64;
-            result <<= 32;
-        }
-        if (xAux >= 0x100000000) {
-            xAux >>= 32;
-            result <<= 16;
-        }
-        if (xAux >= 0x10000) {
-            xAux >>= 16;
-            result <<= 8;
-        }
-        if (xAux >= 0x100) {
-            xAux >>= 8;
-            result <<= 4;
-        }
-        if (xAux >= 0x10) {
-            xAux >>= 4;
-            result <<= 2;
-        }
-        if (xAux >= 0x4) {
-            result <<= 1;
-        }
+        return _calculateShare(
+            submissionToScores[_laborMarket][_submissionId].avg, 
+            totalAvgSum[_laborMarket][requestId], 
+            LaborMarketInterface(_laborMarket).getConfiguration().reputationParams.rewardPool
+        );
+    }
 
-        // The operations can never overflow because the result is max 2^127 when it enters this block.
+    /**
+     * See {EnforcementCriteriaInterface.getRemainder}
+     */
+    function getRemainder(
+          address _laborMarket
+        , uint256 _requestId
+    )
+        external
+        override
+        view
+        returns (
+            uint256
+        )
+    {
+        LaborMarketInterface.ServiceRequest memory request = LaborMarketInterface(_laborMarket).getRequest(_requestId);
+
+        /// @dev If the enforcement exp passed and the request total score is 0, return the total pool.
+        if (
+            block.timestamp > request.enforcementExp && 
+            totalAvgSum[_laborMarket][_requestId] == 0
+        ) return request.pTokenQ;
+
+        return 0;
+    }
+
+    /*////////////////////////////////////////////////// 
+                        INTERNAL
+    //////////////////////////////////////////////////*/
+
+    function _review(
+          address _laborMarket
+        , uint256 _submissionId
+        , uint256 _score
+    )
+        internal
+    {
+        /// @dev Get the request id.
+        uint256 requestId = _getRequestId(_submissionId);
+
+        /// @dev Load the submissions score state.
+        Scores storage score = submissionToScores[_laborMarket][_submissionId];
+
+        /// @dev Remove the current score from the cumulative total.
         unchecked {
-            result = (result + x / result) >> 1;
-            result = (result + x / result) >> 1;
-            result = (result + x / result) >> 1;
-            result = (result + x / result) >> 1;
-            result = (result + x / result) >> 1;
-            result = (result + x / result) >> 1;
-            result = (result + x / result) >> 1; // Seven iterations should be enough
-            uint256 roundedDownResult = x / result;
-            return result >= roundedDownResult ? roundedDownResult : result;
+            score.reviewCount++;
+            score.reviewSum += _score * 25; /// @dev Scale the score to 100.
+            totalAvgSum[_laborMarket][requestId] -= score.avg;
+        }
+
+        /// @dev Update the average.
+        score.avg = score.reviewSum / score.reviewCount;
+
+        /// @dev Update the cumulative total earned score with the submission's new average.
+        unchecked {
+            totalAvgSum[_laborMarket][requestId] += score.avg;
         }
     }
 
-    /// @notice Gets the average of the scores given to a submission.
-    /// @param _scores The scores given to a submission.
-    /// @return The average of the scores.
+    /**
+     * @notice Calculates the share of the total pool a user is entitled to.
+     * @param _userScore The user's score.
+     * @param _totalCumulativeScore The total cumulative score of all submissions.
+     * @param _totalPool The total pool of tokens to distribute.
+     */
+    function _calculateShare(
+          uint256 _userScore
+        , uint256 _totalCumulativeScore
+        , uint256 _totalPool
+    )
+        internal
+        pure
+        returns (
+            uint256
+        )
+    {
+        return (_userScore * _totalPool) / _totalCumulativeScore;
+    }
+
+    /** 
+     * @notice Gets the average of the scores given to a submission.
+     * @param _scores The scores given to a submission.
+     * @return The average of the scores.
+     */ 
     function _getAvg(
         uint256[] memory _scores
     )
@@ -200,5 +252,25 @@ contract ConstantLikertEnforcement {
         }
 
         return cumulativeScore / qScores;
+    }
+
+    /**
+     * @notice Gets the request id of a submission.
+     * @param _submissionId The submission id.
+     * @return The request id.
+     */
+    function _getRequestId(
+        uint256 _submissionId
+    )
+        internal
+        view
+        returns (
+            uint256
+        )
+    {
+        return 
+            LaborMarketInterface(msg.sender)
+                .getSubmission(_submissionId)
+                .requestId;
     }
 }

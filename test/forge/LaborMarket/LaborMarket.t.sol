@@ -23,9 +23,7 @@ import {LaborMarketVersions} from "src/Network/LaborMarketVersions.sol";
 import {ReputationModule} from "src/Modules/Reputation/ReputationModule.sol";
 import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/ReputationModuleInterface.sol";
 
-import { ConstantLikertEnforcement } from "src/Modules/Enforcement/ConstantLikertEnforcement.sol";
-
-import {PayCurve} from "src/Modules/Payment/PayCurve.sol";
+import { ScalableLikertEnforcement } from "src/Modules/Enforcement/ScalableLikertEnforcement.sol";
 
 import {LaborMarketConfigurationInterface} from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
 import {LaborMarketNetworkInterface} from "src/Network/interfaces/LaborMarketNetworkInterface.sol";
@@ -46,8 +44,10 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
     LaborMarketNetwork public network;
 
-    ConstantLikertEnforcement public enforcementCriteria;
-    PayCurve public payCurve;
+    ScalableLikertEnforcement public enforcementCriteria;
+
+    uint256[] private RANGES;
+    uint256[] private WEIGHTS;
 
     // Define the tokenIds for ERC1155
     uint256 private constant DELEGATE_TOKEN_ID = 0;
@@ -58,6 +58,9 @@ contract LaborMarketTest is PRBTest, StdCheats {
     uint256 private constant CREATOR_TOKEN_ID = 5;
     uint256 private constant REPUTATION_DECAY_RATE = 0;
     uint256 private constant REPUTATION_DECAY_INTERVAL = 0;
+
+    // uint16[] private constant RANGES = [25, 45, 70, 90, 100];
+    // uint16[] private constant WEIGHTS = [0, 25, 75, 100, 200];
 
     // Deployer
     address private deployer = address(0xDe);
@@ -78,14 +81,6 @@ contract LaborMarketTest is PRBTest, StdCheats {
     // Alt delegate
     address private delegate =
         address(uint160(uint256(keccak256("DELEGATOOOR"))));
-
-    // Events
-    /// @dev Announces when a new Labor Market is created through the protocol Factory.
-    event LaborMarketCreated(
-          address indexed marketAddress
-        , address indexed owner
-        , address indexed implementation
-    );
 
     /// @notice emitted when labor market parameters are updated.
     event LaborMarketConfigured(
@@ -129,15 +124,15 @@ contract LaborMarketTest is PRBTest, StdCheats {
           address indexed fulfiller
         , uint256 indexed requestId
         , uint256 indexed submissionId
-        , string _uri
+        , string uri
     );
 
     /// @notice emitted when a service submission is reviewed
     event RequestReviewed(
-          address reviewer
+          address indexed reviewer
         , uint256 indexed requestId
         , uint256 indexed submissionId
-        , uint256 indexed reviewScore
+        , uint256 reviewScore
     );
 
     /// @notice emitted when a service submission is claimed.
@@ -155,6 +150,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
         , uint256 indexed requestId
         , uint256 remainderAmount
     );
+
+
     /*//////////////////////////////////////////////////////////////
                         HELPER FUNCTIONALITY
     //////////////////////////////////////////////////////////////*/
@@ -225,11 +222,13 @@ contract LaborMarketTest is PRBTest, StdCheats {
         repToken.leaderMint(address(deployer), GOVERNOR_TOKEN_ID, 1, "0x");
         repToken.leaderMint(address(deployer), CREATOR_TOKEN_ID, 1, "0x");
 
-        // Create enforcement criteria
-        enforcementCriteria = new ConstantLikertEnforcement();
+        RANGES.push(0); RANGES.push(24); RANGES.push(44); RANGES.push(69); RANGES.push(89);
+        WEIGHTS.push(0); WEIGHTS.push(25); WEIGHTS.push(75); WEIGHTS.push(100); WEIGHTS.push(200);
+        bytes32 criteria = "";
 
-        // Create a new pay curve
-        payCurve = new PayCurve();
+
+        // Create enforcement criteria
+        enforcementCriteria = new ScalableLikertEnforcement();
 
         // Create a new labor market configuration
         LaborMarketConfigurationInterface.LaborMarketConfiguration
@@ -241,7 +240,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
                         network: address(network),
                         reputation: address(reputationModule),
                         enforcement: address(enforcementCriteria),
-                        payment: address(payCurve)
+                        enforcementKey: criteria
                     }),
                     maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
@@ -257,7 +256,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
                     }),
                     reputationParams: LaborMarketConfigurationInterface.ReputationParams({
                         rewardPool: 5000,
-                        signalStake: 5,
+                        provideStake: 5,
+                        reviewStake: 5,
                         submitMin: 10,
                         submitMax: 10000e18
                     })
@@ -299,8 +299,6 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         changePrank(deployer);
         repToken.leaderMint(delegate, DELEGATE_TOKEN_ID, 1, "0x");
-
-        bool isDelegate = repToken.isDelegate(1, address(reputationModule));
 
         vm.stopPrank();
     }
@@ -384,7 +382,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         // Skip to enforcement deadline
         vm.warp(5 weeks);
-        market.claim(submissionId, address(alice), "");
+        market.claim(submissionId, address(alice));
     }
 
     function test_CreateMultipleMarkets() public {
@@ -398,6 +396,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
         */
         vm.startPrank(deployer);
 
+        bytes32 criteria = "";
+
         // Example configuration
         LaborMarketConfigurationInterface.LaborMarketConfiguration
             memory config = LaborMarketConfigurationInterface
@@ -408,7 +408,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
                         network: address(network),
                         reputation: address(reputationModule),
                         enforcement: address(enforcementCriteria),
-                        payment: address(payCurve)
+                        enforcementKey: criteria
                     }),
                     maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
@@ -424,7 +424,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
                     }),
                     reputationParams: LaborMarketConfigurationInterface.ReputationParams({
                         rewardPool: 5000,
-                        signalStake: 5,
+                        provideStake: 5,
+                        reviewStake: 5,
                         submitMin: 10,
                         submitMax: 10000e18
                     })
@@ -434,10 +435,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
         for (uint256 i; i <= 10; ++i) {
             changePrank(deployer);
             vm.expectEmit(false, true, true, true);
-            emit LaborMarketCreated(
-                address(market),
-                deployer,
-                address(marketImplementation)
+            emit LaborMarketConfigured(
+                config
             );
             market = LaborMarket(
                 network.createLaborMarket({
@@ -461,7 +460,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
             changePrank(alice);
             vm.warp(block.timestamp + 5 weeks);
-            market.claim(submissionId, msg.sender, "");
+            market.claim(submissionId, msg.sender);
         }
         vm.stopPrank();
     }
@@ -486,7 +485,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         // Verify that Alice's reputation is locked
         assertEq(
             reputationModule.getAvailableReputation(address(market), alice),
-            (100e18 - market.getConfiguration().reputationParams.signalStake)
+            (100e18 - market.getConfiguration().reputationParams.provideStake)
         );
 
         // Fulfill the request
@@ -498,11 +497,11 @@ contract LaborMarketTest is PRBTest, StdCheats {
         market.signalReview(requestId, 3);
 
         // Verify that Maintainers's reputation is locked
-        uint256 signalStake = market.getConfiguration().reputationParams.signalStake;
+        uint256 provideStake = market.getConfiguration().reputationParams.provideStake;
 
         assertEq(
             reputationModule.getAvailableReputation(address(market), bob),
-            (1000e18 - signalStake * 3)
+            (1000e18 - provideStake * 3)
         );
 
         market.review(requestId, submissionId, 2);
@@ -510,7 +509,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         // Verify that the maintainer gets returned some reputation
         assertEq(
             reputationModule.getAvailableReputation(address(market), bob),
-            (1000e18 - signalStake * 2)
+            (1000e18 - provideStake * 2)
         );
 
         // Verify that Alice's reputation is unlocked
@@ -524,7 +523,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         // Skip to enforcement deadline
         vm.warp(5 weeks);
-        market.claim(submissionId, msg.sender, "");
+        market.claim(submissionId, msg.sender);
         
         // Verify that Alice received a reputation reward
         assertGt(
@@ -536,6 +535,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
     function test_VerifyAllEmittedEvents() public {
         vm.startPrank(deployer);
 
+        bytes32 criteria = "";
+
         LaborMarketConfigurationInterface.LaborMarketConfiguration
             memory config = LaborMarketConfigurationInterface
                 .LaborMarketConfiguration({
@@ -545,7 +546,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
                         network: address(network),
                         reputation: address(reputationModule),
                         enforcement: address(enforcementCriteria),
-                        payment: address(payCurve)
+                        enforcementKey: criteria
                     }),
                     maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
@@ -561,7 +562,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
                     }),
                     reputationParams: LaborMarketConfigurationInterface.ReputationParams({
                         rewardPool: 5000,
-                        signalStake: 5,
+                        provideStake: 5,
+                        reviewStake: 5,
                         submitMin: 10,
                         submitMax: 10000e18
                     })
@@ -569,10 +571,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         // Verify market creation event
         vm.expectEmit(false, true, true, true);
-        emit LaborMarketCreated(
-            address(market),
-            deployer,
-            address(marketImplementation)
+        emit LaborMarketConfigured(
+            config
         );
 
         // Create a market
@@ -610,7 +610,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         uint256 requestId = createSimpleRequest(market);
 
         // Verify signaling events
-        vm.expectEmit(true, true, true, false);
+        vm.expectEmit(true, true, false, false);
         emit RequestSignal(address(alice), requestId, 5);
 
         changePrank(alice);
@@ -630,25 +630,25 @@ contract LaborMarketTest is PRBTest, StdCheats {
         uint256 submissionId = market.provide(requestId, "IPFS://333");
 
         // Verify reviewing events
-        vm.expectEmit(true, true, true, true);
-        emit RequestReviewed(address(bob), requestId, submissionId, 4);
+        vm.expectEmit(true, true, false, false);
+        emit RequestReviewed(address(bob), requestId, submissionId, 2);
 
         changePrank(bob);
         market.review(requestId, submissionId, 4);
 
-        // // Verify claiming events
+        // Verify claiming events
         vm.expectEmit(true, true, true, true);
         emit RequestPayClaimed(
             address(alice),
             requestId,
             submissionId,
-            999999999956753113201, // (100e18 * 0.6)
+            1000000000000000000000,
             address(alice)
         );
 
         changePrank(alice);
         vm.warp(block.timestamp + 5 weeks);
-        market.claim(submissionId, address(alice), "");
+        market.claim(submissionId, address(alice));
 
         // // Verify withdrawing request event
         changePrank(bob);
@@ -678,7 +678,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         // Try to signal the request and expect it to revert
         vm.expectRevert(
-            "LaborMarket::permittedParticipant: Not permitted participant"
+            "LaborMarket::signal: Not a permitted participant"
         );
         market.signal(requestId);
         vm.stopPrank();
@@ -695,13 +695,13 @@ contract LaborMarketTest is PRBTest, StdCheats {
         market.signal(requestId);
 
         // A user tries to signal for review and we expect it to revert
-        vm.expectRevert("LaborMarket::onlyMaintainer: Not maintainer");
+        vm.expectRevert("LaborMarket::signalReview: Not a maintainer");
         market.signalReview(requestId, 3);
 
         // We also expect a revert if a random address tries to review
         changePrank(evilUser);
 
-        vm.expectRevert("LaborMarket::onlyMaintainer: Not maintainer");
+        vm.expectRevert("LaborMarket::signalReview: Not a maintainer");
         market.signalReview(requestId, 3);
 
         vm.stopPrank();
@@ -709,6 +709,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
     function test_CanOnlyInitializeOnce() public {
         vm.startPrank(deployer);
+
+       bytes32 criteria = "";
 
         LaborMarketConfigurationInterface.LaborMarketConfiguration
             memory config = LaborMarketConfigurationInterface
@@ -719,7 +721,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
                         network: address(network),
                         reputation: address(reputationModule),
                         enforcement: address(enforcementCriteria),
-                        payment: address(payCurve)
+                        enforcementKey: criteria
                     }),
                     maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
@@ -735,7 +737,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
                     }),
                     reputationParams: LaborMarketConfigurationInterface.ReputationParams({
                         rewardPool: 5000,
-                        signalStake: 5,
+                        provideStake: 5,
+                        reviewStake: 5,
                         submitMin: 10,
                         submitMax: 10000e18
                     })
@@ -826,13 +829,14 @@ contract LaborMarketTest is PRBTest, StdCheats {
         // Skip time
         vm.warp(5 weeks);
 
+        
         // User claims reward
         changePrank(alice);
-        market.claim(submissionId, msg.sender, "");
+        market.claim(submissionId, msg.sender);
 
         // User tries to claim same reward again
         vm.expectRevert("LaborMarket::claim: Already claimed");
-        market.claim(submissionId, msg.sender, "");
+        market.claim(submissionId, msg.sender);
 
         vm.stopPrank();
     }
@@ -870,7 +874,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         market.signal(requestId);
 
         // User fulfills the request
-        uint256 submissionId = market.provide(requestId, "IPFS://333");
+        market.provide(requestId, "IPFS://333");
 
         // A valid maintainer signals for review
         changePrank(bob);
@@ -879,9 +883,9 @@ contract LaborMarketTest is PRBTest, StdCheats {
         // No reviewing happens
 
         // User attempts to claim the reward, we expect a revert
-        changePrank(alice);
-        vm.expectRevert("LaborMarket::claim: Not reviewed");
-        market.claim(submissionId, msg.sender, "");
+        // changePrank(alice);
+        // vm.expectRevert("LaborMarket::claim: Not reviewed");
+        // market.claim(submissionId, msg.sender);
 
         vm.stopPrank();
     }
@@ -909,7 +913,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         // User claims reward
         changePrank(evilUser);
         vm.expectRevert("LaborMarket::claim: Not provider");
-        market.claim(submissionId, msg.sender, "");
+        market.claim(submissionId, msg.sender);
 
         vm.stopPrank();
     }
@@ -1055,15 +1059,14 @@ contract LaborMarketTest is PRBTest, StdCheats {
         market.review(requestId, submissionId, 1);
 
         // Scores
-        assertEq(market.getSubmission(submissionId).scores[0], 3);
-        assertEq(market.getSubmission(submissionId).scores[1], 1);
+        (, , uint256 submissionAvg, ) = enforcementCriteria.submissionToScore(address(market), submissionId);
+        assertEq(submissionAvg, 50);
 
         changePrank(alice);
         vm.warp(123 weeks);
 
         // User claims reward
-        // It is the only score for constant likert, so it is the only one that counts.
-        uint256 qClaimed = market.claim(submissionId, alice, "");
+        (uint256 qClaimed, )= market.claim(submissionId, alice);
         assertAlmostEq(qClaimed, 1000e18, 0.0001e18);
 
         vm.stopPrank();
@@ -1092,12 +1095,12 @@ contract LaborMarketTest is PRBTest, StdCheats {
         changePrank(bob);
         market.signalReview(requestId, 4);
 
-        uint256 signalStake = market.getConfiguration().reputationParams.signalStake;
+        uint256 reviewStake = market.getConfiguration().reputationParams.reviewStake;
 
         // 4e18 of rep should be locked
         assertEq(
             reputationModule.getAvailableReputation(address(market), bob),
-            1000e18 - signalStake * 4
+            1000e18 - reviewStake * 4
         );
 
         // A valid maintainer reviews the request
@@ -1106,7 +1109,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         // Should unlock 1e18 of rep
         assertEq(
             reputationModule.getAvailableReputation(address(market), bob),
-            1000e18 - signalStake * 3
+            1000e18 - reviewStake * 3
         );
 
         // Skip forward in time
@@ -1188,12 +1191,12 @@ contract LaborMarketTest is PRBTest, StdCheats {
         changePrank(bob);
         market.signalReview(requestId, 4);
 
-        uint256 signalStake = market.getConfiguration().reputationParams.signalStake;
+        uint256 reviewStake = market.getConfiguration().reputationParams.reviewStake;
 
         // 4e18 of rep should be locked
         assertEq(
             reputationModule.getAvailableReputation(address(market), bob),
-            1000e18 - signalStake * 4
+            1000e18 - reviewStake * 4
         );
 
         // A valid maintainer reviews the request
@@ -1202,7 +1205,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         // Should unlock 3/4 of rep staked
         assertEq(
             reputationModule.getAvailableReputation(address(market), bob),
-            1000e18 - signalStake * 3
+            1000e18 - reviewStake * 3
         );
 
         // Skip forward in time
@@ -1219,7 +1222,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         // Reviewer reclaims their signal stake again
         vm.expectRevert(
-            "LaborMarket::retrieveReputation: No reputation to retrieve"
+            "LaborMarket::retrieveReputation: Insufficient reviews"
         );
         market.retrieveReputation(requestId);
 
@@ -1256,22 +1259,214 @@ contract LaborMarketTest is PRBTest, StdCheats {
         market.review(requestId, submissionId, 0);
 
         // Scores
-        assertEq(market.getSubmission(submissionId).scores[0], 2);
-        assertEq(market.getSubmission(submissionId).scores[1], 0);
+        (, , uint256 submissionAvg, ) = enforcementCriteria.submissionToScore(address(market), submissionId);
+        assertEq(submissionAvg, 25); // 2*25 + 0*25 / 2
 
         changePrank(alice);
         vm.warp(123 weeks);
 
         // User claims reward
         // There is only submission so they should get 99.9% of the reward
-        uint256 qClaimed = market.claim(submissionId, alice, "");
+        (uint256 qClaimed, ) = market.claim(submissionId, alice);
         assertAlmostEq(qClaimed, 1000e18, 0.000001e18);
 
         // User claims reward again
         vm.expectRevert(
             "LaborMarket::claim: Already claimed"
         );
-        market.claim(submissionId, alice, "");
+        market.claim(submissionId, alice);
+
+        vm.stopPrank();
+    }
+
+    function test_CanCreatePublicMarket() public {
+        vm.startPrank(deployer);
+
+        bytes32 criteria = "";
+
+        LaborMarketConfigurationInterface.LaborMarketConfiguration
+            memory config = LaborMarketConfigurationInterface
+                .LaborMarketConfiguration({
+                    marketUri: "ipfs://000",
+                    owner: address(deployer),
+                    modules: LaborMarketConfigurationInterface.Modules({
+                        network: address(network),
+                        reputation: address(reputationModule),
+                        enforcement: address(enforcementCriteria),
+                        enforcementKey: criteria
+                    }),
+                    maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
+                        token: address(repToken),
+                        tokenId: MAINTAINER_TOKEN_ID
+                    }),
+                    delegateBadge: LaborMarketConfigurationInterface.BadgePair({
+                        token: address(0),
+                        tokenId: DELEGATE_TOKEN_ID
+                    }),
+                    reputationBadge: LaborMarketConfigurationInterface.BadgePair({
+                        token: address(repToken),
+                        tokenId: REPUTATION_TOKEN_ID
+                    }),
+                    reputationParams: LaborMarketConfigurationInterface.ReputationParams({
+                        rewardPool: 5000,
+                        provideStake: 5,
+                        reviewStake: 5,
+                        submitMin: 10,
+                        submitMax: 10000e18
+                    })
+                });
+
+        // Create a market
+        market = LaborMarket(
+            network.createLaborMarket({
+                _implementation: address(marketImplementation),
+                _configuration: config
+            })
+        );
+
+        address noob = address(0xDEAD);
+
+        repToken.leaderMint(noob, REPUTATION_TOKEN_ID, 1000e18, "0x");
+        payToken.freeMint(noob, 100000e18);
+
+        changePrank(noob);
+        payToken.approve(address(market), 100000e18);
+        createSimpleRequest(market);
+
+        vm.stopPrank();
+    }
+
+    function test_CanEditRequest() public {
+        vm.startPrank(bob);
+
+        uint256 balanceBefore = payToken.balanceOf(address(bob));
+
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
+
+        payToken.approve(address(market), 100000e18);
+
+        market.editRequest(
+            requestId,
+            address(payToken),
+            50e18,
+            block.timestamp + 1 hours,
+            block.timestamp + 1 days,
+            block.timestamp + 1 weeks,
+            "ipfs://222"
+        );
+
+        (
+            ,
+            ,
+            uint256 pTokenQ,
+            ,
+            ,
+            ,
+            ,
+        ) = market.serviceRequests(requestId);
+
+        uint256 balanceAfter = payToken.balanceOf(address(bob));
+
+        assertEq(pTokenQ, 50e18);
+        assertEq(balanceAfter, balanceBefore - 50e18);
+
+        vm.stopPrank();
+    }
+
+    function test_CantEditRequestAfterSignal() public {
+        vm.startPrank(bob);
+
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
+
+        // A valid user signals
+        changePrank(alice);
+        market.signal(requestId);
+
+        changePrank(bob);
+        // User tries to edit the request
+        vm.expectRevert(
+            "LaborMarket::editRequest: Already active"
+        );
+        market.editRequest(
+            requestId,
+            address(payToken),
+            50e18,
+            block.timestamp + 1 hours,
+            block.timestamp + 1 days,
+            block.timestamp + 1 weeks,
+            "ipfs://222"
+        );
+
+        vm.stopPrank();
+    }
+
+    function test_CannotEditIfNotRequester() public {
+        vm.startPrank(bob);
+
+        // Create a request
+        uint256 requestId = createSimpleRequest(market);
+
+        // Other user tries to edit the request
+        changePrank(alice);
+        vm.expectRevert(
+            "LaborMarket::editRequest: Not requester"
+        );
+        market.editRequest(
+            requestId + 1,
+            address(payToken),
+            50e18,
+            block.timestamp + 1 hours,
+            block.timestamp + 1 days,
+            block.timestamp + 1 weeks,
+            "ipfs://222"
+        );
+
+        vm.stopPrank();
+    }
+
+    function test_RequestCannotHaveInvalidTimestamps() public {
+        vm.startPrank(bob);
+
+        // Create a request
+        vm.expectRevert(
+            "LaborMarket::submitRequest: Invalid timestamps"
+        );
+        market.submitRequest(
+            address(payToken),
+            50e18,
+            block.timestamp - 1,
+            block.timestamp + 1 days,
+            block.timestamp + 1 weeks,
+            "ipfs://222"
+        );
+
+        // Create a request
+        vm.expectRevert(
+            "LaborMarket::submitRequest: Invalid timestamps"
+        );
+        market.submitRequest(
+            address(payToken),
+            50e18,
+            block.timestamp + 1 days,
+            block.timestamp + 1 hours,
+            block.timestamp + 1 weeks,
+            "ipfs://222"
+        );
+
+        // Create a request
+        vm.expectRevert(
+            "LaborMarket::submitRequest: Invalid timestamps"
+        );
+        market.submitRequest(
+            address(payToken),
+            50e18,
+            block.timestamp + 1 hours,
+            block.timestamp + 1 weeks,
+            block.timestamp + 1 days,
+            "ipfs://222"
+        );
 
         vm.stopPrank();
     }

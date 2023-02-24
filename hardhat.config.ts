@@ -11,6 +11,7 @@ import "hardhat-preprocessor";
 import "hardhat-abi-exporter";
 import "hardhat-contract-sizer";
 import "hardhat-finder";
+import "hardhat-docgen";
 import { HardhatUserConfig } from "hardhat/config";
 import { task } from "hardhat/config";
 
@@ -40,7 +41,7 @@ const config: HardhatUserConfig = {
             settings: {
                 optimizer: { // Keeps the amount of gas used in check
                     enabled: true,
-                    runs: 75,
+                    runs: 1000,
                 }
             }
         }
@@ -88,7 +89,12 @@ const config: HardhatUserConfig = {
   contractSizer: {
     alphaSort: false,
     disambiguatePaths: true,
-    runOnCompile: true,
+    runOnCompile: true
+  },
+  docgen: {
+    path: './docs',
+    clear: true,
+    runOnCompile: true
   },
   etherscan: {
     apiKey: {
@@ -141,7 +147,7 @@ const config: HardhatUserConfig = {
       transform: (line: string) => {
         if (line.match(/^\s*import /i)) {
           for (const [from, to] of getRemappings()) {
-            if (line.includes(from) && !line.includes("openzeppelin")) {
+            if (line.includes(from) && !line.includes("openzeppelin") && !line.includes("@prb/math")) {
               line = line.replace(from, to);
               break;
             }

@@ -24,8 +24,6 @@ import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/Reput
 
 import { ConstantLikertEnforcement } from "src/Modules/Enforcement/ConstantLikertEnforcement.sol";
 
-import {PayCurve} from "src/Modules/Payment/PayCurve.sol";
-
 import {LaborMarketConfigurationInterface} from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
 import {LaborMarketNetworkInterface} from "src/Network/interfaces/LaborMarketNetworkInterface.sol";
 
@@ -47,7 +45,6 @@ contract ReputationModuleTest is PRBTest, StdCheats {
 
     LaborMarketNetwork public network;
 
-    PayCurve public payCurve;
 
     // Define the tokenIds for ERC1155
     uint256 private constant DELEGATE_TOKEN_ID = 0;
@@ -125,9 +122,6 @@ contract ReputationModuleTest is PRBTest, StdCheats {
         // Deploy a new reputation module
         reputationModule = new ReputationModule(address(network));
 
-        // Create a new pay curve
-        payCurve = new PayCurve();
-
         // Initialize reputation and roles
         address[] memory delegates = new address[](1);
         delegates[0] = address(reputationModule);
@@ -152,9 +146,7 @@ contract ReputationModuleTest is PRBTest, StdCheats {
 
         enforcement = new ConstantLikertEnforcement();
 
-        // Create a new pay curve
-        payCurve = new PayCurve();
-
+        bytes32 criteria = "";
 
         // Create a new labor market configuration for likert
         LaborMarketConfigurationInterface.LaborMarketConfiguration
@@ -166,7 +158,7 @@ contract ReputationModuleTest is PRBTest, StdCheats {
                         network: address(network),
                         reputation: address(reputationModule),
                         enforcement: address(enforcement),
-                        payment: address(payCurve)
+                        enforcementKey: criteria
                     }),
                     maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
@@ -182,7 +174,8 @@ contract ReputationModuleTest is PRBTest, StdCheats {
                     }),
                     reputationParams: LaborMarketConfigurationInterface.ReputationParams({
                         rewardPool: 5000,
-                        signalStake: 5,
+                        provideStake: 5,
+                        reviewStake: 5,
                         submitMin: 5,
                         submitMax: 10000e18
                     })
@@ -286,9 +279,9 @@ contract ReputationModuleTest is PRBTest, StdCheats {
         uint256 requestId = market.submitRequest({
             _pToken: address(payToken),
             _pTokenQ: 100e18,
-            _signalExp: block.timestamp + 5 weeks,
+            _signalExp: block.timestamp + 4 weeks,
             _submissionExp: block.timestamp + 5 weeks,
-            _enforcementExp: block.timestamp + 5 weeks,
+            _enforcementExp: block.timestamp + 6 weeks,
             _requestUri: "ipfs://222"
         });
 
@@ -336,25 +329,57 @@ contract ReputationModuleTest is PRBTest, StdCheats {
         market.submitRequest({
             _pToken: address(payToken),
             _pTokenQ: 100e18,
-            _signalExp: block.timestamp + 100 weeks,
+            _signalExp: block.timestamp + 99 weeks,
             _submissionExp: block.timestamp + 100 weeks,
-            _enforcementExp: block.timestamp + 100 weeks,
+            _enforcementExp: block.timestamp + 101 weeks,
             _requestUri: "ipfs://222"
         });
 
         // // A valid user signals
         changePrank(newGuy);
-        uint256 balanceBefore = repToken.balanceOf(address(newGuy), REPUTATION_TOKEN_ID);
 
         vm.warp(10 weeks);
-        uint256 expectedDecay = reputationModule.getPendingDecay(
-            address(market),
-            address(newGuy)
-        );
 
         assertEq(
             reputationModule.getAvailableReputation(address(market), address(newGuy)),
             0
+        );
+
+        vm.stopPrank();
+    }
+
+    function test_CanFreezeReputation() public {
+        vm.startPrank(deployer);
+
+        network.setReputationDecay(
+            address(reputationModule),
+            address(repToken),
+            REPUTATION_TOKEN_ID,
+            10,
+            5000,
+            block.timestamp
+        );
+
+        changePrank(bob);
+
+        uint256 balanceBefore = reputationModule.getAvailableReputation(address(market), address(bob));
+
+        reputationModule.freezeReputation(
+            address(repToken),
+            REPUTATION_TOKEN_ID,
+            1000000
+        );
+
+        assertEq(
+            reputationModule.getAvailableReputation(address(market), address(bob)),
+            0
+        );
+
+        vm.warp(300 weeks);
+
+        assertLt(
+            reputationModule.getAvailableReputation(address(market), address(bob)),
+            balanceBefore
         );
 
         vm.stopPrank();

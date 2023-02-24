@@ -24,8 +24,6 @@ import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/Reput
 
 import {ConstantLikertEnforcement} from "src/Modules/Enforcement/ConstantLikertEnforcement.sol";
 
-import {PayCurve} from "src/Modules/Payment/PayCurve.sol";
-
 import {LaborMarketConfigurationInterface} from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
 import {LaborMarketNetworkInterface} from "src/Network/interfaces/LaborMarketNetworkInterface.sol";
 
@@ -47,8 +45,6 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
 
     ConstantLikertEnforcement public constantLikertEnforcement;
 
-    PayCurve public payCurve;
-
     // Define the tokenIds for ERC1155
     uint256 private constant DELEGATE_TOKEN_ID = 0;
     uint256 private constant REPUTATION_TOKEN_ID = 1;
@@ -68,6 +64,10 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
     // Maintainer 2
     address private bobert = address(0x11);
 
+    address private grader1 = address(0x111);
+
+    address private grader2 = address(0x222);
+
     // User
     address private alice = address(0x2);
 
@@ -76,7 +76,6 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
         address(uint160(uint256(keccak256("EVIL_USER"))));
 
     // Alt delegate
-    // Evil user
     address private delegate =
         address(uint160(uint256(keccak256("DELEGATOOOR"))));
 
@@ -188,8 +187,6 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
         // Deploy a new reputation module
         reputationModule = new ReputationModule(address(network));
 
-        // Create a new pay curve
-        payCurve = new PayCurve();
 
         // Initialize reputation and roles
         address[] memory delegates = new address[](1);
@@ -216,8 +213,7 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
         // Create enforcement criteria
         constantLikertEnforcement = new ConstantLikertEnforcement();
 
-        // Create a new pay curve
-        payCurve = new PayCurve();
+        bytes32 constantLikertKey = "";
 
         // Create a new labor market configuration for constant likert
         LaborMarketConfigurationInterface.LaborMarketConfiguration
@@ -229,7 +225,7 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
                         network: address(network),
                         reputation: address(reputationModule),
                         enforcement: address(constantLikertEnforcement),
-                        payment: address(payCurve)
+                        enforcementKey: constantLikertKey
                     }),
                     maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
                         token: address(repToken),
@@ -245,7 +241,8 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
                     }),
                     reputationParams: LaborMarketConfigurationInterface.ReputationParams({
                         rewardPool: 5000,
-                        signalStake: 5,
+                        provideStake: 5,
+                        reviewStake: 5,
                         submitMin: 10,
                         submitMax: 10000e18
                     })
@@ -262,24 +259,22 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
         repToken.leaderMint(alice, REPUTATION_TOKEN_ID, 100e18, "0x");
         repToken.leaderMint(alice, DELEGATE_TOKEN_ID, 1, "0x");
 
-        changePrank(alice);
-        repToken.setApprovalForAll(address(constantLikertMarket), true);
-
         changePrank(deployer);
         repToken.leaderMint(bob, REPUTATION_TOKEN_ID, 100000e18, "0x");
         repToken.leaderMint(bob, DELEGATE_TOKEN_ID, 1, "0x");
         payToken.freeMint(bob, 1_000_000e18);
         repToken.leaderMint(bob, MAINTAINER_TOKEN_ID, 1, "0x");
+        repToken.leaderMint(bobert, MAINTAINER_TOKEN_ID, 1, "0x");
+        repToken.leaderMint(bobert, REPUTATION_TOKEN_ID, 1_000_000e18, "0x");
+        repToken.leaderMint(delegate, REPUTATION_TOKEN_ID, 1_000_000e18, "0x");
+        repToken.leaderMint(delegate, MAINTAINER_TOKEN_ID, 1, "0x");
+        repToken.leaderMint(grader1, REPUTATION_TOKEN_ID, 1_000_000e18, "0x");
+        repToken.leaderMint(grader1, MAINTAINER_TOKEN_ID, 1, "0x");
+        repToken.leaderMint(grader2, REPUTATION_TOKEN_ID, 1_000_000e18, "0x");
+        repToken.leaderMint(grader2, MAINTAINER_TOKEN_ID, 1, "0x");
 
         changePrank(bob);
         payToken.approve(address(constantLikertMarket), 1_000e18);
-
-        changePrank(deployer);
-        repToken.leaderMint(bobert, REPUTATION_TOKEN_ID, 1000e18, "0x");
-        repToken.leaderMint(bobert, MAINTAINER_TOKEN_ID, 1, "0x");
-
-        changePrank(deployer);
-        repToken.leaderMint(delegate, DELEGATE_TOKEN_ID, 1, "0x");
 
         vm.stopPrank();
     }
@@ -300,15 +295,156 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
         return rid;
     }
 
-    function pseudoRandom(uint256 _n) internal view returns (uint256) {
+    function pseudoRandom(uint256 _n, uint256 _salt) internal view returns (uint256) {
         return
             uint256(
-                keccak256(abi.encodePacked(block.timestamp, msg.sender, _n))
+                keccak256(abi.encodePacked(block.timestamp, msg.sender, _n, _salt))
             ) / 1.5e75;
     }
 
-    function coinflip() internal view returns (uint256) {
-        return ((pseudoRandom(123) + uint160(msg.sender)) % 2) == 0 ? 1 : 0;
+    function randomLikert(uint256 salt) internal view returns (uint256) {
+        return (pseudoRandom(123, salt) + uint160(msg.sender) + uint256(salt)) % 5;
+    }
+
+    function test_ConstantLikertRandomReviews() public {
+        vm.startPrank(deployer);
+
+        uint256 runs = 200;
+        payToken.freeMint(bob, 10000e18);
+
+        changePrank(bob);
+        // Create a request
+        uint256 requestId = createSimpleRequest(constantLikertMarket);
+
+        // Signal the request on 20 accounts
+        for (uint256 i = requestId; i < requestId + runs; i++) {
+            address user = address(uint160(1337 + i));
+
+            // Mint required tokens
+            changePrank(deployer);
+            repToken.leaderMint(user, REPUTATION_TOKEN_ID, 100e18, "0x");
+            changePrank(user);
+
+            constantLikertMarket.signal(requestId);
+            constantLikertMarket.provide(requestId, "0x");
+        }
+
+        changePrank(bob);
+        constantLikertMarket.signalReview(requestId, runs);
+
+        changePrank(bobert);
+        constantLikertMarket.signalReview(requestId, runs);
+
+        changePrank(delegate);
+        constantLikertMarket.signalReview(requestId, runs);
+
+        changePrank(grader1);
+        constantLikertMarket.signalReview(requestId, runs);
+
+        changePrank(grader2);
+        constantLikertMarket.signalReview(requestId, runs);
+
+        uint256 salt = 0;
+        for (uint256 i = requestId; i < requestId + runs; i++) {
+            changePrank(delegate);
+            salt = (salt * i + i + 2) % 1000;
+            constantLikertMarket.review(requestId, i + 1, randomLikert(salt));
+            changePrank(bobert);
+            salt = (salt * i + i + 3) % 1000;
+            constantLikertMarket.review(requestId, i + 1, randomLikert(salt));
+            changePrank(bob);
+            salt = (salt * i + i + 4) % 1000;
+            constantLikertMarket.review(requestId, i + 1, randomLikert(salt));
+            changePrank(grader1);
+            salt = (salt * i + i + 3) % 1000;
+            constantLikertMarket.review(requestId, i + 1, randomLikert(salt));
+            changePrank(grader2);
+            salt = (salt * i + i + 2) % 1000;
+            constantLikertMarket.review(requestId, i + 1, randomLikert(salt));
+        }
+
+        // Keeps track of the total amount paid out
+        uint256 totalPaid;
+        uint256 totalReputation;
+
+        // Skip to enforcement deadline
+        vm.warp(5 weeks);
+
+        // Claim rewards
+        for (uint256 i = requestId; i < requestId + runs; i++) {
+            address user = address(uint160(1337 + i));
+            changePrank(user);
+
+            // Claim
+            (uint256 pPaid, uint256 rPaid) = constantLikertMarket.claim(i + 1, msg.sender); 
+            totalPaid += pPaid;
+            totalReputation += rPaid;
+        }
+
+        console.log("pTokenDust %s / %s", 1000e18 - totalPaid, 1000e18);
+        console.log("rTokenDust %s / %s", 5000 - totalReputation, 5000);
+
+        assertAlmostEq(totalPaid, 1000e18, 1e6);
+        assertAlmostEq(totalReputation, 5000, 100);
+    }
+
+    function test_ConstantLikertMarketSimple() public {
+        vm.startPrank(deployer);
+
+        payToken.freeMint(bob, 10000e18);
+
+        changePrank(bob);
+        // Create a request
+        uint256 requestId = createSimpleRequest(constantLikertMarket);
+
+        // Signal the request on 5 accounts
+        for (uint256 i = requestId; i < requestId + 5; i++) {
+            address user = address(uint160(1337 + i));
+
+            // Mint required tokens
+            changePrank(deployer);
+            repToken.leaderMint(user, REPUTATION_TOKEN_ID, 100e18, "0x");
+            changePrank(user);
+
+            constantLikertMarket.signal(requestId);
+            uint256 subId = constantLikertMarket.provide(requestId, "0x");
+        }
+
+        // Have bob review the submissions
+        changePrank(bob);
+
+        // The reviewer signals the requestId
+        constantLikertMarket.signalReview(requestId, 5);
+
+        uint256 counter = 0;
+        for (uint256 i = requestId; i < requestId + 5; i++) {
+            constantLikertMarket.review(requestId, i + 1, counter);
+            counter++;
+        }
+
+        // Keeps track of the total amount paid out
+        uint256 totalPaid;
+        uint256 totalReputation;
+
+        // Skip to enforcement deadline
+        vm.warp(5 weeks);
+
+        // Claim rewards
+        for (uint256 i = requestId; i < requestId + 5; i++) {
+            address user = address(uint160(1337 + i));
+            changePrank(user);
+
+            // Claim
+            (uint256 pPaid, uint256 rPaid) = constantLikertMarket.claim(i + 1, msg.sender); 
+            totalPaid += pPaid;
+            totalReputation += rPaid;
+        }
+
+        console.log("pTokenDust %s / %s", 1000e18 - totalPaid, 1000e18);
+        console.log("rTokenDust %s / %s", 5000 - totalReputation, 5000);
+
+        assertAlmostEq(totalPaid, 1000e18, 1e6);
+        assertAlmostEq(totalReputation, 5000, 100);
     }
 
     function test_ConstantLikertMarket() public {
@@ -373,14 +509,144 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
             changePrank(user);
 
             // Claim
-            uint256 repBefore = repToken.balanceOf(user, REPUTATION_TOKEN_ID);
-            uint256 paid = constantLikertMarket.claim(i + 1, msg.sender, ""); 
-            totalPaid += paid;
-            uint256 repAfter = repToken.balanceOf(user, REPUTATION_TOKEN_ID);
-            totalReputation += repAfter - repBefore;
+            (uint256 pPaid, uint256 rPaid) = constantLikertMarket.claim(i + 1, msg.sender); 
+            totalPaid += pPaid;
+            totalReputation += rPaid;
         }
 
-        assertAlmostEq(totalPaid, 1000e18, 0.000001e18);
-        assertAlmostEq(totalReputation, 5000, 100);
+        console.log("pTokenDust %s / %s", 1000e18 - totalPaid, 1000e18);
+        console.log("rTokenDust %s / %s", 5000 - totalReputation, 5000);
+
+        assertAlmostEq(totalPaid, 1000e18, 0.00001e18);
+    }
+
+    function test_CanReclaimUnusedPayment() public {
+        vm.startPrank(deployer);
+
+        payToken.freeMint(bob, 10000e18);
+
+        changePrank(bob);
+        // Create a request
+        uint256 requestId = createSimpleRequest(constantLikertMarket);
+
+        // Signal the request on 112 accounts
+        for (uint256 i = requestId; i < 113; i++) {
+            address user = address(uint160(1337 + i));
+
+            // Mint required tokens
+            changePrank(deployer);
+            repToken.leaderMint(user, DELEGATE_TOKEN_ID, 1, "0x");
+            repToken.leaderMint(user, REPUTATION_TOKEN_ID, 100e18, "0x");
+            changePrank(user);
+
+            constantLikertMarket.signal(requestId);
+            constantLikertMarket.provide(requestId, "NaN");
+        }
+
+        // Skip to enforcement deadline
+        vm.warp(100 weeks);
+
+        // Claim remainder
+        changePrank(bob);
+        uint256 balanceBefore = payToken.balanceOf(bob);
+        constantLikertMarket.claimRemainder(requestId);
+
+        uint256 balanceAfter = payToken.balanceOf(bob);
+
+        assertEq(balanceAfter - balanceBefore, 1000e18);
+    }
+
+    function test_CanReclaimPaymentWithSubmissions() public {
+        vm.startPrank(deployer);
+
+        payToken.freeMint(bob, 10000e18);
+
+        changePrank(bob);
+        // Create a request
+        uint256 requestId = createSimpleRequest(constantLikertMarket);
+
+        // Signal the request
+        for (uint256 i = requestId; i < 10; i++) {
+            address user = address(uint160(1337 + i));
+
+            // Mint required tokens
+            changePrank(deployer);
+            repToken.leaderMint(user, DELEGATE_TOKEN_ID, 1, "0x");
+            repToken.leaderMint(user, REPUTATION_TOKEN_ID, 100e18, "0x");
+            changePrank(user);
+
+            constantLikertMarket.signal(requestId);
+            uint256 id = constantLikertMarket.provide(requestId, "NaN");
+        }
+
+        /// Cannot withdraw as signals exist
+        changePrank(bob);
+        vm.expectRevert("LaborMarket::withdrawRequest: Already active");
+        constantLikertMarket.withdrawRequest(requestId);
+
+        // Have bob review a submission
+        constantLikertMarket.signalReview(requestId, 1);
+        constantLikertMarket.review(requestId, 5, 0);
+
+        // Skip to enforcement deadline
+        vm.warp(100 weeks);
+
+        // Claim remainder (should be 0)
+        changePrank(bob);
+        uint256 balanceBefore = payToken.balanceOf(bob);
+        constantLikertMarket.claimRemainder(requestId);
+        uint256 balanceAfter = payToken.balanceOf(bob);
+        assertEq(balanceAfter - balanceBefore, 1000e18);
+    }
+
+    function test_CannotReclaimUsedPayment() public {
+        vm.startPrank(deployer);
+
+        payToken.freeMint(bob, 10000e18);
+
+        changePrank(bob);
+        // Create a request
+        uint256 requestId = createSimpleRequest(constantLikertMarket);
+
+        // Signal the request on 10 accounts
+        for (uint256 i = requestId; i < 10; i++) {
+            address user = address(uint160(1337 + i));
+
+            // Mint required tokens
+            changePrank(deployer);
+            repToken.leaderMint(user, DELEGATE_TOKEN_ID, 1, "0x");
+            repToken.leaderMint(user, REPUTATION_TOKEN_ID, 100e18, "0x");
+            changePrank(user);
+
+            constantLikertMarket.signal(requestId);
+            uint256 id = constantLikertMarket.provide(requestId, "NaN");
+        }
+
+        /// Cannot withdraw as signals exist
+        changePrank(bob);
+        vm.expectRevert("LaborMarket::withdrawRequest: Already active");
+        constantLikertMarket.withdrawRequest(requestId);
+
+        // Have bob review a submission
+        constantLikertMarket.signalReview(requestId, 1);
+        constantLikertMarket.review(requestId, 5, 1);
+
+        changePrank(grader1);
+        constantLikertMarket.signalReview(requestId, 1);
+        constantLikertMarket.review(requestId, 5, 1);
+
+        changePrank(grader2);
+        constantLikertMarket.signalReview(requestId, 1);
+        constantLikertMarket.review(requestId, 5, 0);
+
+        // Skip to enforcement deadline
+        vm.warp(100 weeks);
+
+        // Claim remainder (should be 0)
+        changePrank(bob);
+        uint256 balanceBefore = payToken.balanceOf(bob);
+        constantLikertMarket.claimRemainder(requestId);
+        uint256 balanceAfter = payToken.balanceOf(bob);
+        assertEq(balanceAfter - balanceBefore, 0);
     }
 }

@@ -74,4 +74,20 @@ contract LaborMarketNetworkTest is PRBTest, StdCheats {
         // Check that the new capacity implementation is set
         assertEq(address(network.capacityToken()), newCapacityImplementation);
     }
+
+    function test_CanChangeNetworkRoles() public {
+        LaborMarketConfigurationInterface.BadgePair memory governorPair = LaborMarketConfigurationInterface.BadgePair({
+            token: address(0x1),
+            tokenId: 0
+        });
+        LaborMarketConfigurationInterface.BadgePair memory creatorPair = LaborMarketConfigurationInterface.BadgePair({
+            token: address(0x1),
+            tokenId: 1
+        });
+
+        network.setNetworkRoles(governorPair, creatorPair);
+
+        assertEq(address(network.governorBadge()), address(0x1));
+        assertEq(address(network.creatorBadge()), address(0x1));
+    }
 }

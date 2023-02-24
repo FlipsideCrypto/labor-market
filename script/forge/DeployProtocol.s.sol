@@ -5,9 +5,9 @@ import {Script} from "forge-std/Script.sol";
 
 import {PaymentToken} from "test/forge/Helpers/HelperTokens.sol";
 
-import { BadgerOrganization } from "src/Modules/Badger/BadgerOrganization.sol";
-import { Badger } from "src/Modules/Badger/Badger.sol";
-import { BadgerScoutInterface } from "src/Modules/Badger/interfaces/BadgerScoutInterface.sol";
+import {BadgerOrganization} from "src/Modules/Badger/BadgerOrganization.sol";
+import {Badger} from "src/Modules/Badger/Badger.sol";
+import {BadgerScoutInterface} from "src/Modules/Badger/interfaces/BadgerScoutInterface.sol";
 
 import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
 import {LaborMarket} from "src/LaborMarket/LaborMarket.sol";
@@ -18,9 +18,7 @@ import {LaborMarketVersions} from "src/Network/LaborMarketVersions.sol";
 import {ReputationModule} from "src/Modules/Reputation/ReputationModule.sol";
 import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/ReputationModuleInterface.sol";
 
-import {ConstantLikertEnforcement} from "src/Modules/Enforcement/ConstantLikertEnforcement.sol";
-
-import {PayCurve} from "src/Modules/Payment/PayCurve.sol";
+import {ScalableLikertEnforcement} from "src/Modules/Enforcement/ScalableLikertEnforcement.sol";
 
 import {LaborMarketConfigurationInterface} from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
 import {LaborMarketNetworkInterface} from "src/Network/interfaces/LaborMarketNetworkInterface.sol";
@@ -39,13 +37,10 @@ struct PaymentTokenInt {
 contract DeployProtocol is Script {
     LaborMarket public marketImplementation;
     LaborMarket public market;
-
     ReputationModule public reputationModule;
-
     LaborMarketNetwork public network;
+    ScalableLikertEnforcement public enforcement;
 
-    ConstantLikertEnforcement public constantLikertEnforcement;
-    PayCurve public payCurve;
 
     address public capacityToken = address(0);
 
@@ -57,12 +52,13 @@ contract DeployProtocol is Script {
         marketImplementation = new LaborMarket();
 
         LaborMarketConfigurationInterface.BadgePair memory governorPair = LaborMarketConfigurationInterface.BadgePair({
-            token: address(0x854DE1bf96dFBe69FC46f1a888d26934Ad47B77f),
-            tokenId: 0
+            token: address(0xA873Dad23D357a19ac03CdA4ea3522108D26ebeA),
+            tokenId: 6
         });
+        
         LaborMarketConfigurationInterface.BadgePair memory creatorPair = LaborMarketConfigurationInterface.BadgePair({
-            token: address(0x854DE1bf96dFBe69FC46f1a888d26934Ad47B77f),
-            tokenId: 1
+            token: address(0xA873Dad23D357a19ac03CdA4ea3522108D26ebeA),
+            tokenId: 3
         });
 
         // Deploy a labor market network
@@ -77,10 +73,7 @@ contract DeployProtocol is Script {
         reputationModule = new ReputationModule(address(network));
 
         // Create enforcement criteria
-        constantLikertEnforcement = new ConstantLikertEnforcement();
-
-        // Create a new pay curve
-        payCurve = new PayCurve();
+        enforcement = new ScalableLikertEnforcement();
 
         vm.stopBroadcast();
     }
