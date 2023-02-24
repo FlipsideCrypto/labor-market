@@ -26,7 +26,7 @@ interface ReputationModuleInterface {
     )
         external;
         
-    function useReputation(
+    function revokeReputation(
           address _account
         , uint256 _amount
     )

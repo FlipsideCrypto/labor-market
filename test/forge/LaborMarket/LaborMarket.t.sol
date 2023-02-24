@@ -874,7 +874,7 @@ contract LaborMarketTest is PRBTest, StdCheats {
         market.signal(requestId);
 
         // User fulfills the request
-        uint256 submissionId = market.provide(requestId, "IPFS://333");
+        market.provide(requestId, "IPFS://333");
 
         // A valid maintainer signals for review
         changePrank(bob);
@@ -1357,14 +1357,13 @@ contract LaborMarketTest is PRBTest, StdCheats {
         );
 
         (
-            address serviceRequester,
-            address pToken,
+            ,
+            ,
             uint256 pTokenQ,
-            uint256 signalExp,
-            uint256 submissionExp,
-            uint256 enforcementExp,
-            uint256 submissionCount,
-            string memory uri
+            ,
+            ,
+            ,
+            ,
         ) = market.serviceRequests(requestId);
 
         uint256 balanceAfter = payToken.balanceOf(address(bob));

@@ -106,7 +106,7 @@ contract LaborMarket is LaborMarketManager {
         }
 
         /// @dev Use the user's reputation.
-        reputationModule.useReputation(
+        reputationModule.revokeReputation(
             _msgSender(), 
             configuration.reputationParams.provideStake
         );
@@ -150,7 +150,7 @@ contract LaborMarket is LaborMarketManager {
         uint256 reviewStake = _quantity * configuration.reputationParams.reviewStake;
 
         /// @dev Use the maintainer's reputation.
-        reputationModule.useReputation(_msgSender(), reviewStake);
+        reputationModule.revokeReputation(_msgSender(), reviewStake);
 
         /// @dev Set the maintainer's review signal.
         reviewPromise.total += _quantity;

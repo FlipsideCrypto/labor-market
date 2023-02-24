@@ -31,6 +31,7 @@ contract LaborMarketNetwork is
      * @dev This is used to gate the ability to create and update Labor Markets.
      * @param _governorBadge The address and tokenId of the GovernorBadge.
      * @param _creatorBadge The address and tokenId of the CreatorBadge.
+     *
      * Requirements:
      * - Only the owner can call this function.
      */
@@ -49,6 +50,7 @@ contract LaborMarketNetwork is
     /**
      * @notice Allows the owner to set the capacity token implementation.
      * @param _implementation The address of the reputation token.
+     *
      * Requirements:
      * - Only a Governor can call this function.
      */
@@ -73,6 +75,7 @@ contract LaborMarketNetwork is
      * @param _decayRate The rate of decay.
      * @param _decayInterval The interval of decay.
      * @param _decayStartEpoch The epoch to start the decay.
+     *
      * Requirements:
      * - Only a Governor can call this function.
      */
@@ -88,6 +91,7 @@ contract LaborMarketNetwork is
         virtual
         override
     {
+        /// @dev Check for permissions.
         require(
             _isGovernor(_msgSender()), 
             "LaborMarketNetwork: Only a Governor can call this."

@@ -97,7 +97,7 @@ contract ReputationModule is
      * @param _account The account to burn reputation from.
      * @param _amount The amount of reputation to burn.
      */
-    function useReputation(
+    function revokeReputation(
           address _account
         , uint256 _amount
     )

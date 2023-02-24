@@ -5,18 +5,18 @@ pragma solidity ^0.8.17;
 import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
 import {EnforcementCriteriaInterface} from "src/Modules/Enforcement/interfaces/EnforcementCriteriaInterface.sol";
 
+
 /**
  * @title Scalable Likert Enforcement
  * @notice A contract that enforces a scalable likert scale.
  * @dev This contract takes in reviews on a 5 point Likert scale of SPAM, BAD, OK, GOOD, GREAT.
- *         Upon a review, the average score is calculated and the cumulative score is updated with
- *         the score multiplied by it's bucket multiplier.
- *         Once it is time to claim, the ratio of a submission's average scaled score to the cumulative
- *         score is calculated. This ratio represents the % of the total reward pool that a submission
- *         has earned. The earnings are distributed to the submission's based on their average score and
- *         where it falls on the bucket criteria.
+ *      Upon a review, the average score is calculated and the cumulative score is updated with
+ *      the score multiplied by it's bucket multiplier.
+ *      Once it is time to claim, the ratio of a submission's average scaled score to the cumulative
+ *      score is calculated. This ratio represents the % of the total reward pool that a submission
+ *      has earned. The earnings are distributed to the submission's based on their average score and
+ *      where it falls on the bucket criteria.
  */
-
 
 contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
     /// @dev Tracks the scores given to service submissions.
@@ -76,14 +76,11 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
     {
         require(
             _score <= uint256(Likert.GREAT),
-            "VariableLikertEnforcement::review: Invalid score"
+            "ScalableLikertEnforcement::review: Invalid score"
         );
-
-        uint256 requestId = _getRequestId(_submissionId);
 
         _review(
             msg.sender, 
-            requestId, 
             _submissionId, 
             _score
         );
@@ -102,10 +99,16 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
     )
         external
     {
+        /// @dev The key cannot be empty.
+        require(
+            _key != bytes32(0),
+            "ScalableLikertEnforcement::setBuckets: Invalid key"
+        );
+
         /// @dev The ranges and weights must be the same length.
         require(
             _ranges.length == _weights.length,
-            "ConstantLikertEnforcement::setBuckets: Invalid input"
+            "ScalableLikertEnforcement::setBuckets: Invalid input"
         );
         
         Buckets storage buckets = bucketCriteria[_key];
@@ -113,7 +116,7 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
         /// @dev Criteria can only be set once.
         require(
             buckets.ranges.length == 0, 
-            "ConstantLikertEnforcement::setBuckets: Criteria already in use"
+            "ScalableLikertEnforcement::setBuckets: Criteria already in use"
         );
 
         /// @dev Opting for cleaning user input, as this will not 
@@ -122,7 +125,7 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
             /// @dev The ranges must be in ascending order.
             require(
                 _ranges[i] < _ranges[i + 1],
-                "ConstantLikertEnforcement::setBuckets: Buckets not sequential"
+                "ScalableLikertEnforcement::setBuckets: Buckets not sequential"
             );
         }
 
@@ -151,7 +154,7 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
             uint256
         )
     {
-        uint256 requestId = _getRequestId(_submissionId);
+        uint256 requestId = _getRequestId(_laborMarket, _submissionId);
 
         return (
             _calculateShare(
@@ -182,7 +185,7 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
             uint256
         )
     {
-        uint256 requestId = _getRequestId(_submissionId);
+        uint256 requestId = _getRequestId(_laborMarket, _submissionId);
 
         return _calculateShare(
             submissionToScore[_laborMarket][_submissionId].avg, 
@@ -205,7 +208,7 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
             uint256
         )
     {
-        uint256 requestId = _getRequestId(_submissionId);
+        uint256 requestId = _getRequestId(_laborMarket, _submissionId);
 
         return _calculateShare(
             submissionToScore[_laborMarket][_submissionId].avg, 
@@ -247,7 +250,6 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
      */
     function _review(
           address _laborMarket
-        , uint256 _requestId
         , uint256 _submissionId
         , uint256 _score
     )
@@ -255,7 +257,9 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
     {
         /// @dev Load the submissions score state and the request data.
         Score storage score = submissionToScore[_laborMarket][_submissionId];
-        Request storage request = requests[_laborMarket][_getRequestId(_submissionId)];
+        Request storage request = requests[_laborMarket][
+            _getRequestId(_laborMarket, _submissionId)
+        ];
 
         /// @dev Set the score data and remove the scaled average from the cumulative total.
         unchecked {
@@ -331,7 +335,7 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
         , uint256 _totalPool
     )
         internal
-        view
+        pure
         returns (
             uint256
         )
@@ -345,11 +349,13 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
 
     /**
      * @notice Gets the request id of a submission.
+     * @param _laborMarket The labor market the submission is in.
      * @param _submissionId The submission id.
      * @return The request id.
      */
     function _getRequestId(
-        uint256 _submissionId
+          address _laborMarket
+        , uint256 _submissionId
     )
         internal
         view
@@ -357,9 +363,10 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
             uint256
         )
     {
-        return 
-            LaborMarketInterface(msg.sender)
+        return (
+            LaborMarketInterface(_laborMarket)
                 .getSubmission(_submissionId)
-                .requestId;
+                .requestId
+        );
     }
 }

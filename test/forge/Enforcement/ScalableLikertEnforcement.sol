@@ -240,8 +240,8 @@ contract ScalableLikertEnforcementTest is PRBTest, StdCheats {
         vm.startPrank(deployer);
         // vm.assume(ptokenQ < 643289384651756641242061027826043932518166581475780911330319911155072942);
 
-        uint256 runs = 100;
-        uint256 ptokenQ = 1000e32;
+        uint256 runs = 200;
+        uint256 ptokenQ = 100000e18;
         payToken.freeMint(bob, ptokenQ);
 
         changePrank(bob);
@@ -482,7 +482,12 @@ contract ScalableLikertEnforcementTest is PRBTest, StdCheats {
             (uint256 pPaid, uint256 rPaid) = market.claim(i, msg.sender); 
             totalPaid += pPaid;
             totalReputation += rPaid;
-            console.log("pPaid %s", pPaid);
+            
+            // Check the claim
+            uint256 pTokenReward = enforcement.getPaymentReward(address(market), i);
+            uint256 rTokenReward = enforcement.getReputationReward(address(market), i);
+            assertEq(pPaid, pTokenReward);
+            assertEq(rPaid, rTokenReward);
         }
 
         console.log("pTokenDust %s / %s", 1000e18 - totalPaid, 1000e18);
@@ -492,7 +497,7 @@ contract ScalableLikertEnforcementTest is PRBTest, StdCheats {
         assertAlmostEq(totalReputation, 5000, 100);
     }
 
-        function test_CanReclaimUnusedPayment() public {
+    function test_CanReclaimUnusedPayment() public {
         vm.startPrank(deployer);
 
         payToken.freeMint(bob, 10000e18);
@@ -620,5 +625,67 @@ contract ScalableLikertEnforcementTest is PRBTest, StdCheats {
         market.claimRemainder(requestId);
         uint256 balanceAfter = payToken.balanceOf(bob);
         assertEq(balanceAfter - balanceBefore, 0);
+    }
+
+    uint256[] public _ranges;
+    function test_ScalableLikertCannotSetEmptyKeyBuckets() public {
+        vm.startPrank(deployer);
+
+        _ranges.push(0);
+        _ranges.push(1);
+        _ranges.push(2);
+
+        vm.expectRevert("ScalableLikertEnforcement::setBuckets: Invalid key");
+        enforcement.setBuckets("", _ranges, _ranges);
+    }
+
+    function test_ScalableLikertCannotSetOldCritera() public {
+        vm.startPrank(deployer);
+
+        _ranges.push(0);
+        _ranges.push(1);
+        _ranges.push(2);
+
+        enforcement.setBuckets("test", _ranges, _ranges);
+
+        vm.expectRevert("ScalableLikertEnforcement::setBuckets: Criteria already in use");
+        enforcement.setBuckets("test", _ranges, _ranges);
+
+        vm.stopPrank();
+    }
+
+    uint256[] public _weights;
+    function test_ScalableLikertSetBucketsInvalidInput() public {
+        vm.startPrank(deployer);
+
+        _ranges.push(0);
+        _ranges.push(1);
+        _weights.push(0);
+
+        vm.expectRevert("ScalableLikertEnforcement::setBuckets: Invalid input");
+        enforcement.setBuckets("test", _ranges, _weights);
+
+        vm.stopPrank();
+    }
+
+    function testScalableLikertInvalidScore() public {
+        vm.startPrank(deployer);
+
+        payToken.freeMint(bob, 10000e18);
+
+        changePrank(bob);
+        // Create a request
+        uint256 requestId = createSimpleRequest(market, 1000e18);
+
+        changePrank(alice);
+        market.signal(requestId);
+        uint256 submissionId = market.provide(requestId, "NaN");
+
+        changePrank(bob);
+        market.signalReview(requestId, 1);
+        vm.expectRevert("ScalableLikertEnforcement::review: Invalid score");
+        market.review(requestId, submissionId, 100);
+
+        vm.stopPrank();
     }
 }
