@@ -238,7 +238,7 @@ contract LaborMarket is LaborMarketManager {
           uint256 _requestId
         , uint256 _submissionId
         , uint256 _score
-    ) 
+    )
         external
     {
         /// @dev Require the enforcement deadline has not passed.
@@ -481,70 +481,5 @@ contract LaborMarket is LaborMarketManager {
         );
 
         emit RequestWithdrawn(_requestId);
-    }
-
-    /**
-     * @notice Allows a service requester to edit a request.
-     * @dev Refunds the previous pToken and transfers in the new pToken.
-     * @param _requestId The id of the service requesters request.
-     * @param _pToken The address of the payment token.
-     * @param _pTokenQ The quantity of payment tokens.
-     * @param _signalExp The expiration of the signal period.
-     * @param _submissionExp The expiration of the submission period.
-     * @param _enforcementExp The expiration of the enforcement period.
-     * @param _requestUri The uri of the request.
-     *
-     * Requirements:
-     * - The requester is the sender.
-     * - The request must not have been signaled.
-     * - The timestamps are valid.
-     */
-    function editRequest(
-          uint256 _requestId
-        , address _pToken
-        , uint256 _pTokenQ
-        , uint256 _signalExp
-        , uint256 _submissionExp
-        , uint256 _enforcementExp
-        , string calldata _requestUri
-    )
-        external
-    {
-        /// @dev Ensure the requester is the sender.
-        require(
-            serviceRequests[_requestId].serviceRequester == _msgSender(),
-            "LaborMarket::editRequest: Not requester"
-        );
-
-        /// @dev Ensure there have been no signals.
-        require(
-            signalCount[_requestId] < 1,
-            "LaborMarket::editRequest: Already active"
-        );
-
-        /// @dev Ensure the timestamps are valid.
-        require(
-            _isValidTimestamps(_signalExp, _submissionExp, _enforcementExp),
-            "LaborMarket::editRequest: Invalid timestamps"
-        );
-
-        /// @dev Refund the prior payment token.
-        IERC20(
-            serviceRequests[_requestId].pToken
-        ).transfer(
-            _msgSender(),
-            serviceRequests[_requestId].pTokenQ
-        );
-    
-        /// @dev Change the request config.
-        _setRequest(
-            _requestId,
-            _pToken,
-            _pTokenQ,
-            _signalExp,
-            _submissionExp,
-            _enforcementExp,
-            _requestUri
-        );
     }
 }

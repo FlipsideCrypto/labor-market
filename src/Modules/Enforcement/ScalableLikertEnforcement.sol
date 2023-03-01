@@ -5,7 +5,6 @@ pragma solidity ^0.8.17;
 import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
 import {EnforcementCriteriaInterface} from "src/Modules/Enforcement/interfaces/EnforcementCriteriaInterface.sol";
 
-
 /**
  * @title Scalable Likert Enforcement
  * @notice A contract that enforces a scalable likert scale.
