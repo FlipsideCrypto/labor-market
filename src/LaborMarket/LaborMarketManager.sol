@@ -269,7 +269,7 @@ contract LaborMarketManager is
 
         return (
             availableRep >= configuration.reputationParams.submitMin &&
-            availableRep < configuration.reputationParams.submitMax
+            availableRep <= configuration.reputationParams.submitMax
         );
     }
 
