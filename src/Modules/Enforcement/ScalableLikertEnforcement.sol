@@ -18,6 +18,8 @@ import {EnforcementCriteriaInterface} from "src/Modules/Enforcement/interfaces/E
  */
 
 contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
+    uint256 public constant MATH_AVG_DECIMALS = 1e8;
+
     /// @dev Tracks the scores given to service submissions.
     /// @dev Labor Market -> Submission Id -> Scores
     mapping(address => mapping(uint256 => Score)) public submissionToScore;
@@ -46,7 +48,7 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
     struct Score {
         uint256 reviewCount;
         uint256 reviewSum;
-        uint256 avg;
+        uint256 scaledAvg;
         bool qualified;
     }
 
@@ -157,12 +159,12 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
 
         return (
             _calculateShare(
-                submissionToScore[_laborMarket][_submissionId].avg, 
+                submissionToScore[_laborMarket][_submissionId].scaledAvg, 
                 requests[_laborMarket][requestId].scaledAvgSum, 
                 LaborMarketInterface(_laborMarket).getRequest(requestId).pTokenQ
             ),
             _calculateShare(
-                submissionToScore[_laborMarket][_submissionId].avg, 
+                submissionToScore[_laborMarket][_submissionId].scaledAvg, 
                 requests[_laborMarket][requestId].scaledAvgSum, 
                 LaborMarketInterface(_laborMarket).getConfiguration().reputationParams.rewardPool
             )
@@ -187,7 +189,7 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
         uint256 requestId = _getRequestId(_laborMarket, _submissionId);
 
         return _calculateShare(
-            submissionToScore[_laborMarket][_submissionId].avg, 
+            submissionToScore[_laborMarket][_submissionId].scaledAvg, 
             requests[_laborMarket][requestId].scaledAvgSum, 
             LaborMarketInterface(_laborMarket).getRequest(requestId).pTokenQ
         );
@@ -210,7 +212,7 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
         uint256 requestId = _getRequestId(_laborMarket, _submissionId);
 
         return _calculateShare(
-            submissionToScore[_laborMarket][_submissionId].avg, 
+            submissionToScore[_laborMarket][_submissionId].scaledAvg, 
             requests[_laborMarket][requestId].scaledAvgSum, 
             LaborMarketInterface(_laborMarket).getConfiguration().reputationParams.rewardPool
         );
@@ -263,26 +265,26 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
         /// @dev Set the score data and remove the scaled average from the cumulative total.
         unchecked {
             score.reviewCount++;
-            score.reviewSum += _score * 25; /// @dev Scale the score to 100.
-            request.scaledAvgSum -= score.avg;
+            score.reviewSum += _score * 25; /// @dev Scale the score to 100 a.
+            request.scaledAvgSum -= score.scaledAvg;
         }
 
         /// @dev Get the scaled average.
-        uint256 avg = score.reviewSum / score.reviewCount;
-        score.avg = avg * _getBucketWeight(_laborMarket, avg);
+        uint256 avg = MATH_AVG_DECIMALS * score.reviewSum / score.reviewCount;
+        score.scaledAvg = avg * _getBucketWeight(_laborMarket, avg) / MATH_AVG_DECIMALS;
 
         /// @dev Add the scaled score to the cumulative total.
-        request.scaledAvgSum += score.avg;
+        request.scaledAvgSum += score.scaledAvg;
 
         /// @dev Is there a better way to handle this?
         /// @dev If not qualified, increment the number of qualifying scores and mark score as qualified.
-        if (score.avg > 0 && !score.qualified) {
+        if (score.scaledAvg > 0 && !score.qualified) {
             score.qualified = true;
             request.qualifyingCount++;
         }
 
         /// @dev If qualified, decrement number of scores and set score as qualified.
-        if (score.avg == 0 && score.qualified) {
+        if (score.scaledAvg == 0 && score.qualified) {
             score.qualified = false;
             request.qualifyingCount--;
         }

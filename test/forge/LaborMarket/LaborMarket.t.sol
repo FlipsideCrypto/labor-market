@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity ^0.8.17;
 
 // Testing imports
 import {StdCheats} from "forge-std/StdCheats.sol";
@@ -1470,4 +1470,6 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         vm.stopPrank();
     }
+
+    function test_CanHaveNoSignalStakeMarkets
 }
