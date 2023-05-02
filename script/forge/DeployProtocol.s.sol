@@ -15,9 +15,6 @@ import {LaborMarket} from "src/LaborMarket/LaborMarket.sol";
 import {LaborMarketNetwork} from "src/Network/LaborMarketNetwork.sol";
 import {LaborMarketVersions} from "src/Network/LaborMarketVersions.sol";
 
-import {ReputationModule} from "src/Modules/Reputation/ReputationModule.sol";
-import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/ReputationModuleInterface.sol";
-
 import {ScalableLikertEnforcement} from "src/Modules/Enforcement/ScalableLikertEnforcement.sol";
 
 import {LaborMarketConfigurationInterface} from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
@@ -35,46 +32,32 @@ struct PaymentTokenInt {
 }
 
 contract DeployProtocol is Script {
-    LaborMarket public marketImplementation;
-    LaborMarket public market;
-    ReputationModule public reputationModule;
-    LaborMarketNetwork public network;
-    ScalableLikertEnforcement public enforcement;
+    // LaborMarket public marketImplementation;
+    // LaborMarket public market;
+    // LaborMarketNetwork public network;
+    // ScalableLikertEnforcement public enforcement;
 
 
-    address public capacityToken = address(0);
+    // address public capacityToken = address(0);
 
-    function run() external {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
+    // function run() external {
+    //     uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+    //     vm.startBroadcast(deployerPrivateKey);
 
-        // Deploy an empty labor market for implementation
-        marketImplementation = new LaborMarket();
+    //     // Deploy an empty labor market for implementation
+    //     marketImplementation = new LaborMarket();
 
-        LaborMarketConfigurationInterface.BadgePair memory governorPair = LaborMarketConfigurationInterface.BadgePair({
-            token: address(0xA873Dad23D357a19ac03CdA4ea3522108D26ebeA),
-            tokenId: 6
-        });
-        
-        LaborMarketConfigurationInterface.BadgePair memory creatorPair = LaborMarketConfigurationInterface.BadgePair({
-            token: address(0xA873Dad23D357a19ac03CdA4ea3522108D26ebeA),
-            tokenId: 3
-        });
+    //     // Deploy a labor market network
+    //     network = new LaborMarketNetwork({
+    //         _factoryImplementation: address(marketImplementation),
+    //         _capacityImplementation: capacityToken,
+    //         _governorBadge: governorPair,
+    //         _creatorBadge: creatorPair
+    //     });
 
-        // Deploy a labor market network
-        network = new LaborMarketNetwork({
-            _factoryImplementation: address(marketImplementation),
-            _capacityImplementation: capacityToken,
-            _governorBadge: governorPair,
-            _creatorBadge: creatorPair
-        });
+    //     // Create enforcement criteria
+    //     enforcement = new ScalableLikertEnforcement();
 
-        // Deploy a new reputation module
-        reputationModule = new ReputationModule(address(network));
-
-        // Create enforcement criteria
-        enforcement = new ScalableLikertEnforcement();
-
-        vm.stopBroadcast();
-    }
+    //     vm.stopBroadcast();
+    // }
 }

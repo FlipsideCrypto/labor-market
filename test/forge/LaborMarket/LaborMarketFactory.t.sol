@@ -16,7 +16,6 @@ import {LaborMarketVersions} from "src/Network/LaborMarketVersions.sol";
 import {LaborMarketFactory} from "src/Network/LaborMarketFactory.sol";
 
 import {LaborMarketConfigurationInterface} from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
-import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/ReputationModuleInterface.sol";
 
 contract LaborMarketFactoryTest is PRBTest, StdCheats {
     AnyReputationToken public repToken;

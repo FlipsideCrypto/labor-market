@@ -20,9 +20,6 @@ import {LaborMarketFactory} from "src/Network/LaborMarketFactory.sol";
 import {LaborMarketNetwork} from "src/Network/LaborMarketNetwork.sol";
 import {LaborMarketVersions} from "src/Network/LaborMarketVersions.sol";
 
-import {ReputationModule} from "src/Modules/Reputation/ReputationModule.sol";
-import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/ReputationModuleInterface.sol";
-
 import { ScalableLikertEnforcement } from "src/Modules/Enforcement/ScalableLikertEnforcement.sol";
 
 import {LaborMarketConfigurationInterface} from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";

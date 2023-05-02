@@ -19,10 +19,7 @@ import {LaborMarketFactory} from "src/Network/LaborMarketFactory.sol";
 import {LaborMarketNetwork} from "src/Network/LaborMarketNetwork.sol";
 import {LaborMarketVersions} from "src/Network/LaborMarketVersions.sol";
 
-import {ReputationModule} from "src/Modules/Reputation/ReputationModule.sol";
-import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/ReputationModuleInterface.sol";
-
-import {ConstantLikertEnforcement} from "src/Modules/Enforcement/ConstantLikertEnforcement.sol";
+import {ScalableLikertEnforcement} from "src/Modules/Enforcement/ScalableLikertEnforcement.sol";
 
 import {LaborMarketConfigurationInterface} from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
 import {LaborMarketNetworkInterface} from "src/Network/interfaces/LaborMarketNetworkInterface.sol";
@@ -37,13 +34,11 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
     LaborMarket public marketImplementation;
     LaborMarket public constantLikertMarket;
 
-    ReputationModule public reputationModule;
-
     LaborMarketFactory public factory;
 
     LaborMarketNetwork public network;
 
-    ConstantLikertEnforcement public constantLikertEnforcement;
+    ScalableLikertEnforcement public scalableLikertEnforcement;
 
     // Define the tokenIds for ERC1155
     uint256 private constant DELEGATE_TOKEN_ID = 0;
@@ -184,13 +179,13 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
             })
         });
 
-        // Deploy a new reputation module
-        reputationModule = new ReputationModule(address(network));
+        /// TODO: This used to be the reputation module..
+        address notsure = address(0xfff);
 
 
         // Initialize reputation and roles
         address[] memory delegates = new address[](1);
-        delegates[0] = address(reputationModule);
+        delegates[0] = notsure;
         for (uint256 i=0; i <= CREATOR_TOKEN_ID; i++) {
             repToken.setBadge(
                 i,
@@ -211,7 +206,7 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
         repToken.leaderMint(address(deployer), CREATOR_TOKEN_ID, 1, "0x");
 
         // Create enforcement criteria
-        constantLikertEnforcement = new ConstantLikertEnforcement();
+        scalableLikertEnforcement = new ScalableLikertEnforcement();
 
         bytes32 constantLikertKey = "";
 
@@ -223,28 +218,8 @@ contract ConstantLikertEnforcementTest is PRBTest, StdCheats {
                     owner: address(deployer),
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
-                        reputation: address(reputationModule),
-                        enforcement: address(constantLikertEnforcement),
+                        enforcement: address(scalableLikertEnforcement),
                         enforcementKey: constantLikertKey
-                    }),
-                    maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
-                        token: address(repToken),
-                        tokenId: MAINTAINER_TOKEN_ID
-                    }),
-                    delegateBadge: LaborMarketConfigurationInterface.BadgePair({
-                        token: address(repToken),
-                        tokenId: DELEGATE_TOKEN_ID
-                    }),
-                    reputationBadge: LaborMarketConfigurationInterface.BadgePair({
-                        token: address(repToken),
-                        tokenId: REPUTATION_TOKEN_ID
-                    }),
-                    reputationParams: LaborMarketConfigurationInterface.ReputationParams({
-                        rewardPool: 5000,
-                        provideStake: 5,
-                        reviewStake: 5,
-                        submitMin: 10,
-                        submitMax: 10000e18
                     })
                 });
 

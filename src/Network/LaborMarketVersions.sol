@@ -10,7 +10,6 @@ import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC11
 /// @dev Helpers.
 import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
 import { LaborMarketInterface } from "../LaborMarket/interfaces/LaborMarketInterface.sol";
-import { ReputationModuleInterface } from "../Modules/Reputation/interfaces/ReputationModuleInterface.sol";
 
 /// @dev Supported interfaces.
 import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
@@ -74,8 +73,6 @@ contract LaborMarketVersions is
 
     constructor(
           address _implementation
-        , BadgePair memory _governorBadge
-        , BadgePair memory _creatorBadge
     ) {
         /// @dev Initialize the foundational version of the Labor Market primitive.
         _setVersion(
@@ -85,12 +82,20 @@ contract LaborMarketVersions is
             0,
             false
         );
+    }
 
-        /// @dev Set the network roles.
-        _setNetworkRoles(
-            _governorBadge, 
-            _creatorBadge
-        );
+    /*//////////////////////////////////////////////////////////////
+                               MODIFIERS
+    //////////////////////////////////////////////////////////////*/
+
+    modifier onlyGovernor(address _sender) {
+        require(isGovernor(_sender), "LaborMarketVersions::isGovernor: Not a Governor.");
+        _;
+    }
+
+    modifier onlyCreator(address _sender) {
+        require(isCreator(_sender), "LaborMarketVersions::isCreator: Not a Creator.");
+        _;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -205,27 +210,33 @@ contract LaborMarketVersions is
      * @param _sender The address to verify against.
      * @return Whether or not the sender is a Creator.
      */
-    function _isCreator(address _sender)
-        internal
+    function isGovernor(address _sender)
+        external
         view
-        returns (bool)
+        virtual
+        returns (
+            bool
+        )
     {
-        return creatorBadge.balanceOf(_sender, creatorTokenId) > 0;
+        // TODO: NBADGE
+        return true;
     }
 
     /**
-     * @notice Gates permissions behind the Governor Badge.
-     * @dev This is an internal function to allow gating Governor permissions
-     *     within the entire network and factory contract stack.
-     * @param _sender The address to verify against.
-     * @return Whether or not the sender is a Governor.
+     * @notice Checks if the sender is a Creator.
+     * @param _sender The message sender address.
+     * @return True if the sender is a Creator.
      */
-    function _isGovernor(address _sender) 
-        internal
+    function isCreator(address _sender)
+        external
         view
-        returns (bool)
+        virtual
+        returns (
+            bool
+        )
     {
-        return governorBadge.balanceOf(_sender, governorTokenId) > 0;
+        // TODO: NBADGE
+        return true;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -261,13 +272,6 @@ contract LaborMarketVersions is
         /// @dev Deploy the clone contract to serve as the Labor Market.
         laborMarket.initialize(_configuration);
 
-        /// @dev Register the Labor Market with the Reputation Module.
-        ReputationModuleInterface(_configuration.modules.reputation).useReputationModule(
-            marketAddress,
-            _configuration.reputationBadge.token,
-            _configuration.reputationBadge.tokenId
-        );
-
         /// @dev Announce the creation of the Labor Market.
         emit LaborMarketCreated(marketAddress, _configuration.owner, _implementation);
 
@@ -296,46 +300,6 @@ contract LaborMarketVersions is
 
         /// @dev Announce that the version has been updated to index it on the front-end.
         emit VersionUpdated(_implementation, versions[_implementation]);
-    }
-
-    /**
-     * See {LaborMarketsNetwork.setNetworkRoles}
-     */
-    function _setNetworkRoles(
-          BadgePair memory _governorBadge
-        , BadgePair memory _creatorBadge
-    )
-        internal
-    {
-        /// @dev Set the Governor Badge.
-        governorBadge = IERC1155(_governorBadge.token);
-        governorTokenId = _governorBadge.tokenId;
-
-        /// @dev Set the Creator Badge.
-        creatorBadge = IERC1155(_creatorBadge.token);
-        creatorTokenId = _creatorBadge.tokenId;
-    }
-
-    /**
-     * See {LaborMarketsNetwork.setReputationDecay}
-     */
-    function _setReputationDecay(
-          address _reputationModule
-        , address _reputationToken
-        , uint256 _reputationTokenId
-        , uint256 _decayRate
-        , uint256 _decayInterval
-        , uint256 _decayStartEpoch
-    )
-        internal
-    {
-        ReputationModuleInterface(_reputationModule).setDecayConfig(
-            _reputationToken,
-            _reputationTokenId,
-            _decayRate,
-            _decayInterval,
-            _decayStartEpoch
-        );
     }
 
     /**

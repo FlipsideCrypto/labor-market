@@ -11,22 +11,6 @@ interface LaborMarketNetworkInterface {
     )
         external;
 
-    function setNetworkRoles(
-          LaborMarketVersionsInterface.BadgePair memory _governorBadge
-        , LaborMarketVersionsInterface.BadgePair memory _creatorBadge
-    ) 
-        external;
-
-    function setReputationDecay(
-          address _reputationModule
-        , address _reputationToken
-        , uint256 _reputationTokenId
-        , uint256 _decayRate
-        , uint256 _decayInterval
-        , uint256 _decayStartEpoch
-    )
-        external;
-
     function isGovernor(address _sender) 
         external 
         view

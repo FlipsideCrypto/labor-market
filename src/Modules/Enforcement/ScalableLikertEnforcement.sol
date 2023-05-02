@@ -17,6 +17,8 @@ import {EnforcementCriteriaInterface} from "src/Modules/Enforcement/interfaces/E
  *      where it falls on the bucket criteria.
  */
 
+
+// TODO: We need to remove the score completely when someone claims, instead of tracking a claim status.
 contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
     uint256 public constant MATH_AVG_DECIMALS = 1e8;
 
@@ -138,44 +140,11 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
     /*////////////////////////////////////////////////// 
                         GETTERS
     //////////////////////////////////////////////////*/
-
-    
-    /**
-     * See {EnforcementCriteriaInterface.getRewards}
-     */
-    function getRewards(
-          address _laborMarket
-        , uint256 _submissionId
-    )
-        external
-        override
-        view
-        returns (
-            uint256,
-            uint256
-        )
-    {
-        uint256 requestId = _getRequestId(_laborMarket, _submissionId);
-
-        return (
-            _calculateShare(
-                submissionToScore[_laborMarket][_submissionId].scaledAvg, 
-                requests[_laborMarket][requestId].scaledAvgSum, 
-                LaborMarketInterface(_laborMarket).getRequest(requestId).pTokenQ
-            ),
-            _calculateShare(
-                submissionToScore[_laborMarket][_submissionId].scaledAvg, 
-                requests[_laborMarket][requestId].scaledAvgSum, 
-                LaborMarketInterface(_laborMarket).getConfiguration().reputationParams.rewardPool
-            )
-        );
-    }
-
     
     /**
      * See {EnforcementCriteriaInterface.getPaymentReward}
      */
-    function getPaymentReward(
+    function getReward(
           address _laborMarket
         , uint256 _submissionId
     )
@@ -192,29 +161,6 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
             submissionToScore[_laborMarket][_submissionId].scaledAvg, 
             requests[_laborMarket][requestId].scaledAvgSum, 
             LaborMarketInterface(_laborMarket).getRequest(requestId).pTokenQ
-        );
-    }
-
-    /**
-     * See {EnforcementCriteriaInterface.getReputationReward}
-     */
-    function getReputationReward(
-          address _laborMarket
-        , uint256 _submissionId
-    )
-        external
-        override
-        view
-        returns (
-            uint256
-        )
-    {
-        uint256 requestId = _getRequestId(_laborMarket, _submissionId);
-
-        return _calculateShare(
-            submissionToScore[_laborMarket][_submissionId].scaledAvg, 
-            requests[_laborMarket][requestId].scaledAvgSum, 
-            LaborMarketInterface(_laborMarket).getConfiguration().reputationParams.rewardPool
         );
     }
 
@@ -263,11 +209,9 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
         ];
 
         /// @dev Set the score data and remove the scaled average from the cumulative total.
-        unchecked {
-            score.reviewCount++;
-            score.reviewSum += _score * 25; /// @dev Scale the score to 100 a.
-            request.scaledAvgSum -= score.scaledAvg;
-        }
+        score.reviewCount++;
+        score.reviewSum += _score * 25; /// @dev Scale the score to 100.
+        request.scaledAvgSum -= score.scaledAvg;
 
         /// @dev Get the scaled average.
         uint256 avg = MATH_AVG_DECIMALS * score.reviewSum / score.reviewCount;
@@ -343,8 +287,8 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
     {
         return (
             _totalCumulativeScore > 0 ?
-            _userScore * _totalPool / _totalCumulativeScore :
-            0
+                _userScore * _totalPool / _totalCumulativeScore :
+                0
         );
     }
 

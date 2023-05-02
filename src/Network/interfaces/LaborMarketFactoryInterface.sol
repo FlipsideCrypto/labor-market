@@ -3,8 +3,6 @@
 pragma solidity ^0.8.17;
 
 import { LaborMarketVersionsInterface } from "./LaborMarketVersionsInterface.sol";
-import { ReputationModuleInterface } from "../../Modules/Reputation/interfaces/ReputationModuleInterface.sol";
-
 
 interface LaborMarketFactoryInterface is LaborMarketVersionsInterface {
     /**

@@ -19,9 +19,6 @@ import {LaborMarketFactory} from "src/Network/LaborMarketFactory.sol";
 import {LaborMarketNetwork} from "src/Network/LaborMarketNetwork.sol";
 import {LaborMarketVersions} from "src/Network/LaborMarketVersions.sol";
 
-import {ReputationModule} from "src/Modules/Reputation/ReputationModule.sol";
-import {ReputationModuleInterface} from "src/Modules/Reputation/interfaces/ReputationModuleInterface.sol";
-
 import {ScalableLikertEnforcement} from "src/Modules/Enforcement/ScalableLikertEnforcement.sol";
 
 import {LaborMarketConfigurationInterface} from "src/LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
@@ -37,8 +34,6 @@ contract ScalableLikertEnforcementTest is PRBTest, StdCheats {
     LaborMarket public marketImplementation;
     LaborMarket public market;
 
-    ReputationModule public reputationModule;
-
     LaborMarketFactory public factory;
 
     LaborMarketNetwork public network;
@@ -47,13 +42,10 @@ contract ScalableLikertEnforcementTest is PRBTest, StdCheats {
 
     // Define the tokenIds for ERC1155
     uint256 private constant DELEGATE_TOKEN_ID = 0;
-    uint256 private constant REPUTATION_TOKEN_ID = 1;
     uint256 private constant PAYMENT_TOKEN_ID = 2;
     uint256 private constant MAINTAINER_TOKEN_ID = 3;
     uint256 private constant GOVERNOR_TOKEN_ID = 4;
     uint256 private constant CREATOR_TOKEN_ID = 5;
-    uint256 private constant REPUTATION_DECAY_RATE = 0;
-    uint256 private constant REPUTATION_DECAY_INTERVAL = 0;
 
     uint256[] private RANGES;
     uint256[] private WEIGHTS;
@@ -108,9 +100,9 @@ contract ScalableLikertEnforcementTest is PRBTest, StdCheats {
             })
         });
 
-        // Deploy a new reputation module
-        reputationModule = new ReputationModule(address(network));
-
+        // @TODO: This used to be the reputation module address if we need to change it
+        // TODO: DELETE
+        address reputationModule = address(0x04);
 
         // Initialize reputation and roles
         address[] memory delegates = new address[](1);
@@ -156,28 +148,8 @@ contract ScalableLikertEnforcementTest is PRBTest, StdCheats {
                     owner: address(deployer),
                     modules: LaborMarketConfigurationInterface.Modules({
                         network: address(network),
-                        reputation: address(reputationModule),
                         enforcement: address(enforcement),
                         enforcementKey: key
-                    }),
-                    maintainerBadge: LaborMarketConfigurationInterface.BadgePair({
-                        token: address(repToken),
-                        tokenId: MAINTAINER_TOKEN_ID
-                    }),
-                    delegateBadge: LaborMarketConfigurationInterface.BadgePair({
-                        token: address(repToken),
-                        tokenId: DELEGATE_TOKEN_ID
-                    }),
-                    reputationBadge: LaborMarketConfigurationInterface.BadgePair({
-                        token: address(repToken),
-                        tokenId: REPUTATION_TOKEN_ID
-                    }),
-                    reputationParams: LaborMarketConfigurationInterface.ReputationParams({
-                        rewardPool: 5000,
-                        provideStake: 5,
-                        reviewStake: 5,
-                        submitMin: 10,
-                        submitMax: 10000e18
                     })
                 });
 

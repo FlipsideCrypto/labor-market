@@ -7,22 +7,15 @@ import { LaborMarketFactoryInterface } from "./interfaces/LaborMarketFactoryInte
 import { LaborMarketVersions } from "./LaborMarketVersions.sol";
 import { LaborMarketNetworkInterface } from "./interfaces/LaborMarketNetworkInterface.sol";
 
-/// @dev Helpers.
-import { ReputationModuleInterface } from "../Modules/Reputation/interfaces/ReputationModuleInterface.sol";
-
 contract LaborMarketFactory is
       LaborMarketFactoryInterface
     , LaborMarketVersions
 {
     constructor(
           address _implementation
-        , BadgePair memory _governorBadge
-        , BadgePair memory _creatorBadge
     ) 
         LaborMarketVersions(
               _implementation
-            , _governorBadge
-            , _creatorBadge
         )
     {}
 
@@ -43,16 +36,11 @@ contract LaborMarketFactory is
         override
         public
         virtual
+        onlyCreator(_msgSender())
         returns (
             address laborMarketAddress
         )
     {
-        /// @dev MVP only allows creators to deploy new Labor Markets.
-        require(
-            _isCreator(_msgSender()),
-            "LaborMarketFactory: Only creators can deploy new Labor Markets."
-        );
-
         /// @dev Load the version.
         Version memory version = versions[_implementation];
 
@@ -154,13 +142,8 @@ contract LaborMarketFactory is
         external
         virtual
         payable
+        onlyGovernor(_msgSender())
     {
-        /// @dev Only allow protocol Governors to execute protocol level transactions.
-        require(
-            _isGovernor(_msgSender()),
-            "LaborMarketFactory: Only Governors can call this."   
-        );
-
         /// @dev Make the call.
         (
               bool success

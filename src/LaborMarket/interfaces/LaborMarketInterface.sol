@@ -2,47 +2,37 @@
 
 pragma solidity ^0.8.17;
 
-import { LaborMarketConfigurationInterface } from "./LaborMarketConfigurationInterface.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface LaborMarketInterface is LaborMarketConfigurationInterface {
+interface LaborMarketInterface {
+    struct LaborMarketConfiguration {
+        string marketUri;
+        address owner;
+        Modules modules;
+    }
+
+    struct Modules {
+        address network;
+        address enforcement;
+        bytes32 enforcementKey;
+    }
+
     struct ServiceRequest {
         address serviceRequester;
-        address pToken;
+        IERC20 pToken;
+        uint48 signalExp;
+        uint48 submissionExp;
+        uint48 enforcementExp;
+        uint48 submissionCount;
         uint256 pTokenQ;
-        uint256 signalExp;
-        uint256 submissionExp;
-        uint256 enforcementExp;
-        uint256 submissionCount;
         string uri;
     }
 
     struct ServiceSubmission {
         address serviceProvider;
         uint256 requestId;
-        uint256 timestamp;
-        string uri;
-    }
-
-    struct ReviewPromise {
-        uint256 total;
-        uint256 remainder;
     }
 
     function initialize(LaborMarketConfiguration calldata _configuration)
         external;
-
-    function getSubmission(uint256 submissionId)
-        external
-        view
-        returns (ServiceSubmission memory);
-
-    function getRequest(uint256 requestId)
-        external
-        view
-        returns (ServiceRequest memory);
-
-    function getConfiguration()
-        external
-        view
-        returns (LaborMarketConfiguration memory);
 }
