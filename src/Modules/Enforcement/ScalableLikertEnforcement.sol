@@ -2,8 +2,8 @@
 
 pragma solidity ^0.8.17;
 
-import {LaborMarketInterface} from "src/LaborMarket/interfaces/LaborMarketInterface.sol";
-import {EnforcementCriteriaInterface} from "src/Modules/Enforcement/interfaces/EnforcementCriteriaInterface.sol";
+import { LaborMarketInterface } from 'src/LaborMarket/interfaces/LaborMarketInterface.sol';
+import { EnforcementCriteriaInterface } from 'src/Modules/Enforcement/interfaces/EnforcementCriteriaInterface.sol';
 
 /**
  * @title Scalable Likert Enforcement
@@ -17,8 +17,11 @@ import {EnforcementCriteriaInterface} from "src/Modules/Enforcement/interfaces/E
  *      where it falls on the bucket criteria.
  */
 
-
 // TODO: We need to remove the score completely when someone claims, instead of tracking a claim status.
+//       review() -> enforce()
+// TODO: We need have a function to enable with refunding of a request.
+//       refund()?
+// TODO: Remainder -> surplus()
 contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
     uint256 public constant MATH_AVG_DECIMALS = 1e8;
 
@@ -70,23 +73,10 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
     /**
      * See {EnforcementCriteriaInterface.review}
      */
-    function review(
-          uint256 _submissionId
-        , uint256 _score
-    )
-        external
-        override
-    {
-        require(
-            _score <= uint256(Likert.GREAT),
-            "ScalableLikertEnforcement::review: Invalid score"
-        );
+    function review(uint256 _submissionId, uint256 _score) external override {
+        require(_score <= uint256(Likert.GREAT), 'ScalableLikertEnforcement::review: Invalid score');
 
-        _review(
-            msg.sender, 
-            _submissionId, 
-            _score
-        );
+        _review(msg.sender, _submissionId, _score);
     }
 
     /**
@@ -96,40 +86,26 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
      * @param _weights The weights for the criteria.
      */
     function setBuckets(
-          bytes32 _key
-        , uint256[] calldata _ranges
-        , uint256[] calldata _weights
-    )
-        external
-    {
+        bytes32 _key,
+        uint256[] calldata _ranges,
+        uint256[] calldata _weights
+    ) external {
         /// @dev The key cannot be empty.
-        require(
-            _key != bytes32(0),
-            "ScalableLikertEnforcement::setBuckets: Invalid key"
-        );
+        require(_key != bytes32(0), 'ScalableLikertEnforcement::setBuckets: Invalid key');
 
         /// @dev The ranges and weights must be the same length.
-        require(
-            _ranges.length == _weights.length,
-            "ScalableLikertEnforcement::setBuckets: Invalid input"
-        );
-        
-        Buckets storage buckets = bucketCriteria[_key];
-        
-        /// @dev Criteria can only be set once.
-        require(
-            buckets.ranges.length == 0, 
-            "ScalableLikertEnforcement::setBuckets: Criteria already in use"
-        );
+        require(_ranges.length == _weights.length, 'ScalableLikertEnforcement::setBuckets: Invalid input');
 
-        /// @dev Opting for cleaning user input, as this will not 
+        Buckets storage buckets = bucketCriteria[_key];
+
+        /// @dev Criteria can only be set once.
+        require(buckets.ranges.length == 0, 'ScalableLikertEnforcement::setBuckets: Criteria already in use');
+
+        /// @dev Opting for cleaning user input, as this will not
         ///      be the V2 version of range and weight storage.
         for (uint256 i = 0; i < _ranges.length - 1; i++) {
             /// @dev The ranges must be in ascending order.
-            require(
-                _ranges[i] < _ranges[i + 1],
-                "ScalableLikertEnforcement::setBuckets: Buckets not sequential"
-            );
+            require(_ranges[i] < _ranges[i + 1], 'ScalableLikertEnforcement::setBuckets: Buckets not sequential');
         }
 
         /// @dev Set the criteria.
@@ -140,54 +116,31 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
     /*////////////////////////////////////////////////// 
                         GETTERS
     //////////////////////////////////////////////////*/
-    
+
     /**
      * See {EnforcementCriteriaInterface.getPaymentReward}
      */
-    function getReward(
-          address _laborMarket
-        , uint256 _submissionId
-    )
-        external
-        override
-        view
-        returns (
-            uint256
-        )
-    {
+    function getReward(address _laborMarket, uint256 _submissionId) external view override returns (uint256) {
         uint256 requestId = _getRequestId(_laborMarket, _submissionId);
 
-        return _calculateShare(
-            submissionToScore[_laborMarket][_submissionId].scaledAvg, 
-            requests[_laborMarket][requestId].scaledAvgSum, 
-            LaborMarketInterface(_laborMarket).getRequest(requestId).pTokenQ
-        );
+        return
+            _calculateShare(
+                submissionToScore[_laborMarket][_submissionId].scaledAvg,
+                requests[_laborMarket][requestId].scaledAvgSum,
+                LaborMarketInterface(_laborMarket).getRequest(requestId).pTokenQ
+            );
     }
 
     /**
      * See {EnforcementCriteriaInterface.getRemainder}
      */
-    function getRemainder(
-          address _laborMarket
-        , uint256 _requestId
-    )
-        external
-        override
-        view
-        returns (
-            uint256
-        )
-    {
+    function getRemainder(address _laborMarket, uint256 _requestId) external view override returns (uint256) {
         /// @dev Load the request.
-        LaborMarketInterface.ServiceRequest memory request = LaborMarketInterface(
-            _laborMarket
-        ).getRequest(_requestId);
+        LaborMarketInterface.ServiceRequest memory request = LaborMarketInterface(_laborMarket).getRequest(_requestId);
 
         /// @dev If the enforcement exp passed and the request total score is 0, return the total pool.
-        if (
-            block.timestamp > request.enforcementExp && 
-            requests[_laborMarket][_requestId].qualifyingCount == 0
-        ) return request.pTokenQ;
+        if (block.timestamp > request.enforcementExp && requests[_laborMarket][_requestId].qualifyingCount == 0)
+            return request.pTokenQ;
 
         return 0;
     }
@@ -196,17 +149,13 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
      * See {EnforcementCriteriaInterface.review}
      */
     function _review(
-          address _laborMarket
-        , uint256 _submissionId
-        , uint256 _score
-    )
-        internal
-    {
+        address _laborMarket,
+        uint256 _submissionId,
+        uint256 _score
+    ) internal {
         /// @dev Load the submissions score state and the request data.
         Score storage score = submissionToScore[_laborMarket][_submissionId];
-        Request storage request = requests[_laborMarket][
-            _getRequestId(_laborMarket, _submissionId)
-        ];
+        Request storage request = requests[_laborMarket][_getRequestId(_laborMarket, _submissionId)];
 
         /// @dev Set the score data and remove the scaled average from the cumulative total.
         score.reviewCount++;
@@ -214,8 +163,8 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
         request.scaledAvgSum -= score.scaledAvg;
 
         /// @dev Get the scaled average.
-        uint256 avg = MATH_AVG_DECIMALS * score.reviewSum / score.reviewCount;
-        score.scaledAvg = avg * _getBucketWeight(_laborMarket, avg) / MATH_AVG_DECIMALS;
+        uint256 avg = (MATH_AVG_DECIMALS * score.reviewSum) / score.reviewCount;
+        score.scaledAvg = (avg * _getBucketWeight(_laborMarket, avg)) / MATH_AVG_DECIMALS;
 
         /// @dev Add the scaled score to the cumulative total.
         request.scaledAvgSum += score.scaledAvg;
@@ -239,16 +188,7 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
      * @param _laborMarket The labor market the submission is in.
      * @param _score The score to get the weight for.
      */
-    function _getBucketWeight(
-        address _laborMarket,
-        uint256 _score
-    )
-        internal
-        view
-        returns (
-            uint256
-        )
-    {
+    function _getBucketWeight(address _laborMarket, uint256 _score) internal view returns (uint256) {
         /// @dev Get the enforcement key.
         bytes32 key = LaborMarketInterface(_laborMarket).getConfiguration().modules.enforcementKey;
 
@@ -275,21 +215,11 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
      * @param _totalPool The total pool of tokens to distribute.
      */
     function _calculateShare(
-          uint256 _userScore
-        , uint256 _totalCumulativeScore
-        , uint256 _totalPool
-    )
-        internal
-        pure
-        returns (
-            uint256
-        )
-    {
-        return (
-            _totalCumulativeScore > 0 ?
-                _userScore * _totalPool / _totalCumulativeScore :
-                0
-        );
+        uint256 _userScore,
+        uint256 _totalCumulativeScore,
+        uint256 _totalPool
+    ) internal pure returns (uint256) {
+        return (_totalCumulativeScore > 0 ? (_userScore * _totalPool) / _totalCumulativeScore : 0);
     }
 
     /**
@@ -298,20 +228,7 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
      * @param _submissionId The submission id.
      * @return The request id.
      */
-    function _getRequestId(
-          address _laborMarket
-        , uint256 _submissionId
-    )
-        internal
-        view
-        returns (
-            uint256
-        )
-    {
-        return (
-            LaborMarketInterface(_laborMarket)
-                .getSubmission(_submissionId)
-                .requestId
-        );
+    function _getRequestId(address _laborMarket, uint256 _submissionId) internal view returns (uint256) {
+        return (LaborMarketInterface(_laborMarket).getSubmission(_submissionId).requestId);
     }
 }

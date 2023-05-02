@@ -114,7 +114,7 @@ contract LaborMarketManager is LaborMarkeInterface, ERC1155HolderUpgradeable, De
     );
 
     /// @notice emitted when a remainder is claimed.
-    event RemainderClaimed(address indexed claimer, uint256 indexed requestId, uint256 remainderAmount);
+    event RemainderClaimed(address indexed claimer, uint256 indexed requestId, uint256 remainderAmount, address to);
 
     /*//////////////////////////////////////////////////////////////
                             SETTERS

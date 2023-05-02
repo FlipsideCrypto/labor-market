@@ -247,7 +247,6 @@ contract LaborMarket is LaborMarketManager {
      * @notice Allows a service provider to claim payment for a service submission.
      * @param _requestId The id of the service request being fulfilled.
      * @param _submissionId The id of the service providers submission.
-     * @param _to The address to send the payment to.
      * @return pTokenClaimed The amount of pTokens claimed.
      * @return rTokenClaimed The amount of rTokens claimed.
      *
@@ -256,11 +255,7 @@ contract LaborMarket is LaborMarketManager {
      * - The provider is the sender.
      * - The enforcement deadline has passed.
      */
-    function claim(
-        uint256 _requestId,
-        uint256 _submissionId,
-        address _to
-    ) external returns (uint256 rewards) {
+    function claim(uint256 _requestId, uint256 _submissionId) external returns (bool success, uint256 amount) {
         /// @dev Get the request out of storage to warm the slot.
         ServiceRequest storage request = serviceIdToRequest[_requestId];
 
@@ -279,17 +274,25 @@ contract LaborMarket is LaborMarketManager {
         /// TODO: Handle the nullification of rewards upon a claim.
         // hasPerformed[_submissionId][_msgSender()][HAS_CLAIMED] = true;
 
-        /// @dev Get the rewards.
-        rewards = enforcementCriteria.getRewards(address(this), _submissionId);
+        /// @dev Get the rewards attributed to this submission.
+        amount = enforcementCriteria.getRewards(address(this), _submissionId);
 
-        /// @dev Ensure there are rewards to be distributed to the participant.
-        require(rewards > 0, 'LaborMarket::claim: No rewards');
+        if (rewards != 0) {
+            /// @dev Determine the address of the provider for this submission.
+            address provider = serviceviceIdToSubmission[_submissionId].serviceProvider;
 
-        /// @dev Transfer the pTokens.
-        request.pToken.transfer(_to, rewards);
+            /// @dev Transfer the pTokens to the network participant.
+            request.pToken.transfer(provider, amount);
 
-        /// @notice Announce the claiming of a service provider reward.
-        emit RequestPayClaimed(_msgSender(), _requestId, _submissionId, rewards, _to);
+            /// @dev Update health status for bulk processing offchain.
+            success = true;
+
+            /// @notice Announce the claiming of a service provider reward.
+            emit RequestPayClaimed(_msgSender(), _requestId, _submissionId, amount, provider);
+        }
+
+        /// @notice If there were no funds to claim, acknowledge the failure of the transfer
+        ///         and return false without blocking the transaction.
     }
 
     /**
@@ -297,40 +300,46 @@ contract LaborMarket is LaborMarketManager {
      * @param _requestId The id of the service request.
      *
      * Requirements:
-     * - The requester is the sender.
      * - The enforcement deadline has passed.
-     * - The requester has not claimed the remainder.
+     * - The requester has a remainder to claim.
      */
-    function claimRemainder(uint256 _requestId) external {
-        /// @dev Require the requester is the sender.
-        require(
-            serviceIdToRequest[_requestId].serviceRequester == _msgSender(),
-            'LaborMarket::claimRemainder: Not requester'
-        );
+    function claimRemainder(uint256 _requestId) public virtual returns (bool success, uint256 amount) {
+        /// @dev Get the request out of storage to warm the slot.
+        ServiceRequest storage request = serviceIdToRequest[_requestId];
 
         /// @dev Require the enforcement deadline has passed.
-        require(
-            block.timestamp >= serviceIdToRequest[_requestId].enforcementExp,
-            'LaborMarket::claimRemainder: Not enforcement deadline'
-        );
+        require(block.timestamp >= request.enforcementExp, 'LaborMarket::claimRemainder: Not enforcement deadline');
 
         /// @dev Require the requester has not claimed the remainder.
-        require(
-            !hasPerformed[_requestId][_msgSender()][HAS_CLAIMED_REMAINDER],
-            'LaborMarket::claimRemainder: Already claimed'
-        );
+        // TODO: Need to implement in the enforcement criteria
+        // require(
+        //     !hasPerformed[_requestId][_msgSender()][HAS_CLAIMED_REMAINDER],
+        //     'LaborMarket::claimRemainder: Already claimed'
+        // );
 
-        /// @dev Get the remainder.
-        uint256 totalClaimable = enforcementCriteria.getRemainder(address(this), _requestId);
+        /// @dev Determine the amount of undistributed money remaining in the request.
+        // TODO: Nomenclature of this should be `criteria.surplus()`
+        amount = enforcementCriteria.getRemainder(address(this), _requestId);
 
-        /// @dev Requester has claimed the remainder.
-        hasPerformed[_requestId][_msgSender()][HAS_CLAIMED_REMAINDER] = true;
+        /// @notice Redistribute the funds that were not earned.
+        /// @dev This model has been implemented to allow for bulk distribution of unclaimed rewards to
+        ///      assist in keeping the economy as healthy as possible.
+        if (amount != 0) {
+            /// @dev Pull the address of the requester out of storage.
+            address requester = request.serviceRequester;
 
-        /// @dev Transfer the remainder.
-        serviceIdToRequest[_requestId].pToken.transfer(_msgSender(), totalClaimable);
+            /// @dev Transfer the remainder of the deposit funds back to the requester.
+            request.pToken.transfer(requester, amount);
 
-        /// @dev Announce the claiming of the remainder.
-        emit RemainderClaimed(_msgSender(), _requestId, totalClaimable);
+            /// @dev Update health status for bulk processing offchain.
+            success = true;
+
+            /// @dev Announce the claiming of the remainder.
+            emit RemainderClaimed(_msgSender(), _requestId, amount, requester);
+        }
+
+        /// @notice If there were no funds to reclaim, acknowledge the failure of the transaction
+        ///         and return false without blocking the transaction.
     }
 
     /**
@@ -342,6 +351,7 @@ contract LaborMarket is LaborMarketManager {
      * - The request creator is the sender.
      */
     function withdrawRequest(uint256 _requestId) external {
+        /// @dev Get the request out of storage to warm the slot.
         ServiceRequest storage request = serviceIdToRequest[_requestId];
 
         /// @dev Ensure that only the Requester may withdraw the request.
@@ -352,18 +362,19 @@ contract LaborMarket is LaborMarketManager {
         ///      since this now has more of an impact with the removal of signal collateral. Will have to model and get approved.
         require(signalCount[_requestId] < 1, 'LaborMarket::withdrawRequest: Already active');
 
-        /// @notice Delete the request and prevent further action.
-        delete serviceIdToRequest[_requestId].serviceRequester;
-        delete serviceIdToRequest[_requestId].pToken;
-        delete serviceIdToRequest[_requestId].pTokenQ;
-        delete serviceIdToRequest[_requestId].signalExp;
-        delete serviceIdToRequest[_requestId].submissionExp;
-        delete serviceIdToRequest[_requestId].enforcementExp;
-        delete serviceIdToRequest[_requestId].submissionCount;
-        delete serviceIdToRequest[_requestId].uri;
-
         /// @dev Return the $pToken back to the Requester.
         request.pToken.transfer(_msgSender(), request.pTokenQ);
+
+        /// @notice Delete the request and prevent further action.
+        delete request.serviceRequester;
+        delete request.pToken;
+        delete request.pTokenQ;
+        delete request.signalExp;
+        delete request.submissionExp;
+        delete request.enforcementExp;
+        delete request.submissionCount;
+        delete request.uri;
+        delete request;
 
         /// @dev Announce the withdrawal of a request.
         emit RequestWithdrawn(_requestId);
