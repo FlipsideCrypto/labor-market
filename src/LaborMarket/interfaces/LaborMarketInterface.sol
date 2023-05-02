@@ -31,9 +31,6 @@ interface LaborMarketInterface is LaborMarketConfigurationInterface {
     function initialize(LaborMarketConfiguration calldata _configuration)
         external;
 
-    function setConfiguration(LaborMarketConfiguration calldata _configuration)
-        external;
-
     function getSubmission(uint256 submissionId)
         external
         view

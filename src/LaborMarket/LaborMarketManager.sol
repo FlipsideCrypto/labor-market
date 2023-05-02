@@ -23,16 +23,16 @@ contract LaborMarketManager is
     Delegatable("LaborMarket", "v1.0.0")
 {
     /// @dev Performable actions.
-    bytes32 internal constant HAS_SUBMITTED = keccak256("hasSubmitted");
+    bytes32 public immutable HAS_SUBMITTED = keccak256("hasSubmitted");
 
-    bytes32 internal constant HAS_CLAIMED = keccak256("hasClaimed");
+    bytes32 public immutable HAS_CLAIMED = keccak256("hasClaimed");
 
-    bytes32 internal constant HAS_CLAIMED_REMAINDER =
+    bytes32 public immutable HAS_CLAIMED_REMAINDER =
         keccak256("hasClaimedRemainder");
 
-    bytes32 internal constant HAS_REVIEWED = keccak256("hasReviewed");
+    bytes32 public immutable HAS_REVIEWED = keccak256("hasReviewed");
     
-    bytes32 internal constant HAS_SIGNALED = keccak256("hasSignaled");
+    bytes32 public immutable HAS_SIGNALED = keccak256("hasSignaled");
 
     /*//////////////////////////////////////////////////////////////
                             STATE
@@ -152,6 +152,11 @@ contract LaborMarketManager is
                             SETTERS
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev Prevent implementation from being initialized.
+    constructor() {
+        _disableInitializers();
+    }
+
     /// @notice Initialize the labor market.
     function initialize(
         LaborMarketConfiguration calldata _configuration
@@ -160,34 +165,6 @@ contract LaborMarketManager is
         override
         initializer
     {
-        setConfiguration(_configuration);
-    }
-
-    /**
-     * @notice Allows a network governor to set the configuration.
-     * @param _configuration The new configuration.
-     *
-     * Requirements:
-     * - The caller must be the owner of the market or a 
-     *   governor at the network level.
-     * - The market must not have been used.
-     */
-    function setConfiguration(
-        LaborMarketConfiguration calldata _configuration
-    )
-        public
-    {
-        /// @dev The caller must be the owner or a governor.
-        require(
-            configuration.owner == address(0) || 
-            _msgSender() == configuration.owner || 
-            _msgSender() == address(network),
-            "LaborMarketManager::setConfiguration: Not owner or governor"
-        );
-
-        /// @dev The market must not be in use.
-        require(serviceId == 0, "LaborMarketManager::setConfiguration: Market in use");
-
         network = LaborMarketNetworkInterface(_configuration.modules.network);
 
         /// @dev Configure the Labor Market state control.
@@ -292,7 +269,7 @@ contract LaborMarketManager is
 
         return (
             availableRep >= configuration.reputationParams.submitMin &&
-            availableRep < configuration.reputationParams.submitMax
+            availableRep <= configuration.reputationParams.submitMax
         );
     }
 

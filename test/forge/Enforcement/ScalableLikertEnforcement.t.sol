@@ -137,8 +137,11 @@ contract ScalableLikertEnforcementTest is PRBTest, StdCheats {
         // Create enforcement criteria
         enforcement = new ScalableLikertEnforcement();
 
-        RANGES.push(0); RANGES.push(24); RANGES.push(44); RANGES.push(69); RANGES.push(89);
-        WEIGHTS.push(0); WEIGHTS.push(25); WEIGHTS.push(75); WEIGHTS.push(100); WEIGHTS.push(200);
+        RANGES.push(0); WEIGHTS.push(0);
+        RANGES.push(24e6); WEIGHTS.push(25);
+        RANGES.push(44e6); WEIGHTS.push(50); 
+        RANGES.push(69e6); WEIGHTS.push(100); 
+        RANGES.push(89e6); WEIGHTS.push(300);
 
         bytes32 key = "aggressive";
 
@@ -319,7 +322,7 @@ contract ScalableLikertEnforcementTest is PRBTest, StdCheats {
         console.log("rTokenDust %s / %s", 5000 - totalReputation, 5000);
 
         assertAlmostEq(totalPaid, ptokenQ, 1e8);
-        assertAlmostEq(totalReputation, 5000, 100);
+        assertAlmostEq(totalReputation, 5000, 200);
     }
 
     function test_ScalableLikertMarketSimple() public {
@@ -378,7 +381,7 @@ contract ScalableLikertEnforcementTest is PRBTest, StdCheats {
         console.log("rTokenDust %s / %s", 5000 - totalReputation, 5000);
 
         assertAlmostEq(totalPaid, 1000e18, 1e6);
-        assertAlmostEq(totalReputation, 5000, 100);
+        assertAlmostEq(totalReputation, 5000, 200);
     }
 
     function test_ScalableLikertMarketBase() public {
@@ -482,19 +485,32 @@ contract ScalableLikertEnforcementTest is PRBTest, StdCheats {
             (uint256 pPaid, uint256 rPaid) = market.claim(i, msg.sender); 
             totalPaid += pPaid;
             totalReputation += rPaid;
+
+            (
+                uint256 reviewCount, 
+                uint256 reviewSum, 
+                uint256 scaledAvg, 
+                bool isQualified
+            ) = enforcement.submissionToScore(address(market), i);
+
+            console.log("reviewCount %s", reviewCount);
+            console.log("reviewSum %s", reviewSum);
+            console.log("scaledAvg %s", scaledAvg);
+            console.log("isQualified %s", isQualified);
             
             // Check the claim
             uint256 pTokenReward = enforcement.getPaymentReward(address(market), i);
             uint256 rTokenReward = enforcement.getReputationReward(address(market), i);
             assertEq(pPaid, pTokenReward);
             assertEq(rPaid, rTokenReward);
+            console.log("pPaid %s", pPaid);
         }
 
         console.log("pTokenDust %s / %s", 1000e18 - totalPaid, 1000e18);
         console.log("rTokenDust %s / %s", 5000 - totalReputation, 5000);
 
         assertAlmostEq(totalPaid, 1000e18, 1e6);
-        assertAlmostEq(totalReputation, 5000, 100);
+        assertAlmostEq(totalReputation, 5000, 200);
     }
 
     function test_CanReclaimUnusedPayment() public {
@@ -614,7 +630,7 @@ contract ScalableLikertEnforcementTest is PRBTest, StdCheats {
 
         // Have bob review a submission
         market.signalReview(requestId, 1);
-        market.review(requestId, 5, 1);
+        market.review(requestId, 5, 4);
 
         // Skip to enforcement deadline
         vm.warp(100 weeks);

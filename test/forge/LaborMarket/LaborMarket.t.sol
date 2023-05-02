@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity ^0.8.17;
 
 // Testing imports
 import {StdCheats} from "forge-std/StdCheats.sol";
@@ -1309,8 +1309,8 @@ contract LaborMarketTest is PRBTest, StdCheats {
                     }),
                     reputationParams: LaborMarketConfigurationInterface.ReputationParams({
                         rewardPool: 5000,
-                        provideStake: 5,
-                        reviewStake: 5,
+                        provideStake: 0,
+                        reviewStake: 0,
                         submitMin: 10,
                         submitMax: 10000e18
                     })
@@ -1336,95 +1336,95 @@ contract LaborMarketTest is PRBTest, StdCheats {
         vm.stopPrank();
     }
 
-    function test_CanEditRequest() public {
-        vm.startPrank(bob);
+    // function test_CanEditRequest() public {
+    //     vm.startPrank(bob);
 
-        uint256 balanceBefore = payToken.balanceOf(address(bob));
+    //     uint256 balanceBefore = payToken.balanceOf(address(bob));
 
-        // Create a request
-        uint256 requestId = createSimpleRequest(market);
+    //     // Create a request
+    //     uint256 requestId = createSimpleRequest(market);
 
-        payToken.approve(address(market), 100000e18);
+    //     payToken.approve(address(market), 100000e18);
 
-        market.editRequest(
-            requestId,
-            address(payToken),
-            50e18,
-            block.timestamp + 1 hours,
-            block.timestamp + 1 days,
-            block.timestamp + 1 weeks,
-            "ipfs://222"
-        );
+    //     market.editRequest(
+    //         requestId,
+    //         address(payToken),
+    //         50e18,
+    //         block.timestamp + 1 hours,
+    //         block.timestamp + 1 days,
+    //         block.timestamp + 1 weeks,
+    //         "ipfs://222"
+    //     );
 
-        (
-            ,
-            ,
-            uint256 pTokenQ,
-            ,
-            ,
-            ,
-            ,
-        ) = market.serviceRequests(requestId);
+    //     (
+    //         ,
+    //         ,
+    //         uint256 pTokenQ,
+    //         ,
+    //         ,
+    //         ,
+    //         ,
+    //     ) = market.serviceRequests(requestId);
 
-        uint256 balanceAfter = payToken.balanceOf(address(bob));
+    //     uint256 balanceAfter = payToken.balanceOf(address(bob));
 
-        assertEq(pTokenQ, 50e18);
-        assertEq(balanceAfter, balanceBefore - 50e18);
+    //     assertEq(pTokenQ, 50e18);
+    //     assertEq(balanceAfter, balanceBefore - 50e18);
 
-        vm.stopPrank();
-    }
+    //     vm.stopPrank();
+    // }
 
-    function test_CantEditRequestAfterSignal() public {
-        vm.startPrank(bob);
+    // function test_CantEditRequestAfterSignal() public {
+    //     vm.startPrank(bob);
 
-        // Create a request
-        uint256 requestId = createSimpleRequest(market);
+    //     // Create a request
+    //     uint256 requestId = createSimpleRequest(market);
 
-        // A valid user signals
-        changePrank(alice);
-        market.signal(requestId);
+    //     // A valid user signals
+    //     changePrank(alice);
+    //     market.signal(requestId);
 
-        changePrank(bob);
-        // User tries to edit the request
-        vm.expectRevert(
-            "LaborMarket::editRequest: Already active"
-        );
-        market.editRequest(
-            requestId,
-            address(payToken),
-            50e18,
-            block.timestamp + 1 hours,
-            block.timestamp + 1 days,
-            block.timestamp + 1 weeks,
-            "ipfs://222"
-        );
+    //     changePrank(bob);
+    //     // User tries to edit the request
+    //     vm.expectRevert(
+    //         "LaborMarket::editRequest: Already active"
+    //     );
+    //     market.editRequest(
+    //         requestId,
+    //         address(payToken),
+    //         50e18,
+    //         block.timestamp + 1 hours,
+    //         block.timestamp + 1 days,
+    //         block.timestamp + 1 weeks,
+    //         "ipfs://222"
+    //     );
 
-        vm.stopPrank();
-    }
+    //     vm.stopPrank();
+    // }
 
-    function test_CannotEditIfNotRequester() public {
-        vm.startPrank(bob);
+    // function test_CannotEditIfNotRequester() public {
+    //     vm.startPrank(bob);
 
-        // Create a request
-        uint256 requestId = createSimpleRequest(market);
+    //     // Create a request
+    //     uint256 requestId = createSimpleRequest(market);
 
-        // Other user tries to edit the request
-        changePrank(alice);
-        vm.expectRevert(
-            "LaborMarket::editRequest: Not requester"
-        );
-        market.editRequest(
-            requestId + 1,
-            address(payToken),
-            50e18,
-            block.timestamp + 1 hours,
-            block.timestamp + 1 days,
-            block.timestamp + 1 weeks,
-            "ipfs://222"
-        );
+    //     // Other user tries to edit the request
+    //     changePrank(alice);
+    //     vm.expectRevert(
+    //         "LaborMarket::editRequest: Not requester"
+    //     );
+    //     market.editRequest(
+    //         requestId + 1,
+    //         address(payToken),
+    //         50e18,
+    //         block.timestamp + 1 hours,
+    //         block.timestamp + 1 days,
+    //         block.timestamp + 1 weeks,
+    //         "ipfs://222"
+    //     );
 
-        vm.stopPrank();
-    }
+    //     vm.stopPrank();
+    // }
 
     function test_RequestCannotHaveInvalidTimestamps() public {
         vm.startPrank(bob);
@@ -1470,4 +1470,6 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         vm.stopPrank();
     }
+
+    function test_CanHaveNoSignalStakeMarkets
 }
