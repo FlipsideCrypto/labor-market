@@ -1470,6 +1470,4 @@ contract LaborMarketTest is PRBTest, StdCheats {
 
         vm.stopPrank();
     }
-
-    function test_CanHaveNoSignalStakeMarkets
 }
