@@ -82,53 +82,6 @@ contract LaborMarketVersions is LaborMarketVersionsInterface, Ownable, ERC1155Ho
                                 SETTERS
     //////////////////////////////////////////////////////////////*/
 
-    /**
-     * @notice Allows configuration to specific versions.
-     * @dev This enables the ability to have Enterprise versions as well as public versions. None of this
-     *      state is immutable as a license model may change in the future and updates here do not impact
-     *      Labor Markets that are already running.
-     * @param _implementation The implementation address.
-     * @param _owner The owner of the version.
-     * @param _tokenAddress The token address.
-     * @param _tokenId The token ID.
-     * @param _amount The amount that this user will have to pay.
-     * @param _locked Whether or not this version has been made immutable.
-     * Requirements:
-     * - The caller must be the owner.
-     * - If the caller is not the owner, cannot set a Payment Token as they cannot withdraw.
-     */
-    function setVersion(
-        address _implementation,
-        address _owner,
-        address _tokenAddress,
-        uint256 _tokenId,
-        uint256 _amount,
-        bool _locked
-    ) public virtual override {
-        /// @dev Load the existing Version object.
-        Version memory version = versions[_implementation];
-
-        /// @dev Prevent editing of a version once it has been locked.
-        require(!version.locked, 'LaborMarketVersions::_setVersion: Cannot update a locked version.');
-
-        /// @dev Only the owner can set the version.
-        require(
-            version.owner == address(0) || version.owner == _msgSender(),
-            'LaborMarketVersions::_setVersion: You do not have permission to edit this version.'
-        );
-
-        /// @dev Make sure that no exogenous version controllers can set a payment
-        ///      as there is not a mechanism for them to withdraw.
-        if (_msgSender() != owner()) {
-            require(
-                _tokenAddress == address(0) && _tokenId == 0 && _amount == 0,
-                'LaborMarketVersions::_setVersion: You do not have permission to set a payment token.'
-            );
-        }
-
-        /// @dev Set the version configuration.
-        _setVersion(_implementation, _owner, keccak256(abi.encodePacked(_tokenAddress, _tokenId)), _amount, _locked);
-    }
 
     /*//////////////////////////////////////////////////////////////
                                 GETTERS

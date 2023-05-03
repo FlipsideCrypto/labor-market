@@ -19,8 +19,8 @@ The key for the types of changes are as follows:
 
 ## [2.0.3] - 2023-05-05
 
-- 🎯 Added Requester controlled ability to set the maximum signal intent at which they can cancel.
-- 🎯 Colateral can optionally be configured to provide financialized obligation for signaled intent.
+-   🎯 Added Requester controlled ability to set the maximum signal intent at which they can cancel.
+-   🎯 Colateral can optionally be configured to provide financialized obligation for signaled intent.
 
 ## [2.0.2] - 2023-05-04
 

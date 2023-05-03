@@ -4,8 +4,6 @@ pragma solidity ^0.8.17;
 
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
-import { EnumerableSet } from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
-
 interface LaborMarketInterface {
     struct LaborMarketConfiguration {
         string marketUri;
@@ -24,9 +22,7 @@ interface LaborMarketInterface {
         uint48 submissionExp;
         uint48 enforcementExp;
         uint256 pTokenQ;
-        address serviceRequester;
         IERC20 pToken;
-        EnumerableSet.AddressSet submissions;
     }
 
     struct ServiceSignalState {
@@ -41,11 +37,11 @@ interface LaborMarketInterface {
     event RequestConfigured(
         address indexed requester,
         uint256 indexed requestId,
-        uint256 signalExp,
-        uint256 submissionExp,
-        uint256 enforcementExp,
-        IERC20 pToken,
+        uint48 signalExp,
+        uint48 submissionExp,
+        uint48 enforcementExp,
         uint256 pTokenQ,
+        IERC20 indexed pToken,
         string uri
     );
 

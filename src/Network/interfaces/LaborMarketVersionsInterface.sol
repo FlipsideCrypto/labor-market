@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pragma solidity ^0.8.17;
+
 interface LaborMarketVersionsInterface {
     /*//////////////////////////////////////////////////////////////
                                 SCHEMAS
@@ -31,16 +32,7 @@ interface LaborMarketVersionsInterface {
                                 GETTERS
     //////////////////////////////////////////////////////////////*/
 
-    function getVersionKey(address _implementation)
-        external
-        view
-        returns (bytes32);
+    function getVersionKey(address _implementation) external view returns (bytes32);
 
-    function getLicenseKey(
-          bytes32 _versionKey
-        , address _sender
-    )
-        external
-        pure
-        returns (bytes32);
+    function getLicenseKey(bytes32 _versionKey, address _sender) external pure returns (bytes32);
 }

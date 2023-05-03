@@ -177,4 +177,26 @@ contract LaborMarketFactory is
             || super.supportsInterface(_interfaceId)
         );
     }
+
+    /**
+     * @notice Gates permissions behind the Creator Badge.
+     * @dev This is an internal function to allow gating Creator permissions
+     *     within the entire network and factory contract stack.
+     * @param _sender The address to verify against.
+     * @return Whether or not the sender is a Creator.
+     */
+    function isGovernor(address _sender) external view virtual returns (bool) {
+        // TODO: NBADGE
+        return true;
+    }
+
+    /**
+     * @notice Checks if the sender is a Creator.
+     * @param _sender The message sender address.
+     * @return True if the sender is a Creator.
+     */
+    function isCreator(address _sender) external view virtual returns (bool) {
+        // TODO: NBADGE
+        return true;
+    }
 }

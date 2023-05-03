@@ -15,8 +15,10 @@ import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 /// @dev Supported interfaces.
 import { IERC1155ReceiverUpgradeable } from '@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155ReceiverUpgradeable.sol';
+import { EnumerableSet } from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
 contract LaborMarketManager is LaborMarketInterface, ERC1155HolderUpgradeable, Delegatable('LaborMarket', 'v1.0.0') {
+
     /*//////////////////////////////////////////////////////////////
                                 STATE
     //////////////////////////////////////////////////////////////*/
@@ -33,15 +35,6 @@ contract LaborMarketManager is LaborMarketInterface, ERC1155HolderUpgradeable, D
     // TODO: Why is this a struct?
     LaborMarketConfiguration public configuration;
 
-    /// @dev Primary struct containing the definition of a Request.
-    // TODO: Rename to requestIdToRequest
-    mapping(uint256 => ServiceRequest) public serviceIdToRequest;
-
-    /// @dev State id for a user relative to a single Request.
-    mapping(uint256 => mapping(address => uint24)) requestIdToAddressToPerformance;
-
-    /// @dev Tracking the amount of Provider and Reviewer interested that has been signaled.
-    mapping(uint256 => ServiceSignalState) public signalCount;
 
     /*//////////////////////////////////////////////////////////////
                             SETTERS

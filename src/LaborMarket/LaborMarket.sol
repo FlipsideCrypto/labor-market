@@ -5,11 +5,29 @@ pragma solidity ^0.8.17;
 /// @dev Core dependencies.
 import { LaborMarketManager } from './LaborMarketManager.sol';
 
+/// @dev Helper libraries.
+import { EnumerableSet } from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
+
 contract LaborMarket is LaborMarketManager {
+    using EnumerableSet for EnumerableSet.AddressSet;
+
+    /// @dev Primary struct containing the definition of a Request.
+    mapping(uint256 => ServiceRequest) public requestIdToRequest;
+
+    /// @dev State id for a user relative to a single Request.
+    mapping(uint256 => mapping(address => uint24)) public requestIdToAddressToPerformance;
+
+    /// @dev Tracking the amount of Provider and Reviewer interested that has been signaled.
+    mapping(uint256 => ServiceSignalState) public requestIdToSignalState;
+
+    /// @dev Definition of active Provider submissions for a request.
+    mapping(uint256 => EnumerableSet.AddressSet) internal requestIdToProviders;
+
     /**
      * @notice Creates a service request.
      * @param _request The request being submit for a work request in the Labor Market.
-     * @return The id of the service request.
+     * @param _uri The uri of the request.
+     * @return requestId The id of the service request.
      *
      * Requirements:
      * - Caller has to have approved the LaborMarket contract to transfer the payment token.
@@ -29,15 +47,15 @@ contract LaborMarket is LaborMarketManager {
         );
 
         /// @dev Generate the uuid for the request using the timestamp and address.
-        requestId = uint256(keccak256(abi.encodePacked(uint96(block.timestamp), _msgSender())));
+        requestId = uint256(keccak256(abi.encodePacked(uint96(block.timestamp), uint160(_msgSender()))));
 
         /// @notice Store the request in the Labor Market.
-        serviceIdToRequest[requestId] = _request;
+        requestIdToRequest[requestId] = _request;
 
         /// @notice Announce the creation of a new request in the Labor Market.
         emit RequestConfigured(
             _msgSender(),
-            uuid,
+            requestId,
             _request.signalExp,
             _request.submissionExp,
             _request.enforcementExp,
@@ -62,7 +80,7 @@ contract LaborMarket is LaborMarketManager {
     function signal(uint256 _requestId) public virtual {
         /// @notice Ensure the signal phase is still active.
         require(
-            block.timestamp <= serviceIdToRequest[_requestId].signalExp,
+            block.timestamp <= requestIdToRequest[_requestId].signalExp,
             'LaborMarket::signal: Signal deadline passed'
         );
 
@@ -74,11 +92,11 @@ contract LaborMarket is LaborMarketManager {
         require(performance & 0x3 == 0, 'LaborMarket::signal: Already signaled');
 
         /// @notice Increment the number of providers that have signaled.
-        ++signalCount[_requestId].providers;
+        ++requestIdToSignalState[_requestId].providers;
 
         // TODO: Add check that signal does not exceed max providers:
         // require(
-        //     signalCount[_requestId].providers <= request.maxProviders,
+        //     requestIdToSignalState[_requestId].providers <= request.maxProviders,
         //     'LaborMarket::signal: Exceeds signal capacity'
         // );
 
@@ -105,7 +123,7 @@ contract LaborMarket is LaborMarketManager {
     function signalReview(uint256 _requestId, uint24 _quantity) public virtual {
         /// @notice Ensure the signal phase is still active.
         require(
-            block.timestamp <= serviceIdToRequest[_requestId].signalExp,
+            block.timestamp <= requestIdToRequest[_requestId].signalExp,
             'LaborMarket::signalReview: Signal deadline passed'
         );
 
@@ -126,7 +144,7 @@ contract LaborMarket is LaborMarketManager {
         );
 
         /// @notice Increment the number of reviewers that have signaled.
-        signalCount[_requestId].reviewers += _quantity;
+        requestIdToSignalState[_requestId].reviewers += _quantity;
 
         // TODO: Add check that signal does not exceed max review: https://github.com/MetricsDAO/xyz/issues/633
 
@@ -146,7 +164,7 @@ contract LaborMarket is LaborMarketManager {
      * @notice Allows a service provider to fulfill a service request.
      * @param _requestId The id of the service request being fulfilled.
      * @param _uri The uri of the service submission data.
-     * @return submissionId The id of the service submission.
+     * @return participationId The id of the service submission.
      *
      * Requirements:
      * - The provider has to have signaled.
@@ -155,7 +173,7 @@ contract LaborMarket is LaborMarketManager {
      */
     function provide(uint256 _requestId, string calldata _uri) external returns (uint256 participationId) {
         /// @dev Get the request out of storage to warm the slot.
-        ServiceRequest storage request = serviceIdToRequest[_requestId];
+        ServiceRequest storage request = requestIdToRequest[_requestId];
 
         /// @notice Require the submission phase is still active.
         require(block.timestamp <= request.submissionExp, 'LaborMarket::provide: Submission deadline passed');
@@ -170,7 +188,7 @@ contract LaborMarket is LaborMarketManager {
         require(performance & 0x3 == 1, 'LaborMarket::provide: Not signaled');
 
         /// @dev Add the Provider to the list of submissions.
-        serviceIdToRequest[_requestId].submissions.add(_msgSender);
+        requestIdToProviders[_requestId].add(_msgSender());
 
         /// @dev Set the participation ID to reflect the providers address.
         participationId = uint256(uint160(_msgSender()));
@@ -208,14 +226,14 @@ contract LaborMarket is LaborMarketManager {
 
         /// @notice Ensure the request is still in the enforcement phase.
         require(
-            block.timestamp <= serviceIdToRequest[_requestId].enforcementExp,
+            block.timestamp <= requestIdToRequest[_requestId].enforcementExp,
             'LaborMarket::review: Enforcement deadline passed'
         );
 
         /// @notice Make the external call into the enforcement module to submit the callers score.
         /// TODO: How is it even possible that we don't need to pass the reviewer address?
         /// TODO: Pretty sure that we are going to have to.
-        (bool newSubmission, uint24 intentChange) = criteria.enforce(_requestId, _submissionId, _score);
+        (bool newSubmission, uint24 intentChange) = criteria.enforce(_requestId, _submissionId, _score, address(0));
 
         /// @notice If the user is scoring a new submission, then deduct their signal.
         /// @dev This implicitly enables the ability to have an enforcement criteria that supports
@@ -240,7 +258,7 @@ contract LaborMarket is LaborMarketManager {
             ///      and then bitwise ORs the remaining signal value minus 1 to the left by 2 bits.
             requestIdToAddressToPerformance[_requestId][_msgSender()] =
                 /// @dev Keep all the bits besides the 22 bits that represent the remaining signal value.
-                (intent & 0xff000003) |
+                (intent & 0x3) |
                 /// @dev Shift the remaining signal value minus 1 to the left by 2 bits to fill the 22.
                 ((remainingIntent - intentChange) << 2);
 
@@ -255,8 +273,8 @@ contract LaborMarket is LaborMarketManager {
      *      function with a static call to determine the qausi-state of claiming.
      * @param _requestId The id of the service request being fulfilled.
      * @param _submissionId The id of the service providers submission.
-     * @return pTokenClaimed The amount of pTokens claimed.
-     * @return rTokenClaimed The amount of rTokens claimed.
+     * @return success Whether or not the claim was successful.
+     * @return amount The amount of tokens earned by the submission.
      *
      * Requirements:
      * - The submission has not already been claimed.
@@ -265,24 +283,27 @@ contract LaborMarket is LaborMarketManager {
      */
     function claim(uint256 _requestId, uint256 _submissionId) external returns (bool success, uint256) {
         /// @notice Get the request out of storage to warm the slot.
-        ServiceRequest storage request = serviceIdToRequest[_requestId];
+        ServiceRequest storage request = requestIdToRequest[_requestId];
 
         /// @notice Ensure the request is no longer in the enforcement phase.
         require(block.timestamp >= request.enforcementExp, 'LaborMarket::claim: Enforcement deadline not passed');
 
         /// @notice Get the rewards attributed to this submission.
-        (uint256 amount, bool requiresSubmission) = criteria.rewards(address(this), _requestId, _submissionId);
+        (uint256 amount, bool requiresSubmission) = criteria.rewards(_requestId, _submissionId, request.pTokenQ);
 
         if (amount != 0) {
+            /// @notice Recover the address of the submission id.
+            address provider = address(uint160(_submissionId));
+
             /// @notice Remove the submission from the list of submissions.
             /// @dev This is done before the transfer to prevent reentrancy attacks.
-            bool removed = request.submissions.remove(_submissionId);
+            bool removed = requestIdToProviders[_requestId].remove(provider);
 
             /// @dev Allow the enforcement criteria to perform any additional logic.
             require(!requiresSubmission || removed, 'LaborMarket::claim: Invalid submission claim');
 
             /// @notice Transfer the pTokens to the network participant.
-            request.pToken.transfer(address(uint160(_submissionId)), amount);
+            request.pToken.transfer(provider, amount);
 
             /// @notice Update health status for bulk processing offchain.
             success = true;
@@ -308,7 +329,7 @@ contract LaborMarket is LaborMarketManager {
      */
     function claimRemainder(uint256 _requestId) public virtual returns (bool success, uint256 amount) {
         /// @dev Get the request out of storage to warm the slot.
-        ServiceRequest storage request = serviceIdToRequest[_requestId];
+        ServiceRequest storage request = requestIdToRequest[_requestId];
 
         /// @dev Ensure the request is no longer in the enforcement phase.
         require(
@@ -317,14 +338,14 @@ contract LaborMarket is LaborMarketManager {
         );
 
         /// @dev Determine the amount of undistributed money remaining in the request.
-        amount = criteria.remainder(address(this), _requestId);
+        amount = criteria.remainder(_requestId, request.pTokenQ);
 
         /// @notice Redistribute the funds that were not earned.
         /// @dev This model has been implemented to allow for bulk distribution of unclaimed rewards to
         ///      assist in keeping the economy as healthy as possible.
         if (amount != 0) {
             /// @dev Pull the address of the requester out of storage.
-            address requester = request.serviceRequester;
+            address requester = address(uint160(_requestId));
 
             /// @dev Transfer the remainder of the deposit funds back to the requester.
             request.pToken.transfer(requester, amount);
@@ -350,25 +371,23 @@ contract LaborMarket is LaborMarketManager {
      */
     function withdrawRequest(uint256 _requestId) external {
         /// @dev Get the request out of storage to warm the slot.
-        ServiceRequest storage request = serviceIdToRequest[_requestId];
+        ServiceRequest storage request = requestIdToRequest[_requestId];
 
         /// @dev Ensure that only the Requester may withdraw the request.
-        require(request.serviceRequester == _msgSender(), 'LaborMarket::withdrawRequest: Not requester');
+        require(address(uint160(_requestId)) == _msgSender(), 'LaborMarket::withdrawRequest: Not requester');
 
         /// @dev Require the request has not been signaled.
-        // TODO: This should be updated to check if is still in signalling phase.
-        require(signalCount[_requestId] < 1, 'LaborMarket::withdrawRequest: Already active');
+        require(
+            keccak256(abi.encode(requestIdToSignalState[_requestId])) == bytes32(0),
+            'LaborMarket::withdrawRequest: Already active'
+        );
 
         /// @notice Delete the request and prevent further action.
-        delete request.serviceRequester;
         delete request.pToken;
         delete request.pTokenQ;
         delete request.signalExp;
         delete request.submissionExp;
         delete request.enforcementExp;
-        delete request.submissionCount;
-        delete request.uri;
-        delete request;
 
         /// @notice Return the $pToken back to the Requester.
         /// @dev This is done last to prevent reentrancy attacks.
