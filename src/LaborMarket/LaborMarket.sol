@@ -6,24 +6,6 @@ pragma solidity ^0.8.17;
 import { LaborMarketManager } from './LaborMarketManager.sol';
 
 contract LaborMarket is LaborMarketManager {
-    /// @dev The service request id counter.
-    uint256 public serviceId;
-
-    modifier onlyMaintainer(address _user) {
-        require(isMaintainer(_user), 'LaborMarket::isMaintainer: Not a maintainer');
-        _;
-    }
-
-    modifier onlyDelegate(address _user) {
-        require(isDelegate(_user), 'LaborMarket::isDelegate: Not a delegate');
-        _;
-    }
-
-    modifier onlyPermittedParticipant(address _user) {
-        require(isPermittedParticipant(_user), 'LaborMarket::isPermittedParticipant: Not a permitted participant');
-        _;
-    }
-
     /**
      * @notice Creates a service request.
      * @param _request The request being submit for a work request in the Labor Market.
@@ -33,7 +15,11 @@ contract LaborMarket is LaborMarketManager {
      * - Caller has to have approved the LaborMarket contract to transfer the payment token.
      * - Timestamps must be valid and chronological.
      */
-    function submitRequest(ServiceRequest memory _request) public virtual onlyDelegate(_msgSender()) returns (uint256) {
+    function submitRequest(ServiceRequest calldata _request, string calldata _uri)
+        public
+        virtual
+        returns (uint256 requestId)
+    {
         /// @notice Ensure the timestamps of the request phases are valid.
         require(
             block.timestamp < _request.signalExp &&
@@ -42,33 +28,27 @@ contract LaborMarket is LaborMarketManager {
             'LaborMarket::submitRequest: Invalid timestamps'
         );
 
-        /// @notice Provide the funding for the request.
-        _request.pToken.transferFrom(_msgSender(), address(this), _request.pTokenQ);
-
-        /// @notice Manage the hard-coded values of the request.
-        _request.serviceRequester = _msgSender();
-        _request.submissionCount = 0;
+        /// @dev Generate the uuid for the request using the timestamp and address.
+        requestId = uint256(keccak256(abi.encodePacked(uint96(block.timestamp), _msgSender())));
 
         /// @notice Store the request in the Labor Market.
-        serviceIdToRequest[serviceId] = _request;
-
-        /// @notice Increment the ecosystem service id.
-        ++serviceId;
+        serviceIdToRequest[requestId] = _request;
 
         /// @notice Announce the creation of a new request in the Labor Market.
         emit RequestConfigured(
             _msgSender(),
-            serviceId,
-            _request.uri,
-            _request.pToken,
-            _request.pTokenQ,
+            uuid,
             _request.signalExp,
             _request.submissionExp,
-            _request.enforcementExp
+            _request.enforcementExp,
+            _request.pTokenQ,
+            _request.pToken,
+            _uri
         );
 
-        /// @notice Return the id of the newly created request.
-        return serviceId;
+        /// @notice Provide the funding for the request.
+        /// @dev This call is made after the request is stored to prevent re-entrancy.
+        _request.pToken.transferFrom(_msgSender(), address(this), _request.pTokenQ);
     }
 
     /**
@@ -79,25 +59,36 @@ contract LaborMarket is LaborMarketManager {
      * - The signal deadline has not passed.
      * - The user has not already signaled.
      */
-    function signal(uint256 _requestId) public virtual onlyPermittedParticipant(_msgSender()) {
+    function signal(uint256 _requestId) public virtual {
         /// @notice Ensure the signal phase is still active.
         require(
             block.timestamp <= serviceIdToRequest[_requestId].signalExp,
             'LaborMarket::signal: Signal deadline passed'
         );
 
+        /// @notice Get the performance state of the user.
+        uint24 performance = requestIdToAddressToPerformance[_requestId][_msgSender()];
+
         /// @notice Require the user has not signaled.
         /// @dev Get the first bit of the user's signal value.
-        require(
-            requestIdToAddressToPerformanceState[_requestId][_msgSender()] & 0x3 == 0,
-            'LaborMarket::signal: Already signaled'
-        );
+        require(performance & 0x3 == 0, 'LaborMarket::signal: Already signaled');
 
-        /// @notice Increment the signal count.
-        ++signalCount[_requestId];
+        /// @notice Increment the number of providers that have signaled.
+        ++signalCount[_requestId].providers;
 
-        /// @notice Set the user's signal.
-        requestIdToAddressToPerformanceState[_requestId][_msgSender()] |= 0x1;
+        // TODO: Add check that signal does not exceed max providers:
+        // require(
+        //     signalCount[_requestId].providers <= request.maxProviders,
+        //     'LaborMarket::signal: Exceeds signal capacity'
+        // );
+
+        /// @notice Set the first two bits of the performance state to 1 to indicate the user has signaled
+        ///         without affecting the rest of the performance state.
+        requestIdToAddressToPerformance[_requestId][_msgSender()] =
+            /// @dev Keep the last 22 bits but clear the first two bits.
+            (performance & 0xFFFFFC) |
+            /// @dev Set the first two bits of the performance state to 1 to indicate the user has signaled.
+            0x1;
 
         /// @notice Announce the signalling of a service provider.
         emit RequestSignal(_msgSender(), _requestId);
@@ -109,21 +100,43 @@ contract LaborMarket is LaborMarketManager {
      * @param _quantity The amount of submissions a reviewer has intent to manage.
      *
      * Requirements:
-     * - Quantity has to be less than 8,388,608.
+     * - Quantity has to be less than 4,194,304.
      */
-    function signalReview(uint256 _requestId, uint24 _quantity) public virtual onlyMaintainer(_msgSender()) {
+    function signalReview(uint256 _requestId, uint24 _quantity) public virtual {
+        /// @notice Ensure the signal phase is still active.
+        require(
+            block.timestamp <= serviceIdToRequest[_requestId].signalExp,
+            'LaborMarket::signalReview: Signal deadline passed'
+        );
+
+        /// @notice Get the performance state of the user.
+        uint24 performance = requestIdToAddressToPerformance[_requestId][_msgSender()];
+
         /// @notice Get the intent of the maintainer.
         /// @dev Shift the performance value to the right by two bits and then mask down to
         ///      the next 22 bits with an overlap of 0x3fffff.
-        uint24 reviewIntent = ((requestIdToAddressToPerformanceState[_requestId][_msgSender()] >> 2) & 0x3fffff);
+        uint24 reviewIntent = ((performance >> 2) & 0x3fffff);
 
         /// @notice Ensure that we are the intent will not overflow the 22 bits saved for the quantity.
         /// @dev Mask the `_quantity` down to 22 bits to prevent overflow and user error.
-        require(reviewIntent + (_quantity & 0x3fffff) <= 4_194_304, 'LaborMarket::signalReview: Too many reviews');
+        /// TODO: We may want to lower this.
+        require(
+            reviewIntent + (_quantity & 0x3fffff) <= 4_194_304,
+            'LaborMarket::signalReview: Exceeds signal capacity'
+        );
+
+        /// @notice Increment the number of reviewers that have signaled.
+        signalCount[_requestId].reviewers += _quantity;
+
+        // TODO: Add check that signal does not exceed max review: https://github.com/MetricsDAO/xyz/issues/633
 
         /// @notice Update the intent of reviewing by summing already signaled quantity with the new quantity
         ///         and then shift it to the left by two bits to make room for the intent of providing.
-        requestIdToAddressToPerformanceState[_requestId][_msgSender()] |= (reviewIntent + _quantity) << 2;
+        requestIdToAddressToPerformance[_requestId][_msgSender()] =
+            /// @dev Set the last 22 bits of the performance state to the sum of the current intent and the new quantity.
+            ((reviewIntent + _quantity) << 2) |
+            /// @dev Keep the first two bits of the performance state the same.
+            (performance & 0x3);
 
         /// @notice Announce the signalling of a service reviewer.
         emit ReviewSignal(_msgSender(), _requestId, _quantity);
@@ -140,39 +153,37 @@ contract LaborMarket is LaborMarketManager {
      * - The submission deadline has not passed.
      * - The provider has not already submitted.
      */
-    function provide(uint256 _requestId, string calldata _uri) external returns (uint256) {
+    function provide(uint256 _requestId, string calldata _uri) external returns (uint256 participationId) {
         /// @dev Get the request out of storage to warm the slot.
         ServiceRequest storage request = serviceIdToRequest[_requestId];
 
         /// @notice Require the submission phase is still active.
         require(block.timestamp <= request.submissionExp, 'LaborMarket::provide: Submission deadline passed');
 
+        /// @notice Get the performance state of the user.
+        uint24 performance = requestIdToAddressToPerformance[_requestId][_msgSender()];
+
         /// @notice Ensure that the provider has signaled, but has not already submitted.
         /// @dev Get the first two bits of the user's performance value.
         ///      0: Not signaled, 1: Signaled, 2: Submitted.
-        require(
-            requestIdToAddressToPerformanceState[_requestId][_msgSender()] & 0x3 == 1,
-            'LaborMarket::provide: Not signaled'
-        );
+        /// TODO: Add or check to see if req = 0 in the case that signal was not required
+        require(performance & 0x3 == 1, 'LaborMarket::provide: Not signaled');
 
-        /// @dev Increment the submission count and service ID.
-        /// TODO: FIX THIS WHEN I FIGURE OUT WHAT THEY ARE USED FOR
-        /// TODO: THIS SECTION IS SO CURSED -- THERE MAY OR MAY NOT BE A REASON FROM BRYAN?
-        ++serviceId;
-        ++serviceIdToRequest[_requestId].submissionCount;
+        /// @dev Add the Provider to the list of submissions.
+        serviceIdToRequest[_requestId].submissions.add(_msgSender);
 
-        /// @dev Set the submission.
-        /// TODO: FIX THIS ONCE THE ABOVE COUNTERS HAVE BEEN REMOVED
-        serviceIdToSubmission[serviceId] = ServiceSubmission({ serviceProvider: _msgSender(), requestId: _requestId });
+        /// @dev Set the participation ID to reflect the providers address.
+        participationId = uint256(uint160(_msgSender()));
 
-        /// @dev Provider has submitted.
-        requestIdToAddressToPerformanceState[_requestId][_msgSender()] |= 0x2;
+        /// @dev Provider has submitted and set the value of the first two bits to 2.
+        requestIdToAddressToPerformance[_requestId][_msgSender()] =
+            /// @dev Keep the last 22 bits but clear the first two bits.
+            (performance & 0xFFFFFC) |
+            /// @dev Set the first two bits to 2.
+            0x2;
 
         /// @notice Announce the submission of a service provider.
-        emit RequestFulfilled(_msgSender(), _requestId, serviceId, _uri);
-
-        /// @notice Return the id of the newly created submission.
-        return serviceId;
+        emit RequestFulfilled(_msgSender(), _requestId, participationId, _uri);
     }
 
     /**
@@ -193,10 +204,7 @@ contract LaborMarket is LaborMarketManager {
         uint256 _score
     ) public virtual {
         /// @notice Ensure that no one is grading their own submission.
-        require(
-            serviceIdToSubmission[_submissionId].serviceProvider != _msgSender(),
-            'LaborMarket::review: Cannot review own submission'
-        );
+        require(_submissionId != uint256(uint160(_msgSender())), 'LaborMarket::review: Cannot review own submission');
 
         /// @notice Ensure the request is still in the enforcement phase.
         require(
@@ -204,47 +212,47 @@ contract LaborMarket is LaborMarketManager {
             'LaborMarket::review: Enforcement deadline passed'
         );
 
-        uint24 intent = requestIdToAddressToPerformanceState[_requestId][_msgSender()];
-
-        /// @notice Get the remaining signal value of the maintainer.
-        /// @dev Uses the last 22 bits of the performance value by shifting over 2 values and then
-        ///      masking down to the last 22 bits with an overlap of 0x3fffff.
-        uint24 remainingIntent = (requestIdToAddressToPerformanceState[_requestId][_msgSender()] >> 2) & 0x3fffff;
-
-        /// @notice Ensure the maintainer is not exceeding their signaled intent.
-        require(remainingIntent > 0, 'LaborMarket::review: Not signaled');
-
-        /// @dev Require the maintainer has not reviewed this submission.
-        // TODO: This should be stored in the enforcement criteria as not all enforcement criterias
-        //       may apply the same rules as well as by moving ENFORCEMENT LOGIC into the enforcement module,
-        //       new modules can actually be deployed without needing a whole new protocol version.
-        // require(
-        //     !hasPerformed[_submissionId][_msgSender()][HAS_REVIEWED],
-        //     "LaborMarket::review: Already reviewed"
-        // );
-
-        /// @notice Lower the bitpacked value representing the remaining signal value of
-        ///         the caller for this request.
-        /// @dev This bitwise shifts shifts 22 bits to the left to clear the previous value
-        ///      and then bitwise ORs the remaining signal value minus 1 to the left by 2 bits.
-        requestIdToAddressToPerformanceState[_requestId][_msgSender()] =
-            (intent & 0xff000003) |
-            ((remainingIntent - 1) << 2);
-
-        /// @dev Maintainer has reviewed this submission.
-        /// TODO: Move this into enforcement criteria and delete once it is handled.
-        // hasPerformed[_submissionId][_msgSender()][HAS_REVIEWED] = true;
-
         /// @notice Make the external call into the enforcement module to submit the callers score.
-        /// TODO: The nomenclature of this should have been `criteria.enforce(submission, score)`
-        enforcementCriteria.review(_submissionId, _score);
+        /// TODO: How is it even possible that we don't need to pass the reviewer address?
+        /// TODO: Pretty sure that we are going to have to.
+        (bool newSubmission, uint24 intentChange) = criteria.enforce(_requestId, _submissionId, _score);
 
-        /// @notice Announce the new submission of a score by a maintainer.
-        emit RequestReviewed(_msgSender(), _requestId, _submissionId, _score);
+        /// @notice If the user is scoring a new submission, then deduct their signal.
+        /// @dev This implicitly enables the ability to have an enforcement criteria that supports
+        ///       many different types of scoring rubrics, but also submitting a score multiple times.
+        ///       In the case that only one submission is wanted, then the enforcement criteria should
+        ///       return `true` to indicate signal deduction is owed.
+        if (newSubmission) {
+            /// @notice Calculate the active intent value of the maintainer.
+            uint24 intent = requestIdToAddressToPerformance[_requestId][_msgSender()];
+
+            /// @notice Get the remaining signal value of the maintainer.
+            /// @dev Uses the last 22 bits of the performance value by shifting over 2 values and then
+            ///      masking down to the last 22 bits with an overlap of 0x3fffff.
+            uint24 remainingIntent = (requestIdToAddressToPerformance[_requestId][_msgSender()] >> 2) & 0x3fffff;
+
+            /// @notice Ensure the maintainer is not exceeding their signaled intent.
+            require(remainingIntent > 0, 'LaborMarket::review: Not signaled');
+
+            /// @notice Lower the bitpacked value representing the remaining signal value of
+            ///         the caller for this request.
+            /// @dev This bitwise shifts shifts 22 bits to the left to clear the previous value
+            ///      and then bitwise ORs the remaining signal value minus 1 to the left by 2 bits.
+            requestIdToAddressToPerformance[_requestId][_msgSender()] =
+                /// @dev Keep all the bits besides the 22 bits that represent the remaining signal value.
+                (intent & 0xff000003) |
+                /// @dev Shift the remaining signal value minus 1 to the left by 2 bits to fill the 22.
+                ((remainingIntent - intentChange) << 2);
+
+            /// @notice Announce the new submission of a score by a maintainer.
+            emit RequestReviewed(_msgSender(), _requestId, _submissionId, _score);
+        }
     }
 
     /**
      * @notice Allows a service provider to claim payment for a service submission.
+     * @dev When you want to determine what the earned amount is, you can use this
+     *      function with a static call to determine the qausi-state of claiming.
      * @param _requestId The id of the service request being fulfilled.
      * @param _submissionId The id of the service providers submission.
      * @return pTokenClaimed The amount of pTokens claimed.
@@ -255,36 +263,28 @@ contract LaborMarket is LaborMarketManager {
      * - The provider is the sender.
      * - The enforcement deadline has passed.
      */
-    function claim(uint256 _requestId, uint256 _submissionId) external returns (bool success, uint256 amount) {
-        /// @dev Get the request out of storage to warm the slot.
+    function claim(uint256 _requestId, uint256 _submissionId) external returns (bool success, uint256) {
+        /// @notice Get the request out of storage to warm the slot.
         ServiceRequest storage request = serviceIdToRequest[_requestId];
 
-        /// @dev Require the submission has not been claimed.
-        /// TODO: This needs to be enforced by the enforcement criteria.
-        // require(
-        //     !hasPerformed[_submissionId][_msgSender()][HAS_CLAIMED],
-        //     // requestIdToAddressToPerformanceState[_submissionId][_msgSender()], // ??
-        //     "LaborMarket::claim: Already claimed"
-        // );
-
-        /// @dev Ensure the request is no longer in the enforcement phase.
+        /// @notice Ensure the request is no longer in the enforcement phase.
         require(block.timestamp >= request.enforcementExp, 'LaborMarket::claim: Enforcement deadline not passed');
 
-        /// @dev Provider has claimed this submission.
-        /// TODO: Handle the nullification of rewards upon a claim.
-        // hasPerformed[_submissionId][_msgSender()][HAS_CLAIMED] = true;
+        /// @notice Get the rewards attributed to this submission.
+        (uint256 amount, bool requiresSubmission) = criteria.rewards(address(this), _submissionId);
 
-        /// @dev Get the rewards attributed to this submission.
-        amount = enforcementCriteria.getRewards(address(this), _submissionId);
+        if (amount != 0) {
+            /// @notice Remove the submission from the list of submissions.
+            /// @dev This is done before the transfer to prevent reentrancy attacks.
+            bool removed = request.submissions.remove(_submissionId);
 
-        if (rewards != 0) {
-            /// @dev Determine the address of the provider for this submission.
-            address provider = serviceviceIdToSubmission[_submissionId].serviceProvider;
+            /// @dev Allow the enforcement criteria to perform any additional logic.
+            require(!requiresSubmission || removed, 'LaborMarket::claim: Invalid submission claim');
 
-            /// @dev Transfer the pTokens to the network participant.
-            request.pToken.transfer(provider, amount);
+            /// @notice Transfer the pTokens to the network participant.
+            request.pToken.transfer(address(uint160(_submissionId)), amount);
 
-            /// @dev Update health status for bulk processing offchain.
+            /// @notice Update health status for bulk processing offchain.
             success = true;
 
             /// @notice Announce the claiming of a service provider reward.
@@ -293,6 +293,9 @@ contract LaborMarket is LaborMarketManager {
 
         /// @notice If there were no funds to claim, acknowledge the failure of the transfer
         ///         and return false without blocking the transaction.
+
+        /// @notice Return the amount of pTokens claimed.
+        return (success, amount);
     }
 
     /**
@@ -307,19 +310,14 @@ contract LaborMarket is LaborMarketManager {
         /// @dev Get the request out of storage to warm the slot.
         ServiceRequest storage request = serviceIdToRequest[_requestId];
 
-        /// @dev Require the enforcement deadline has passed.
-        require(block.timestamp >= request.enforcementExp, 'LaborMarket::claimRemainder: Not enforcement deadline');
-
-        /// @dev Require the requester has not claimed the remainder.
-        // TODO: Need to implement in the enforcement criteria
-        // require(
-        //     !hasPerformed[_requestId][_msgSender()][HAS_CLAIMED_REMAINDER],
-        //     'LaborMarket::claimRemainder: Already claimed'
-        // );
+        /// @dev Ensure the request is no longer in the enforcement phase.
+        require(
+            block.timestamp >= request.enforcementExp,
+            'LaborMarket::claimRemainder: Enforcement deadline not passed'
+        );
 
         /// @dev Determine the amount of undistributed money remaining in the request.
-        // TODO: Nomenclature of this should be `criteria.surplus()`
-        amount = enforcementCriteria.getRemainder(address(this), _requestId);
+        amount = criteria.remainder(address(this), _requestId);
 
         /// @notice Redistribute the funds that were not earned.
         /// @dev This model has been implemented to allow for bulk distribution of unclaimed rewards to
@@ -358,12 +356,8 @@ contract LaborMarket is LaborMarketManager {
         require(request.serviceRequester == _msgSender(), 'LaborMarket::withdrawRequest: Not requester');
 
         /// @dev Require the request has not been signaled.
-        // TODO: Would be nice to add a dynamic back off mechanism that lets people set their own risk tolerance
-        ///      since this now has more of an impact with the removal of signal collateral. Will have to model and get approved.
+        // TODO: This should be updated to check if is still in signalling phase.
         require(signalCount[_requestId] < 1, 'LaborMarket::withdrawRequest: Already active');
-
-        /// @dev Return the $pToken back to the Requester.
-        request.pToken.transfer(_msgSender(), request.pTokenQ);
 
         /// @notice Delete the request and prevent further action.
         delete request.serviceRequester;
@@ -376,39 +370,11 @@ contract LaborMarket is LaborMarketManager {
         delete request.uri;
         delete request;
 
+        /// @notice Return the $pToken back to the Requester.
+        /// @dev This is done last to prevent reentrancy attacks.
+        request.pToken.transfer(_msgSender(), request.pTokenQ);
+
         /// @dev Announce the withdrawal of a request.
         emit RequestWithdrawn(_requestId);
-    }
-
-    /// @notice Gets the delegate eligibility of a caller.
-    /// @param _account The account to check.
-    /// @return Whether the account is a delegate.
-    function isDelegate(address _account) public view returns (bool) {
-        // TODO: NBADGE or delete
-        return true;
-        // return (
-        //     address(delegateBadge) == address(0) ||
-        //     delegateBadge.balanceOf(_account, configuration.delegateBadge.tokenId) > 0
-        // );
-    }
-
-    /// @notice Gets the maintainer eligibility of a caller.
-    /// @param _account The account to check.
-    /// @return Whether the account is a maintainer.
-    function isMaintainer(address _account) public view returns (bool) {
-        // TODO: NBADGE or delete
-        return true;
-        // return (
-        //     address(maintainerBadge) == address(0) ||
-        //     maintainerBadge.balanceOf(_account, configuration.maintainerBadge.tokenId) > 0
-        // );
-    }
-
-    /// @notice Gets the eligibility of a caller to submit a service request.
-    /// @param _account The account to check.
-    /// @return Whether the account is eligible to submit a service request.
-    /// TODO: Delete??
-    function isPermittedParticipant(address _account) public view returns (bool) {
-        return true;
     }
 }

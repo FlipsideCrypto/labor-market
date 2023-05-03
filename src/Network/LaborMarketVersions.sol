@@ -3,31 +3,26 @@
 pragma solidity ^0.8.17;
 
 /// @dev Core dependencies.
-import { LaborMarketVersionsInterface } from "./interfaces/LaborMarketVersionsInterface.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+import { LaborMarketVersionsInterface } from './interfaces/LaborMarketVersionsInterface.sol';
+import { Ownable } from '@openzeppelin/contracts/access/Ownable.sol';
+import { ERC1155Holder } from '@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol';
 
 /// @dev Helpers.
-import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
-import { LaborMarketInterface } from "../LaborMarket/interfaces/LaborMarketInterface.sol";
+import { Clones } from '@openzeppelin/contracts/proxy/Clones.sol';
+import { LaborMarketInterface } from '../LaborMarket/interfaces/LaborMarketInterface.sol';
 
 /// @dev Supported interfaces.
-import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
-import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC1155Receiver } from '@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol';
+import { IERC1155 } from '@openzeppelin/contracts/token/ERC1155/IERC1155.sol';
+import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
-
-contract LaborMarketVersions is
-    LaborMarketVersionsInterface,
-    Ownable,
-    ERC1155Holder
-{
+contract LaborMarketVersions is LaborMarketVersionsInterface, Ownable, ERC1155Holder {
     using Clones for address;
 
     /*//////////////////////////////////////////////////////////////
                             PROTOCOL STATE
     //////////////////////////////////////////////////////////////*/
-    
+
     /// @dev The address interface of the Capacity Token.
     IERC20 public capacityToken;
 
@@ -55,33 +50,18 @@ contract LaborMarketVersions is
     //////////////////////////////////////////////////////////////*/
 
     /// @dev Announces when a Version configuration is updated through the protocol Factory.
-    event VersionUpdated(
-          address indexed implementation
-        , Version indexed version
-    );
+    event VersionUpdated(address indexed implementation, Version indexed version);
 
     /// @dev Announces when a new Labor Market is created through the protocol Factory.
-    event LaborMarketCreated(
-          address indexed marketAddress
-        , address indexed owner
-        , address indexed implementation
-    );
+    event LaborMarketCreated(address indexed marketAddress, address indexed owner, address indexed implementation);
 
     /*//////////////////////////////////////////////////////////////
                                CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(
-          address _implementation
-    ) {
+    constructor(address _implementation) {
         /// @dev Initialize the foundational version of the Labor Market primitive.
-        _setVersion(
-            _implementation,
-            _msgSender(),
-            keccak256(abi.encodePacked(address(0), uint256(0))),
-            0,
-            false
-        );
+        _setVersion(_implementation, _msgSender(), keccak256(abi.encodePacked(address(0), uint256(0))), 0, false);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -89,12 +69,12 @@ contract LaborMarketVersions is
     //////////////////////////////////////////////////////////////*/
 
     modifier onlyGovernor(address _sender) {
-        require(isGovernor(_sender), "LaborMarketVersions::isGovernor: Not a Governor.");
+        require(isGovernor(_sender), 'LaborMarketVersions::isGovernor: Not a Governor.');
         _;
     }
 
     modifier onlyCreator(address _sender) {
-        require(isCreator(_sender), "LaborMarketVersions::isCreator: Not a Creator.");
+        require(isCreator(_sender), 'LaborMarketVersions::isCreator: Not a Creator.');
         _;
     }
 
@@ -118,30 +98,23 @@ contract LaborMarketVersions is
      * - If the caller is not the owner, cannot set a Payment Token as they cannot withdraw.
      */
     function setVersion(
-          address _implementation
-        , address _owner
-        , address _tokenAddress
-        , uint256 _tokenId
-        , uint256 _amount
-        , bool _locked
-    ) 
-        public 
-        virtual 
-        override 
-    {
+        address _implementation,
+        address _owner,
+        address _tokenAddress,
+        uint256 _tokenId,
+        uint256 _amount,
+        bool _locked
+    ) public virtual override {
         /// @dev Load the existing Version object.
         Version memory version = versions[_implementation];
 
         /// @dev Prevent editing of a version once it has been locked.
-        require(
-            !version.locked,
-            "LaborMarketVersions::_setVersion: Cannot update a locked version."
-        );
+        require(!version.locked, 'LaborMarketVersions::_setVersion: Cannot update a locked version.');
 
         /// @dev Only the owner can set the version.
         require(
             version.owner == address(0) || version.owner == _msgSender(),
-            "LaborMarketVersions::_setVersion: You do not have permission to edit this version."
+            'LaborMarketVersions::_setVersion: You do not have permission to edit this version.'
         );
 
         /// @dev Make sure that no exogenous version controllers can set a payment
@@ -149,18 +122,12 @@ contract LaborMarketVersions is
         if (_msgSender() != owner()) {
             require(
                 _tokenAddress == address(0) && _tokenId == 0 && _amount == 0,
-                "LaborMarketVersions::_setVersion: You do not have permission to set a payment token."
+                'LaborMarketVersions::_setVersion: You do not have permission to set a payment token.'
             );
         }
 
         /// @dev Set the version configuration.
-        _setVersion(
-            _implementation,
-            _owner,
-            keccak256(abi.encodePacked(_tokenAddress, _tokenId)),
-            _amount,
-            _locked
-        );
+        _setVersion(_implementation, _owner, keccak256(abi.encodePacked(_tokenAddress, _tokenId)), _amount, _locked);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -175,13 +142,7 @@ contract LaborMarketVersions is
      * @param _implementation The implementation address.
      * @return The version key.
      */
-    function getVersionKey(address _implementation)
-        public
-        view
-        virtual
-        override
-        returns (bytes32)
-    {
+    function getVersionKey(address _implementation) public view virtual override returns (bytes32) {
         return versions[_implementation].licenseKey;
     }
 
@@ -191,15 +152,7 @@ contract LaborMarketVersions is
      * @param _sender The message sender address.
      * returns The license key for the message sender.
      */
-    function getLicenseKey(
-          bytes32 _versionKey
-        , address _sender
-    )
-        public
-        pure
-        override
-        returns (bytes32)
-    {
+    function getLicenseKey(bytes32 _versionKey, address _sender) public pure override returns (bytes32) {
         return keccak256(abi.encodePacked(_versionKey, _sender));
     }
 
@@ -210,14 +163,7 @@ contract LaborMarketVersions is
      * @param _sender The address to verify against.
      * @return Whether or not the sender is a Creator.
      */
-    function isGovernor(address _sender)
-        external
-        view
-        virtual
-        returns (
-            bool
-        )
-    {
+    function isGovernor(address _sender) external view virtual returns (bool) {
         // TODO: NBADGE
         return true;
     }
@@ -227,14 +173,7 @@ contract LaborMarketVersions is
      * @param _sender The message sender address.
      * @return True if the sender is a Creator.
      */
-    function isCreator(address _sender)
-        external
-        view
-        virtual
-        returns (
-            bool
-        )
-    {
+    function isCreator(address _sender) external view virtual returns (bool) {
         // TODO: NBADGE
         return true;
     }
@@ -246,16 +185,11 @@ contract LaborMarketVersions is
      * See {LaborMarketFactory.createLaborMarket}
      */
     function _createLaborMarket(
-          address _implementation
-        , bytes32 _licenseKey
-        , uint256 _versionCost
-        , LaborMarketConfiguration calldata _configuration
-    )
-        internal 
-        returns (
-            address
-        ) 
-    {
+        address _implementation,
+        bytes32 _licenseKey,
+        uint256 _versionCost,
+        LaborMarketConfiguration calldata _configuration
+    ) internal returns (address) {
         /// @dev Deduct the amount of payment that is needed to cover deployment of this version.
         /// @notice This will revert if an individual has not funded it with at least the needed amount
         ///         to cover the cost of the version.
@@ -282,14 +216,12 @@ contract LaborMarketVersions is
      * See {LaborMarketVersionsInterface.setVersion}
      */
     function _setVersion(
-          address _implementation
-        , address _owner
-        , bytes32 _licenseKey
-        , uint256 _amount
-        , bool _locked
-    ) 
-        internal 
-    {
+        address _implementation,
+        address _owner,
+        bytes32 _licenseKey,
+        uint256 _amount,
+        bool _locked
+    ) internal {
         /// @dev Set the version configuration.
         versions[_implementation] = Version({
             owner: _owner,
@@ -307,15 +239,8 @@ contract LaborMarketVersions is
      * @param _interfaceId The interface ID to check.
      * @return True if the interface ID is supported.
      */
-    function supportsInterface(bytes4 _interfaceId)
-        public
-        view
-        virtual
-        override
-        returns (bool)
-    {
-        return (_interfaceId ==
-            type(LaborMarketVersionsInterface).interfaceId ||
+    function supportsInterface(bytes4 _interfaceId) public view virtual override returns (bool) {
+        return (_interfaceId == type(LaborMarketVersionsInterface).interfaceId ||
             _interfaceId == type(IERC1155Receiver).interfaceId);
     }
 }

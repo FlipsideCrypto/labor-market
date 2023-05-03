@@ -3,6 +3,7 @@
 pragma solidity ^0.8.17;
 
 import { LaborMarketInterface } from 'src/LaborMarket/interfaces/LaborMarketInterface.sol';
+import { LaborMarket } from '../../LaborMarket/LaborMarket.sol';
 import { EnforcementCriteriaInterface } from 'src/Modules/Enforcement/interfaces/EnforcementCriteriaInterface.sol';
 
 /**
@@ -120,15 +121,22 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
     /**
      * See {EnforcementCriteriaInterface.getPaymentReward}
      */
-    function getReward(address _laborMarket, uint256 _submissionId) external view override returns (uint256) {
-        uint256 requestId = _getRequestId(_laborMarket, _submissionId);
+    function getReward(
+        address _laborMarket,
+        uint256 _requestId,
+        uint256 _submissionId
+    ) external view returns (uint256) {
+        uint256 earnedRewards = 0;
+        uint256 claimedRewards = 0;
 
-        return
-            _calculateShare(
-                submissionToScore[_laborMarket][_submissionId].scaledAvg,
-                requests[_laborMarket][requestId].scaledAvgSum,
-                LaborMarketInterface(_laborMarket).getRequest(requestId).pTokenQ
-            );
+        return earnedRewards - claimedRewards;
+        
+        // return
+        //     _calculateShare(
+        //         submissionToScore[_laborMarket][_submissionId].scaledAvg,
+        //         requests[_laborMarket][_requestId].scaledAvgSum,
+        //         LaborMarket(_laborMarket).requestIdToAddressToPerformance(_requestId).pTokenQ
+        //     );
     }
 
     /**
@@ -136,7 +144,9 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
      */
     function getRemainder(address _laborMarket, uint256 _requestId) external view override returns (uint256) {
         /// @dev Load the request.
-        LaborMarketInterface.ServiceRequest memory request = LaborMarketInterface(_laborMarket).getRequest(_requestId);
+        // LaborMarketInterface.ServiceRequest memory request = LaborMarketInterface(_laborMarket).getRequest(_requestId);
+
+        // TODO: This should be rewritten to be a view from the labor market call, why move all this state in here?
 
         /// @dev If the enforcement exp passed and the request total score is 0, return the total pool.
         if (block.timestamp > request.enforcementExp && requests[_laborMarket][_requestId].qualifyingCount == 0)
@@ -169,6 +179,8 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
         /// @dev Add the scaled score to the cumulative total.
         request.scaledAvgSum += score.scaledAvg;
 
+        // TODO: .qualified doesnt even really do anything?
+
         /// @dev Is there a better way to handle this?
         /// @dev If not qualified, increment the number of qualifying scores and mark score as qualified.
         if (score.scaledAvg > 0 && !score.qualified) {
@@ -199,6 +211,7 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
         uint256 i = buckets.ranges.length;
 
         /// @dev If the buckets are not configured, utilize a scalable likert scale.
+        // TODO: Optimistic model usage :eyes: mans was cooking on this one tho
         if (i == 0) return 1;
 
         for (i; i > 0; i--) {
@@ -219,6 +232,7 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
         uint256 _totalCumulativeScore,
         uint256 _totalPool
     ) internal pure returns (uint256) {
+        /// TODO: I cannot parse this ternary at first read, please refactor
         return (_totalCumulativeScore > 0 ? (_userScore * _totalPool) / _totalCumulativeScore : 0);
     }
 
@@ -229,6 +243,7 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
      * @return The request id.
      */
     function _getRequestId(address _laborMarket, uint256 _submissionId) internal view returns (uint256) {
+        // TODO: Kek bye bish
         return (LaborMarketInterface(_laborMarket).getSubmission(_submissionId).requestId);
     }
 }

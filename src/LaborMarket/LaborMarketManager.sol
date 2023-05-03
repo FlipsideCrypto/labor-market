@@ -17,104 +17,31 @@ import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import { IERC1155ReceiverUpgradeable } from '@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155ReceiverUpgradeable.sol';
 
 contract LaborMarketManager is LaborMarkeInterface, ERC1155HolderUpgradeable, Delegatable('LaborMarket', 'v1.0.0') {
-    /// @dev Performable actions.
-    bytes32 public immutable HAS_SUBMITTED = keccak256('hasSubmitted');
-
-    bytes32 public immutable HAS_CLAIMED = keccak256('hasClaimed');
-
-    bytes32 public immutable HAS_REVIEWED = keccak256('hasReviewed');
-
-    bytes32 public immutable HAS_SIGNALED = keccak256('hasSignaled');
-
     /*//////////////////////////////////////////////////////////////
-                            STATE
+                                STATE
     //////////////////////////////////////////////////////////////*/
 
     /// @dev The network contract.
+    // TODO: Need to fix this
     LaborMarketNetworkInterface internal network;
 
     /// @dev The enforcement criteria.
-    EnforcementCriteriaInterface internal enforcementCriteria;
-
-    /// @dev The delegate badge.
-    IERC1155 internal delegateBadge;
-
-    /// @dev The maintainer badge.
-    IERC1155 internal maintainerBadge;
+    // TODO: Will need to finalize with the implementation of the enforcement criteria.
+    EnforcementCriteriaInterface internal criteria;
 
     /// @dev The configuration of the labor market.
+    // TODO: Why is this a struct?
     LaborMarketConfiguration public configuration;
 
-    /// @dev Tracking the signals per service request.
-    mapping(uint256 => uint256) public signalCount;
-
-    /// @dev Tracking the service requests.
+    /// @dev Primary struct containing the definition of a Request.
+    // TODO: Rename to requestIdToRequest
     mapping(uint256 => ServiceRequest) public serviceIdToRequest;
 
-    /// @dev Tracking the service submissions.
-    mapping(uint256 => ServiceSubmission) public serviceIdToSubmission;
+    /// @dev State id for a user relative to a single Request.
+    mapping(uint256 => mapping(address => uint24)) requestIdToAddressToPerformance;
 
-    // / @dev Tracking the review signals.
-    // mapping(uint256 => mapping(address => ReviewPromise)) public requestToAddressToReview;
-
-    /// @dev Tracking whether an action has been performed.
-    mapping(uint256 => mapping(address => uint24)) requestIdToAddressToPerformanceState;
-
-    /*//////////////////////////////////////////////////////////////
-                            EVENTS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @notice emitted when labor market parameters are updated.
-    event LaborMarketConfigured(LaborMarketConfiguration indexed configuration);
-
-    /// @notice emitted when a new service request is made.
-    event RequestConfigured(
-        address indexed requester,
-        uint256 indexed requestId,
-        string indexed uri,
-        IERC20 pToken,
-        uint256 pTokenQ,
-        uint256 signalExp,
-        uint256 submissionExp,
-        uint256 enforcementExp
-    );
-
-    /// @notice emitted when a user signals a service request.
-    event RequestSignal(address indexed signaler, uint256 indexed requestId);
-
-    /// @notice emitted when a maintainer signals a review.
-    event ReviewSignal(address indexed signaler, uint256 indexed requestId, uint256 indexed quantity);
-
-    /// @notice emitted when a service request is withdrawn.
-    event RequestWithdrawn(uint256 indexed requestId);
-
-    /// @notice emitted when a service request is fulfilled.
-    event RequestFulfilled(
-        address indexed fulfiller,
-        uint256 indexed requestId,
-        uint256 indexed submissionId,
-        string uri
-    );
-
-    /// @notice emitted when a service submission is reviewed
-    event RequestReviewed(
-        address indexed reviewer,
-        uint256 indexed requestId,
-        uint256 indexed submissionId,
-        uint256 reviewScore
-    );
-
-    /// @notice emitted when a service submission is claimed.
-    event RequestPayClaimed(
-        address indexed claimer,
-        uint256 indexed requestId,
-        uint256 indexed submissionId,
-        uint256 payAmount,
-        address to
-    );
-
-    /// @notice emitted when a remainder is claimed.
-    event RemainderClaimed(address indexed claimer, uint256 indexed requestId, uint256 remainderAmount, address to);
+    /// @dev Tracking the amount of Provider and Reviewer interested that has been signaled.
+    mapping(uint256 => ServiceSignalState) public signalCount;
 
     /*//////////////////////////////////////////////////////////////
                             SETTERS
@@ -142,6 +69,7 @@ contract LaborMarketManager is LaborMarkeInterface, ERC1155HolderUpgradeable, De
                                 GETTERS
     //////////////////////////////////////////////////////////////*/
 
+    // TODO: What is this function for?
     /**
      * @notice Gets the amount of pending rewards for a submission.
      * @param _submissionId The id of the service submission.
@@ -149,10 +77,12 @@ contract LaborMarketManager is LaborMarkeInterface, ERC1155HolderUpgradeable, De
      * @return rTokenToClaim The amount of rTokens to be claimed.
      */
     function getRewards(uint256 _submissionId) external view returns (uint256 pTokenToClaim, uint256 rTokenToClaim) {
+        return (0, 0);
+
         address provider = serviceIdToSubmission[_submissionId].serviceProvider;
 
         /// @dev The provider must have not claimed rewards.
-        if (requestIdToAddressToPerformanceState[_submissionId][provider][HAS_CLAIMED]) {
+        if (requestIdToAddressToPerformance[_submissionId][provider][HAS_CLAIMED]) {
             return (0, 0);
         }
 
