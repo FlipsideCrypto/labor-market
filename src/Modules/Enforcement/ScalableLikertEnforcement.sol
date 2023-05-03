@@ -121,22 +121,28 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
     /**
      * See {EnforcementCriteriaInterface.getPaymentReward}
      */
-    function getReward(
+    function rewards(
         address _laborMarket,
         uint256 _requestId,
         uint256 _submissionId
-    ) external view returns (uint256) {
-        uint256 earnedRewards = 0;
+    ) external view returns (uint256 amount, bool requiresSubmission) {
+        /// @dev Determine how much the submission has earned.
+        uint256 earnedRewards = _calculateShare(
+            submissionToScore[_laborMarket][_submissionId].scaledAvg,
+            requests[_laborMarket][_requestId].scaledAvgSum,
+            LaborMarket(_laborMarket).serviceIdToRequest(_requestId).pTokenQ
+        );
+
+        /// @dev Determine how much the submission has claimed.
         uint256 claimedRewards = 0;
 
-        return earnedRewards - claimedRewards;
-        
-        // return
-        //     _calculateShare(
-        //         submissionToScore[_laborMarket][_submissionId].scaledAvg,
-        //         requests[_laborMarket][_requestId].scaledAvgSum,
-        //         LaborMarket(_laborMarket).requestIdToAddressToPerformance(_requestId).pTokenQ
-        //     );
+        /// @dev Determine the amount of rewards that can be claimed.
+        amount = earnedRewards - claimedRewards;
+
+        /// @dev In this version of the module `requiresSubmission` remains a
+        ///      helpful as it serves as a "re-entrancy guard" due to earnings
+        ///      being final upon claim.
+        return (amount, amount > 0);
     }
 
     /**

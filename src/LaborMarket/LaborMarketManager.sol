@@ -16,7 +16,7 @@ import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 /// @dev Supported interfaces.
 import { IERC1155ReceiverUpgradeable } from '@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155ReceiverUpgradeable.sol';
 
-contract LaborMarketManager is LaborMarkeInterface, ERC1155HolderUpgradeable, Delegatable('LaborMarket', 'v1.0.0') {
+contract LaborMarketManager is LaborMarketInterface, ERC1155HolderUpgradeable, Delegatable('LaborMarket', 'v1.0.0') {
     /*//////////////////////////////////////////////////////////////
                                 STATE
     //////////////////////////////////////////////////////////////*/
@@ -57,7 +57,7 @@ contract LaborMarketManager is LaborMarkeInterface, ERC1155HolderUpgradeable, De
         network = LaborMarketNetworkInterface(_configuration.modules.network);
 
         /// @dev Configure the Labor Market state control.
-        enforcementCriteria = EnforcementCriteriaInterface(_configuration.modules.enforcement);
+        criteria = EnforcementCriteriaInterface(_configuration.modules.enforcement);
 
         /// @dev Configure the Labor Market parameters.
         configuration = _configuration;
@@ -69,23 +69,23 @@ contract LaborMarketManager is LaborMarkeInterface, ERC1155HolderUpgradeable, De
                                 GETTERS
     //////////////////////////////////////////////////////////////*/
 
-    // TODO: What is this function for?
-    /**
-     * @notice Gets the amount of pending rewards for a submission.
-     * @param _submissionId The id of the service submission.
-     * @return pTokenToClaim The amount of pTokens to be claimed.
-     * @return rTokenToClaim The amount of rTokens to be claimed.
-     */
-    function getRewards(uint256 _submissionId) external view returns (uint256 pTokenToClaim, uint256 rTokenToClaim) {
-        return (0, 0);
+    // // TODO: What is this function for? // <-- Easy getter for frontend. Can remove or move out to enforcement tho
+    // /**
+    //  * @notice Gets the amount of pending rewards for a submission.
+    //  * @param _submissionId The id of the service submission.
+    //  * @return pTokenToClaim The amount of pTokens to be claimed.
+    //  * @return rTokenToClaim The amount of rTokens to be claimed.
+    //  */
+    // function getRewards(uint256 _submissionId) external view returns (uint256 pTokenToClaim, uint256 rTokenToClaim) {
+    //     return (0, 0);
 
-        address provider = serviceIdToSubmission[_submissionId].serviceProvider;
+    //     address provider = serviceIdToSubmission[_submissionId].serviceProvider;
 
-        /// @dev The provider must have not claimed rewards.
-        if (requestIdToAddressToPerformance[_submissionId][provider][HAS_CLAIMED]) {
-            return (0, 0);
-        }
+    //     /// @dev The provider must have not claimed rewards.
+    //     if (requestIdToAddressToPerformance[_submissionId][provider][HAS_CLAIMED]) {
+    //         return (0, 0);
+    //     }
 
-        return enforcementCriteria.getRewards(address(this), _submissionId);
-    }
+    //     return enforcementCriteria.getRewards(address(this), _submissionId);
+    // }
 }

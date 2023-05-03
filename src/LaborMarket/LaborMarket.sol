@@ -271,7 +271,7 @@ contract LaborMarket is LaborMarketManager {
         require(block.timestamp >= request.enforcementExp, 'LaborMarket::claim: Enforcement deadline not passed');
 
         /// @notice Get the rewards attributed to this submission.
-        (uint256 amount, bool requiresSubmission) = criteria.rewards(address(this), _submissionId);
+        (uint256 amount, bool requiresSubmission) = criteria.rewards(address(this), _requestId, _submissionId);
 
         if (amount != 0) {
             /// @notice Remove the submission from the list of submissions.

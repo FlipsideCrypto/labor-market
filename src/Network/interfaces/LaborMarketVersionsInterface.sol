@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pragma solidity ^0.8.17;
-
-import {LaborMarketConfigurationInterface} from "../../LaborMarket/interfaces/LaborMarketConfigurationInterface.sol";
-
-interface LaborMarketVersionsInterface is LaborMarketConfigurationInterface {
+interface LaborMarketVersionsInterface {
     /*//////////////////////////////////////////////////////////////
                                 SCHEMAS
     //////////////////////////////////////////////////////////////*/

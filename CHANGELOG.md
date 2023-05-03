@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 
 The key for the types of changes are as follows:
 
+-   🎯 Targeted
 -   ✨ New
 -   👷 Change
 -   🐛 Bug
@@ -16,19 +17,26 @@ The key for the types of changes are as follows:
 
 -   CINAD (sigh-nad): Chain Is Not A Database
 
-## [2.0.2] - 2023-05-05
+## [2.0.3] - 2023-05-05
 
--   ✨ Added Requester controlled ability to set the maximum signal intent at which they can cancel.
--   ✨ Colateral can optionally be configured to provide financialized obligation for signaled intent.
+- 🎯 Added Requester controlled ability to set the maximum signal intent at which they can cancel.
+- 🎯 Colateral can optionally be configured to provide financialized obligation for signaled intent.
 
-## [2.0.1] - 2023-05-04
+## [2.0.2] - 2023-05-04
 
--   ✨ Added `maxSubmissions` to `Request` experienced explicitly by providers through `signal`.
--   ✨ Added `maxReviews` to `Request` experienced explicitly by reviewers through `review`.
--   ✨ Added N-Badge Authority mechanism to allow for complex & configurable gating mechanisms.
--   ✨ ERC-20 ($pToken) distribution (optional) to Reviewers upon successful review.
+-   🎯 Added N-Badge Authority mechanism to allow for complex & configurable gating mechanisms.
+-   🎯 ERC-20 ($pToken) distribution (optional) to Reviewers upon successful review.
 
-## [2.0.0] - 2023-05-03
+## [2.0.1] - 2023-05-03
+
+-   ✨ Updated `submissionId` to be defined as `uint256(uint160(msg.sender))` due to the 1 submission per address limit.
+    -   📝 This will always result in a unique id relative to the provider.
+-   🎯 Added `maxSubmissions` to `Request` experienced explicitly by providers through `signal`.
+-   🎯 Added `maxReviews` to `Request` experienced explicitly by reviewers through `review`.
+-   👷🔮 Only when the `Enforcement Criteria` returns `newSubmission` as `true` is review signal intent deducted.
+-   👷🔮 A customized `Enforcement Criteria` may return a non-standard `intentChange` enabling for more complex logic.
+
+## [2.0.0] - 2023-05-02
 
 v2.0.0 is the first major release of the Labor Market protocol. This release is a culmination of the lessons learned
 from the v1.x.x releases and the feedback from the community. This release is a breaking change from the previous
@@ -41,14 +49,10 @@ framework that enables ephemeral and long-term labor markets to co-exist.
 -   ✨ Use of `SignalCount` struct using two `uint128`s to track activity in a request.
 -   ✨ Total number of submissions signalled to be reviewed by an address cannot exceed 4,194,304 (2^22).
 -   ✨ Store the addresses that have a valid Request submission in an `EnumerableSet.AddressSet` for inline slot access.
--   ✨ Updated `submissionId` to be defined as `uint256(uint160(msg.sender))` due to the 1 submission per address limit.
-    -   📝 This will always result in a unique id relative to the provider.
 -   ✨ Distribution of funds may "fail" without being blocking due to the `if` check on `amount > 0`.
 -   ✨ The returned response when distributing funds is carried with a boolean of success.
 -   ✨ CINAD: When a submission has the associated earnings claimed, delete the submission from storage.
 -   ✨🔮 Can now distribute the finalized funds sitting in the protocol on behalf of and to the respective participant.
--   👷🔮 Only when the `Enforcement Criteria` returns `newSubmission` as `true` is review signal intent deducted.
--   👷🔮 A customized `Enforcement Criteria` may return a non-standard `intentChange` enabling for more complex logic.
 -   👷 Response of claim functions have been updated to `(bool success, uint256 amount)` for inline static calls.
 -   👷 Labor Market factory no longer enforces review uniqueness allowing for multi-stage and editing of reviews.
 -   👷 Use `public virtual` functions rather than `external`.
@@ -59,9 +63,9 @@ framework that enables ephemeral and long-term labor markets to co-exist.
 -   🐛 Fixed bug where `strings` where marked as `indexed` in events. (🏆 @Not Playwololo)
 -   🐛 Fixed bug where struct storage was not implemented as intended.
 -   🩸 $rMETRIC and all supporting functionality such as decay, manager access, etc. has been deprecated.
--   🩸 Removed the staking of ERC-1155 upon signalling as Provider and Reviewer.
+-   🩸 Removed the staking of ERC-1155 upon signaling as Provider and Reviewer.
 -   🩸 All native implementations and functionality of reputation ($rMETRIC) have been deprecated.
-    -   📝 Badges are not revoked upon signalling as social access != financial collateral.
+    -   📝 Badges are not revoked upon signaling as social access != financial collateral.
 -   🩸 CINAD: Removed globally incremented `serviceId`.
 -   🩸 CINAD: Removed the need to manually track `serviceCount`.
 -   🩸 CINAD: Removed the logic mechanism making the `requestId` incremental.
