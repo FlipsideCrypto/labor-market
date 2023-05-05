@@ -95,8 +95,11 @@ contract LaborMarket is LaborMarketInterface, Initializable {
         /// @notice Ensure the reviewer and provider limit are not zero.
         require(_request.providerLimit > 0 && _request.reviewerLimit > 0, 'LaborMarket::submitRequest: Invalid limits');
 
-        /// @dev Generate the uuid for the request using the timestamp and address.
+        /// @notice Generate the uuid for the request using the timestamp and address.
         requestId = uint256(keccak256(abi.encodePacked(uint96(block.timestamp), uint160(msg.sender))));
+
+        /// @notice Ensure the request does not already exist.
+        require(requestIdToRequest[requestId].signalExp == 0, 'LaborMarket::submitRequest: Request already exists');
 
         /// @notice Store the request in the Labor Market.
         requestIdToRequest[requestId] = _request;

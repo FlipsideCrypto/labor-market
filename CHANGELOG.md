@@ -25,15 +25,6 @@ The key for the types of changes are as follows:
 -   ✨ Added gating mechanism for `Reviewer` to allow for complex & configurable gating mechanisms.
 -   ✨ Added single instance immutable factory.
 -   ✨ Added `EnforcementConfigured` and `SubmissionReviewed` events to `EnforcementCriteriaInterface`.
--   👷 Updated file architecture to be more appropriate for the model being used.
--   🩸 Removed the inclusion of versions.
--   🩸 Removed all instances and usage of 'Capacity Token'.
--   🩸 Removed all instances and usage of discrete ERC-1155 Badge definitions.
--   🩸 Removed `LaborMarketsNetwork` due to deprecation of $rToken.
--   🩸 Removed `LaborMarketVersions` due to streamlining of business model.
-
-## [2.0.1] - 2023-05-04
-
 -   ✨ Added use of encoded uuid generation for Request id using `uint256(block.timestamp,uint160(msg.sender))`.
 -   ✨ Added atomic ERC-20 ($pToken) depositing at the time of submitting a new Request.
 -   ✨ Added atomic ERC-20 ($pToken) distribution to Reviewers upon successful review.
@@ -55,6 +46,7 @@ The key for the types of changes are as follows:
 -   ✨ Added the ability to set Reviewer incentive to zero.
 -   ✨ Added native management of the enforcement criteria when deploying a Market.
 -   ✨ Added sender-related configuration of `ScalableLikert` with `auxilaries`, `alphas`, and `betas`.
+-   👷 Updated file architecture to be more appropriate for the model being used.
 -   👷 Updated `providers` and `reviewers` in `ServiceSignalState` from `uint128` to `uint64`.
 -   👷 Updated `RequestConfigured` event to contain newly added fields to `ServiceRequest` (all values are reflected).
 -   👷 Renamed `pToken` in `ServiceRequest` to `pTokenProvider` to reflect the token used to incentivize Providers.
@@ -71,6 +63,11 @@ The key for the types of changes are as follows:
 -   🩸 Removed hard-coded scaling to 100 point scale in `ScalableLikert`.
 -   🩸 CINAD: Removed `uri` being stored in `LaborMarketConfiguration`.
 -   🩸 CINAD: `getRewards` from Labor Market contract as it is logic that belongs in the enforcement criteria.
+-   🩸 Removed the inclusion of versions.
+-   🩸 Removed all instances and usage of 'Capacity Token'.
+-   🩸 Removed all instances and usage of discrete ERC-1155 Badge definitions.
+-   🩸 Removed `LaborMarketsNetwork` due to deprecation of $rToken.
+-   🩸 Removed `LaborMarketVersions` due to streamlining of business model.
 
 ## [2.0.0] - 2023-05-02
 
