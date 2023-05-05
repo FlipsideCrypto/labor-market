@@ -17,24 +17,58 @@ The key for the types of changes are as follows:
 
 -   CINAD (sigh-nad): Chain Is Not A Database
 
-## [2.0.3] - 2023-05-05
+## [2.0.2] - 2023-05-05
 
--   🎯 Added Requester controlled ability to set the maximum signal intent at which they can cancel.
 -   🎯 Colateral can optionally be configured to provide financialized obligation for signaled intent.
-
-## [2.0.2] - 2023-05-04
-
 -   🎯 Added N-Badge Authority mechanism to allow for complex & configurable gating mechanisms.
--   🎯 ERC-20 ($pToken) distribution (optional) to Reviewers upon successful review.
+-   ✨ Added single instance immutable factory.
+-   ✨ Added `EnforcementConfigured` and `SubmissionReviewed` events to `EnforcementCriteriaInterface`.
+-   👷 Updated file architecture to be more appropriate for the model being used.
+-   🩸 Removed the inclusion of versions.
+-   🩸 Removed all instances and usage of 'Capacity Token'.
+-   🩸 Removed all instances and usage of discrete ERC-1155 Badge definitions.
+-   🩸 Removed `LaborMarketsNetwork` due to deprecation of $rToken.
+-   🩸 Removed `LaborMarketVersions` due to streamlining of business model.
 
-## [2.0.1] - 2023-05-03
+## [2.0.1] - 2023-05-04
 
+-   ✨ Added use of encoded uuid generation for Request id using `uint256(block.timestamp,uint160(msg.sender))`.
+-   ✨ Added atomic ERC-20 ($pToken) depositing at the time of submitting a new Request.
+-   ✨ Added atomic ERC-20 ($pToken) distribution to Reviewers upon successful review.
+-   ✨ Added claiming of remainder for unused all $pTokens upon enforcement phase conclusion.
+-   ✨ Added withdrawal of all related $pToken when calling `withdrawRequest`.
+-   ✨ Added contextual returns to `claimRemainder` with `pTokenProviderSuccess` and `pTokenReviewerSuccess`.
+-   ✨ Added requirement check to `signal` preventing the signaled Provider intent from exceeding the maximum.
+-   ✨ Added requirement check to `signalReview` preventing the signaled Reviewer intent from exceeding the maximum.
 -   ✨ Updated `submissionId` to be defined as `uint256(uint160(msg.sender))` due to the 1 submission per address limit.
     -   📝 This will always result in a unique id relative to the provider.
--   🎯 Added `maxSubmissions` to `Request` experienced explicitly by providers through `signal`.
--   🎯 Added `maxReviews` to `Request` experienced explicitly by reviewers through `review`.
+-   ✨ Added `providerLimit` to `ServiceRequest` experienced explicitly by providers through `signal`.
+-   ✨ Added `reviewerLimit` to `ServiceRequest` experienced explicitly by reviewers through `review`.
+-   ✨ Added `pTokenProviderTotal` to `ServiceRequest` to reflect the total number of $pTokens for Providers deposited.
+-   ✨ Added `pTokenReviewerTotal` to `ServiceRequest` to reflect the total number of $pTokens for Reviewers deposited.
+-   ✨ Added `pTokenReviewer` to `ServiceRequest` to reflect the token used to incentivize Reviewers.
+-   ✨ Added state of `providersArrived` and `reviewersArrived` to statically track the number of participants.
+-   ✨ Added `uri` to `review` to enable linked comments/responses with the emission of `RequestReviewed`.
+-   ✨ Added the ability to set Provider incentive to zero.
+-   ✨ Added the ability to set Reviewer incentive to zero.
+-   ✨ Added native management of the enforcement criteria when deploying a Market.
+-   ✨ Added sender-related configuration of `ScalableLikert` with `auxilaries`, `alphas`, and `betas`.
+-   👷 Updated `providers` and `reviewers` in `ServiceSignalState` from `uint128` to `uint64`.
+-   👷 Updated `RequestConfigured` event to contain newly added fields to `ServiceRequest` (all values are reflected).
+-   👷 Renamed `pToken` in `ServiceRequest` to `pTokenProvider` to reflect the token used to incentivize Providers.
 -   👷🔮 Only when the `Enforcement Criteria` returns `newSubmission` as `true` is review signal intent deducted.
 -   👷🔮 A customized `Enforcement Criteria` may return a non-standard `intentChange` enabling for more complex logic.
+-   👷 Reviewers may only "signal again" until the enforcement phase has concluded.
+-   👷 Updated `RemainderClaimed` to include `settled` reflecting whether or not all remainder has been claimed.
+-   👷 Struct values deleted upon `withdrawRequest` being called updated to reflect underlying struct changes.
+-   👷 Include all 4 fields in `ServiceSignalState` to equal `0` in order to have permission to withdraw a Request.
+-   🐛 Fixed denial of service bug in enforcement module implementation by localizing config to `msg.sender`.
+-   🩸 Removed ability to have an unlimited amount of Submissions or Reviews.
+-   🩸 Removed competitive nature from ScalableLikert to promotoe cooperative network organization.
+-   🩸 Removed hard-coded 5 level `ScalableLikert`.
+-   🩸 Removed hard-coded scaling to 100 point scale in `ScalableLikert`.
+-   🩸 CINAD: Removed `uri` being stored in `LaborMarketConfiguration`.
+-   🩸 CINAD: `getRewards` from Labor Market contract as it is logic that belongs in the enforcement criteria.
 
 ## [2.0.0] - 2023-05-02
 

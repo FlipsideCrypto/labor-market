@@ -3,13 +3,24 @@
 pragma solidity ^0.8.17;
 
 /// @dev Core dependencies.
-import { LaborMarketManager } from './LaborMarketManager.sol';
+import { LaborMarketInterface } from './interfaces/LaborMarketInterface.sol';
+import { Initializable } from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
+import { Context } from '@openzeppelin/contracts/utils/Context.sol';
+
+/// @dev Helper interfaces
+import { EnforcementCriteriaInterface } from './interfaces/Enforcement/EnforcementCriteriaInterface.sol';
 
 /// @dev Helper libraries.
 import { EnumerableSet } from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
-contract LaborMarket is LaborMarketManager {
+contract LaborMarket is LaborMarketInterface, Initializable, Context {
     using EnumerableSet for EnumerableSet.AddressSet;
+
+    /// @dev The address of the Labor Market deployer.
+    address public deployer;
+
+    /// @dev The enforcement criteria module used for this Labor Market.
+    EnforcementCriteriaInterface internal criteria;
 
     /// @dev Primary struct containing the definition of a Request.
     mapping(uint256 => ServiceRequest) public requestIdToRequest;
@@ -22,6 +33,45 @@ contract LaborMarket is LaborMarketManager {
 
     /// @dev Definition of active Provider submissions for a request.
     mapping(uint256 => EnumerableSet.AddressSet) internal requestIdToProviders;
+
+    /// @dev Prevent implementation from being initialized.
+    constructor() {
+        _disableInitializers();
+    }
+
+    /**
+     * @notice Initializes the Labor Market contract.
+     * @param _deployer The address of the deployer.
+     * @param _criteria The enforcement criteria module used for this Labor Market.
+     * @param _auxilaries The auxiliary values for the criteria that is being used.
+     * @param _alphas The alpha values for the criteria that is being used.
+     * @param _betas The beta values for the criteria that is being used.
+     */
+    function initialize(
+        address _deployer,
+        EnforcementCriteriaInterface _criteria,
+        uint256[] calldata _auxilaries,
+        uint256[] calldata _alphas,
+        uint256[] calldata _betas
+    ) external initializer {
+        /// @dev Set the deployer.
+        deployer = _deployer;
+
+        /// @dev Configure the Labor Market state control.
+        criteria = _criteria;
+
+        /// @notice Set the auxiliary value for the criteria that is being used.
+        /// @dev This is stored as a relative `uint256` however you may choose to bitpack
+        ///      this value with a segment of smaller bits which is only measurable by
+        ///      enabled enforcement criteria.
+        /// @dev Cross-integration of newly connected modules CANNOT be audited therefore,
+        ///      all onus and liability of the integration is on the individual market
+        ///      instantiator and the module developer.
+        criteria.setConfiguration(_auxilaries, _alphas, _betas);
+
+        /// @dev Announce the configuration of the Labor Market.
+        emit LaborMarketConfigured(_deployer, _criteria);
+    }
 
     /**
      * @notice Creates a service request.
@@ -46,6 +96,9 @@ contract LaborMarket is LaborMarketManager {
             'LaborMarket::submitRequest: Invalid timestamps'
         );
 
+        /// @notice Ensure the reviewer and provider limit are not zero.
+        require(_request.providerLimit > 0 && _request.reviewerLimit > 0, 'LaborMarket::submitRequest: Invalid limits');
+
         /// @dev Generate the uuid for the request using the timestamp and address.
         requestId = uint256(keccak256(abi.encodePacked(uint96(block.timestamp), uint160(_msgSender()))));
 
@@ -59,14 +112,26 @@ contract LaborMarket is LaborMarketManager {
             _request.signalExp,
             _request.submissionExp,
             _request.enforcementExp,
-            _request.pTokenQ,
-            _request.pToken,
+            _request.providerLimit,
+            _request.reviewerLimit,
+            _request.pTokenProviderTotal,
+            _request.pTokenReviewerTotal,
+            _request.pTokenProvider,
+            _request.pTokenReviewer,
             _uri
         );
 
         /// @notice Provide the funding for the request.
-        /// @dev This call is made after the request is stored to prevent re-entrancy.
-        _request.pToken.transferFrom(_msgSender(), address(this), _request.pTokenQ);
+        if (_request.pTokenProviderTotal > 0) {
+            /// @dev Transfer the provider tokens that support the compensation of the Request.
+            _request.pTokenProvider.transferFrom(_msgSender(), address(this), _request.pTokenProviderTotal);
+        }
+
+        /// @notice Provide the funding for the request.
+        if (_request.pTokenReviewerTotal > 0) {
+            /// @dev Transfer the reviewer tokens that support the compensation of the Request.
+            _request.pTokenReviewer.transferFrom(_msgSender(), address(this), _request.pTokenReviewerTotal);
+        }
     }
 
     /**
@@ -76,13 +141,26 @@ contract LaborMarket is LaborMarketManager {
      * Requirements:
      * - The signal deadline has not passed.
      * - The user has not already signaled.
+     * - The Signal Limit has not been reached.
      */
     function signal(uint256 _requestId) public virtual {
+        /// @dev Pull the request out of the storage slot.
+        ServiceRequest storage request = requestIdToRequest[_requestId];
+
         /// @notice Ensure the signal phase is still active.
         require(
             block.timestamp <= requestIdToRequest[_requestId].signalExp,
             'LaborMarket::signal: Signal deadline passed'
         );
+
+        /// @dev Retrieve the state of the providers for this request.
+        ServiceSignalState storage signalState = requestIdToSignalState[_requestId];
+
+        /// @dev Confirm the maximum number of providers is never exceeded.
+        require(signalState.providers + 1 <= request.providerLimit, 'LaborMarket::signal: Exceeds signal limit');
+
+        /// @notice Increment the number of providers that have signaled.
+        ++signalState.providers;
 
         /// @notice Get the performance state of the user.
         uint24 performance = requestIdToAddressToPerformance[_requestId][_msgSender()];
@@ -90,15 +168,6 @@ contract LaborMarket is LaborMarketManager {
         /// @notice Require the user has not signaled.
         /// @dev Get the first bit of the user's signal value.
         require(performance & 0x3 == 0, 'LaborMarket::signal: Already signaled');
-
-        /// @notice Increment the number of providers that have signaled.
-        ++requestIdToSignalState[_requestId].providers;
-
-        // TODO: Add check that signal does not exceed max providers:
-        // require(
-        //     requestIdToSignalState[_requestId].providers <= request.maxProviders,
-        //     'LaborMarket::signal: Exceeds signal capacity'
-        // );
 
         /// @notice Set the first two bits of the performance state to 1 to indicate the user has signaled
         ///         without affecting the rest of the performance state.
@@ -121,11 +190,23 @@ contract LaborMarket is LaborMarketManager {
      * - Quantity has to be less than 4,194,304.
      */
     function signalReview(uint256 _requestId, uint24 _quantity) public virtual {
-        /// @notice Ensure the signal phase is still active.
+        /// @dev Pull the request out of the storage slot.
+        ServiceRequest storage request = requestIdToRequest[_requestId];
+
+        /// @notice Ensure the enforcement phase is still active.
+        require(block.timestamp <= request.enforcementExp, 'LaborMarket::signalReview: Enforcement deadline passed');
+
+        /// @dev Retrieve the state of the providers for this request.
+        ServiceSignalState storage signalState = requestIdToSignalState[_requestId];
+
+        /// @notice Ensure the signal limit is not exceeded.
         require(
-            block.timestamp <= requestIdToRequest[_requestId].signalExp,
-            'LaborMarket::signalReview: Signal deadline passed'
+            signalState.reviewers + _quantity <= request.reviewerLimit,
+            'LaborMarket::signalReview: Exceeds signal limit'
         );
+
+        /// @notice Increment the number of reviewers that have signaled.
+        signalState.reviewers += _quantity;
 
         /// @notice Get the performance state of the user.
         uint24 performance = requestIdToAddressToPerformance[_requestId][_msgSender()];
@@ -137,16 +218,10 @@ contract LaborMarket is LaborMarketManager {
 
         /// @notice Ensure that we are the intent will not overflow the 22 bits saved for the quantity.
         /// @dev Mask the `_quantity` down to 22 bits to prevent overflow and user error.
-        /// TODO: We may want to lower this.
         require(
             reviewIntent + (_quantity & 0x3fffff) <= 4_194_304,
-            'LaborMarket::signalReview: Exceeds signal capacity'
+            'LaborMarket::signalReview: Exceeds maximum signal value'
         );
-
-        /// @notice Increment the number of reviewers that have signaled.
-        requestIdToSignalState[_requestId].reviewers += _quantity;
-
-        // TODO: Add check that signal does not exceed max review: https://github.com/MetricsDAO/xyz/issues/633
 
         /// @notice Update the intent of reviewing by summing already signaled quantity with the new quantity
         ///         and then shift it to the left by two bits to make room for the intent of providing.
@@ -164,14 +239,14 @@ contract LaborMarket is LaborMarketManager {
      * @notice Allows a service provider to fulfill a service request.
      * @param _requestId The id of the service request being fulfilled.
      * @param _uri The uri of the service submission data.
-     * @return participationId The id of the service submission.
+     * @return submissionId The id of the service submission.
      *
      * Requirements:
      * - The provider has to have signaled.
      * - The submission deadline has not passed.
      * - The provider has not already submitted.
      */
-    function provide(uint256 _requestId, string calldata _uri) external returns (uint256 participationId) {
+    function provide(uint256 _requestId, string calldata _uri) external returns (uint256 submissionId) {
         /// @dev Get the request out of storage to warm the slot.
         ServiceRequest storage request = requestIdToRequest[_requestId];
 
@@ -184,14 +259,13 @@ contract LaborMarket is LaborMarketManager {
         /// @notice Ensure that the provider has signaled, but has not already submitted.
         /// @dev Get the first two bits of the user's performance value.
         ///      0: Not signaled, 1: Signaled, 2: Submitted.
-        /// TODO: Add or check to see if req = 0 in the case that signal was not required
         require(performance & 0x3 == 1, 'LaborMarket::provide: Not signaled');
 
         /// @dev Add the Provider to the list of submissions.
         requestIdToProviders[_requestId].add(_msgSender());
 
-        /// @dev Set the participation ID to reflect the providers address.
-        participationId = uint256(uint160(_msgSender()));
+        /// @dev Set the submission ID to reflect the providers address.
+        submissionId = uint256(uint160(_msgSender()));
 
         /// @dev Provider has submitted and set the value of the first two bits to 2.
         requestIdToAddressToPerformance[_requestId][_msgSender()] =
@@ -200,8 +274,11 @@ contract LaborMarket is LaborMarketManager {
             /// @dev Set the first two bits to 2.
             0x2;
 
+        /// @dev Add signal state to the request.
+        requestIdToSignalState[_requestId].providersArrived += 1;
+
         /// @notice Announce the submission of a service provider.
-        emit RequestFulfilled(_msgSender(), _requestId, participationId, _uri);
+        emit RequestFulfilled(_msgSender(), _requestId, submissionId, _uri);
     }
 
     /**
@@ -219,21 +296,26 @@ contract LaborMarket is LaborMarketManager {
     function review(
         uint256 _requestId,
         uint256 _submissionId,
-        uint256 _score
+        uint256 _score,
+        string calldata _uri
     ) public virtual {
         /// @notice Ensure that no one is grading their own submission.
         require(_submissionId != uint256(uint160(_msgSender())), 'LaborMarket::review: Cannot review own submission');
 
+        /// @notice Get the request out of storage to warm the slot.
+        ServiceRequest storage request = requestIdToRequest[_requestId];
+
         /// @notice Ensure the request is still in the enforcement phase.
-        require(
-            block.timestamp <= requestIdToRequest[_requestId].enforcementExp,
-            'LaborMarket::review: Enforcement deadline passed'
-        );
+        require(block.timestamp <= request.enforcementExp, 'LaborMarket::review: Enforcement deadline passed');
 
         /// @notice Make the external call into the enforcement module to submit the callers score.
-        /// TODO: How is it even possible that we don't need to pass the reviewer address?
-        /// TODO: Pretty sure that we are going to have to.
-        (bool newSubmission, uint24 intentChange) = criteria.enforce(_requestId, _submissionId, _score, address(0));
+        (bool newSubmission, uint24 intentChange) = criteria.enforce(
+            _requestId,
+            _submissionId,
+            _score,
+            request.pTokenProviderTotal / request.providerLimit,
+            _msgSender()
+        );
 
         /// @notice If the user is scoring a new submission, then deduct their signal.
         /// @dev This implicitly enables the ability to have an enforcement criteria that supports
@@ -262,8 +344,20 @@ contract LaborMarket is LaborMarketManager {
                 /// @dev Shift the remaining signal value minus 1 to the left by 2 bits to fill the 22.
                 ((remainingIntent - intentChange) << 2);
 
+            /// @dev Decrement the total amount of enforcement capacity needed to finalize this request.
+            requestIdToSignalState[_requestId].reviewersArrived += intentChange;
+
+            /// @notice Determine if the request incentivized reviewers to participate.
+            if (request.pTokenReviewerTotal > 0)
+                /// @notice Transfer the tokens from the Market to the Reviewer.
+                request.pTokenReviewer.transferFrom(
+                    address(this),
+                    _msgSender(),
+                    request.pTokenReviewerTotal / request.reviewerLimit
+                );
+
             /// @notice Announce the new submission of a score by a maintainer.
-            emit RequestReviewed(_msgSender(), _requestId, _submissionId, _score);
+            emit RequestReviewed(_msgSender(), _requestId, _submissionId, _score, _uri);
         }
     }
 
@@ -289,8 +383,9 @@ contract LaborMarket is LaborMarketManager {
         require(block.timestamp >= request.enforcementExp, 'LaborMarket::claim: Enforcement deadline not passed');
 
         /// @notice Get the rewards attributed to this submission.
-        (uint256 amount, bool requiresSubmission) = criteria.rewards(_requestId, _submissionId, request.pTokenQ);
+        (uint256 amount, bool requiresSubmission) = criteria.rewards(_requestId, _submissionId);
 
+        /// @notice Ensure the submission has funds to claim.
         if (amount != 0) {
             /// @notice Recover the address of the submission id.
             address provider = address(uint160(_submissionId));
@@ -303,7 +398,7 @@ contract LaborMarket is LaborMarketManager {
             require(!requiresSubmission || removed, 'LaborMarket::claim: Invalid submission claim');
 
             /// @notice Transfer the pTokens to the network participant.
-            request.pToken.transfer(provider, amount);
+            request.pTokenProvider.transfer(provider, amount);
 
             /// @notice Update health status for bulk processing offchain.
             success = true;
@@ -327,7 +422,16 @@ contract LaborMarket is LaborMarketManager {
      * - The enforcement deadline has passed.
      * - The requester has a remainder to claim.
      */
-    function claimRemainder(uint256 _requestId) public virtual returns (bool success, uint256 amount) {
+    function claimRemainder(uint256 _requestId)
+        public
+        virtual
+        returns (
+            bool pTokenProviderSuccess,
+            bool pTokenReviewerSuccess,
+            uint256 pTokenProviderSurplus,
+            uint256 pTokenReviewerSurplus
+        )
+    {
         /// @dev Get the request out of storage to warm the slot.
         ServiceRequest storage request = requestIdToRequest[_requestId];
 
@@ -337,27 +441,60 @@ contract LaborMarket is LaborMarketManager {
             'LaborMarket::claimRemainder: Enforcement deadline not passed'
         );
 
-        /// @dev Determine the amount of undistributed money remaining in the request.
-        amount = criteria.remainder(_requestId, request.pTokenQ);
+        /// @notice Get the signal state of the request.
+        ServiceSignalState storage signalState = requestIdToSignalState[_requestId];
 
-        /// @notice Redistribute the funds that were not earned.
-        /// @dev This model has been implemented to allow for bulk distribution of unclaimed rewards to
-        ///      assist in keeping the economy as healthy as possible.
-        if (amount != 0) {
-            /// @dev Pull the address of the requester out of storage.
-            address requester = address(uint160(_requestId));
+        /// @notice Determine how many of the expected providers never showed up.
+        uint64 unarrivedProviders = signalState.providers - signalState.providersArrived;
 
-            /// @dev Transfer the remainder of the deposit funds back to the requester.
-            request.pToken.transfer(requester, amount);
+        /// @notice Determine the amount of available provider shares never redeemed.
+        pTokenProviderSurplus = unarrivedProviders * (request.pTokenProviderTotal / request.providerLimit);
 
-            /// @dev Update health status for bulk processing offchain.
-            success = true;
+        /// @notice Determine how many of the expected reviewers never showed up.
+        uint64 unarrivedReviewers = signalState.reviewers - signalState.reviewersArrived;
 
-            /// @dev Announce the claiming of the remainder.
-            emit RemainderClaimed(_msgSender(), _requestId, amount, requester);
+        /// @notice Determine the amount of available reviewer shares never redeemed.
+        pTokenReviewerSurplus = unarrivedReviewers * (request.pTokenReviewerTotal / request.reviewerLimit);
+
+        /// @notice Determine the amount of undistributed money remaining in the request.
+        /// @dev This accounts for funds that were attempted to be earned, but failed to be by
+        ///      not meeting the enforcement standards of the criteria module enabled.
+        pTokenProviderSurplus += criteria.remainder(_requestId);
+
+        /// @dev Pull the address of the requester out of storage.
+        address requester = address(uint160(_requestId));
+
+        /// @notice This model has been implemented to allow for bulk distribution of unclaimed rewards to
+        ///         assist in keeping the economy as healthy as possible.
+
+        /// @notice Redistribute the Provider allocated funds that were not earned.
+        if (pTokenProviderSurplus != 0) {
+            /// @notice Transfer the remainder of the deposit funds back to the requester.
+            request.pTokenProvider.transfer(requester, pTokenProviderSurplus);
+
+            /// @dev Bubble up the success to the return.
+            pTokenProviderSuccess = true;
         }
 
-        /// @notice If there were no funds to reclaim, acknowledge the failure of the transaction
+        /// @notice Redistribute the Reviewer allocated funds that were not earned.
+        if (pTokenReviewerSurplus != 0) {
+            /// @notice Transfer the remainder of the deposit funds back to the requester.
+            request.pTokenReviewer.transfer(requester, pTokenReviewerSurplus);
+
+            /// @notice Bubble up the success to the return.
+            pTokenReviewerSuccess = true;
+        }
+
+        /// @notice Announce a simple event to allow for offchain processing.
+        if (pTokenProviderSuccess || pTokenReviewerSuccess) {
+            /// @dev Determine if there will be a remainder after the claim.
+            bool settled = pTokenProviderSurplus == 0 && pTokenReviewerSurplus == 0;
+
+            /// @notice Announce the claiming of a service requester reward.
+            emit RemainderClaimed(_msgSender(), _requestId, requester, settled);
+        }
+
+        /// @notice If there were no funds to reclaim, acknowledge the failure of the claim
         ///         and return false without blocking the transaction.
     }
 
@@ -383,15 +520,25 @@ contract LaborMarket is LaborMarketManager {
         );
 
         /// @notice Delete the request and prevent further action.
-        delete request.pToken;
-        delete request.pTokenQ;
         delete request.signalExp;
         delete request.submissionExp;
         delete request.enforcementExp;
+        delete request.providerLimit;
+        delete request.reviewerLimit;
+        delete request.pTokenProviderTotal;
+        delete request.pTokenReviewerTotal;
+        delete request.pTokenProvider;
+        delete request.pTokenReviewer;
 
-        /// @notice Return the $pToken back to the Requester.
-        /// @dev This is done last to prevent reentrancy attacks.
-        request.pToken.transfer(_msgSender(), request.pTokenQ);
+        if (request.pTokenProviderTotal > 0) {
+            /// @notice Return the $pToken back to the Requester.
+            request.pTokenProvider.transferFrom(address(this), _msgSender(), request.pTokenProviderTotal);
+        }
+
+        if (request.pTokenReviewerTotal > 0) {
+            /// @dev Transfer the reviewer tokens that support the compensation of the Request.
+            request.pTokenReviewer.transferFrom(address(this), _msgSender(), request.pTokenReviewerTotal);
+        }
 
         /// @dev Announce the withdrawal of a request.
         emit RequestWithdrawn(_requestId);

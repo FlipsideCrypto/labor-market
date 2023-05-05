@@ -4,44 +4,45 @@ pragma solidity ^0.8.17;
 
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
+/// @dev Helper interfaces.
+import { EnforcementCriteriaInterface } from './Enforcement/EnforcementCriteriaInterface.sol';
+
 interface LaborMarketInterface {
-    struct LaborMarketConfiguration {
-        string marketUri;
-        address owner;
-        Modules modules;
-    }
-
-    struct Modules {
-        address network;
-        address enforcement;
-        bytes32 enforcementKey;
-    }
-
     struct ServiceRequest {
         uint48 signalExp;
         uint48 submissionExp;
         uint48 enforcementExp;
-        uint256 pTokenQ;
-        IERC20 pToken;
+        uint64 providerLimit;
+        uint64 reviewerLimit;
+        uint256 pTokenProviderTotal;
+        uint256 pTokenReviewerTotal;
+        IERC20 pTokenProvider;
+        IERC20 pTokenReviewer;
     }
 
     struct ServiceSignalState {
-        uint128 providers;
-        uint128 reviewers;
+        uint64 providers;
+        uint64 reviewers;
+        uint64 providersArrived;
+        uint64 reviewersArrived;
     }
 
-    /// @notice emitted when labor market parameters are updated.
-    event LaborMarketConfigured(LaborMarketConfiguration indexed configuration);
+    /// @notice Emitted when labor market parameters are updated.
+    event LaborMarketConfigured(address deployer, EnforcementCriteriaInterface criteria);
 
     /// @notice emitted when a new service request is made.
     event RequestConfigured(
         address indexed requester,
-        uint256 indexed requestId,
+        uint256 requestId,
         uint48 signalExp,
         uint48 submissionExp,
         uint48 enforcementExp,
-        uint256 pTokenQ,
-        IERC20 indexed pToken,
+        uint64 providerLimit,
+        uint64 reviewerLimit,
+        uint256 pTokenProviderTotal,
+        uint256 pTokenReviewerTotal,
+        IERC20 indexed pTokenProvider,
+        IERC20 indexed pTokenReviewer,
         string uri
     );
 
@@ -50,9 +51,6 @@ interface LaborMarketInterface {
 
     /// @notice emitted when a maintainer signals a review.
     event ReviewSignal(address indexed signaler, uint256 indexed requestId, uint256 indexed quantity);
-
-    /// @notice emitted when a service request is withdrawn.
-    event RequestWithdrawn(uint256 indexed requestId);
 
     /// @notice emitted when a service request is fulfilled.
     event RequestFulfilled(
@@ -67,7 +65,8 @@ interface LaborMarketInterface {
         address indexed reviewer,
         uint256 indexed requestId,
         uint256 indexed submissionId,
-        uint256 reviewScore
+        uint256 reviewScore,
+        string uri
     );
 
     /// @notice emitted when a service submission is claimed.
@@ -80,7 +79,10 @@ interface LaborMarketInterface {
     );
 
     /// @notice emitted when a remainder is claimed.
-    event RemainderClaimed(address indexed claimer, uint256 indexed requestId, uint256 remainderAmount, address to);
+    event RemainderClaimed(address indexed claimer, uint256 indexed requestId, address indexed to, bool settled);
 
-    function initialize(LaborMarketConfiguration calldata _configuration) external;
+    /// @notice emitted when a service request is withdrawn.
+    event RequestWithdrawn(uint256 indexed requestId);
+
+    // TODO: Put the correct functions here. This is not LaborMarketManagerInterface
 }
