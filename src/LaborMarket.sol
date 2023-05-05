@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 
 /// @dev Core dependencies.
 import { LaborMarketInterface } from './interfaces/LaborMarketInterface.sol';
-import { Initializable } from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
+import { NBadgeAuth } from './auth/NBadgeAuth.sol';
 
 /// @dev Helper interfaces
 import { EnforcementCriteriaInterface } from './interfaces/enforcement/EnforcementCriteriaInterface.sol';
@@ -12,7 +12,7 @@ import { EnforcementCriteriaInterface } from './interfaces/enforcement/Enforceme
 /// @dev Helper libraries.
 import { EnumerableSet } from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
-contract LaborMarket is LaborMarketInterface, Initializable {
+contract LaborMarket is LaborMarketInterface, NBadgeAuth {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     /// @dev The enforcement criteria module used for this Labor Market.
@@ -79,11 +79,11 @@ contract LaborMarket is LaborMarketInterface, Initializable {
      * - Caller has to have approved the LaborMarket contract to transfer the payment token.
      * - Timestamps must be valid and chronological.
      */
-    function submitRequest(ServiceRequest calldata _request, string calldata _uri)
-        public
-        virtual
-        returns (uint256 requestId)
-    {
+    function submitRequest(
+        uint8 _blockNonce,
+        ServiceRequest calldata _request,
+        string calldata _uri
+    ) public virtual requiresAuth returns (uint256 requestId) {
         /// @notice Ensure the timestamps of the request phases are valid.
         require(
             block.timestamp < _request.signalExp &&
@@ -96,7 +96,7 @@ contract LaborMarket is LaborMarketInterface, Initializable {
         require(_request.providerLimit > 0 && _request.reviewerLimit > 0, 'LaborMarket::submitRequest: Invalid limits');
 
         /// @notice Generate the uuid for the request using the timestamp and address.
-        requestId = uint256(keccak256(abi.encodePacked(uint96(block.timestamp), uint160(msg.sender))));
+        requestId = uint256(keccak256(abi.encodePacked(_blockNonce, uint88(block.timestamp), uint160(msg.sender))));
 
         /// @notice Ensure the request does not already exist.
         require(requestIdToRequest[requestId].signalExp == 0, 'LaborMarket::submitRequest: Request already exists');
@@ -142,7 +142,7 @@ contract LaborMarket is LaborMarketInterface, Initializable {
      * - The user has not already signaled.
      * - The Signal Limit has not been reached.
      */
-    function signal(uint256 _requestId) public virtual {
+    function signal(uint256 _requestId) public virtual requiresAuth {
         /// @dev Pull the request out of the storage slot.
         ServiceRequest storage request = requestIdToRequest[_requestId];
 
@@ -188,7 +188,7 @@ contract LaborMarket is LaborMarketInterface, Initializable {
      * Requirements:
      * - Quantity has to be less than 4,194,304.
      */
-    function signalReview(uint256 _requestId, uint24 _quantity) public virtual {
+    function signalReview(uint256 _requestId, uint24 _quantity) public virtual requiresAuth {
         /// @dev Pull the request out of the storage slot.
         ServiceRequest storage request = requestIdToRequest[_requestId];
 

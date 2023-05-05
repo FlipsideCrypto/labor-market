@@ -6,7 +6,7 @@ require('chai').use(require('chai-as-promised')).should();
 
 const ethers = hre.ethers;
 
-// import type { ServiceRequest } from '../package/types/src/LaborMarket/LaborMarket';
+import type { LaborMarketInterface } from '../package/types/src/LaborMarket';
 
 async function getCurrentBlockTimestamp() {
     return hre.ethers.provider.getBlock('latest').then((block: any) => block.timestamp);
@@ -37,10 +37,12 @@ describe('Labor Market', function () {
         const enforcement = await EnforcementCriteria.deploy();
         await enforcement.deployed();
 
-        return { factory, enforcement };
+        return { laborMarketSingleton, factory, enforcement };
     }
 
     async function deployCoins() {
+        const { deployer } = await loadFixture(getSigners);
+
         const ERC20 = await ethers.getContractFactory('ERC20FreeMint');
 
         const [PEPE, wETH, NEAR, USDC] = await Promise.all([
@@ -57,6 +59,15 @@ describe('Labor Market', function () {
             USDC.deployed(),
         ]);
 
+        const [pepeMint, wethMint, nearMint, usdcMint] = await Promise.all([
+            pepe.freeMint(deployer.address, ethers.utils.parseEther('1000000')),
+            weth.freeMint(deployer.address, ethers.utils.parseEther('1000000')),
+            near.freeMint(deployer.address, ethers.utils.parseEther('1000000')),
+            usdc.freeMint(deployer.address, ethers.utils.parseEther('1000000')),
+        ]);
+
+        await Promise.all([pepeMint.wait(), wethMint.wait(), nearMint.wait(), usdcMint.wait()]);
+
         return { pepe, weth, near, usdc };
     }
 
@@ -65,15 +76,26 @@ describe('Labor Market', function () {
         alphas: number[] = [0, 1, 2, 3, 4],
         betas: number[] = [0, 0, 100, 200, 300],
     ) {
-        const { factory, enforcement } = await loadFixture(deployFactory);
+        const { factory, enforcement, laborMarketSingleton } = await loadFixture(deployFactory);
         const { deployer } = await loadFixture(getSigners);
 
-        const _criteria = enforcement.address; // EnforcementCriteriaInterface _criteria,
+        const args = [
+            deployer.address, // address _deployer,
+            enforcement.address, // EnforcementCriteriaInterface _criteria,
+            auxilaries, // uint256[] memory _auxilaries,
+            alphas, // uint256[] memory _alphas,
+            betas, // uint256[] memory _betas
+        ];
 
-        const marketAddress = await factory.createLaborMarket(deployer.address, _criteria, auxilaries, alphas, betas);
+        const marketAddress = await factory.callStatic.createLaborMarket(...args);
+
+        await expect(factory.createLaborMarket(...args))
+            .to.emit(factory, 'LaborMarketCreated')
+            .withArgs(marketAddress, deployer.address, laborMarketSingleton.address);
+
         const market = await ethers.getContractAt('LaborMarket', marketAddress);
 
-        return { market, enforcement };
+        return { market, factory, enforcement };
     }
 
     describe('LaborMarketFactory.sol', async () => {
@@ -100,10 +122,10 @@ describe('Labor Market', function () {
 
             const now = await getCurrentBlockTimestamp();
 
-            const request = {
+            const request: LaborMarketInterface.ServiceRequestStruct = {
                 signalExp: now + 60 * 60 * 24 * 7, // uint48
-                submissionExp: now + 60 * 60 * 24 * 7, // uint48
-                enforcementExp: now + 60 * 60 * 24 * 7, // uint48
+                submissionExp: now + 60 * 60 * 24 * 7 + 5, // uint48
+                enforcementExp: now + 60 * 60 * 24 * 7 + 10, // uint48
                 providerLimit: 100, // uint64
                 reviewerLimit: 100, // uint64
                 pTokenProviderTotal: 100, // uint256
@@ -112,9 +134,7 @@ describe('Labor Market', function () {
                 pTokenReviewer: usdc.address, // IERC20
             };
 
-            console.log('request', request);
-
-            await expect(market.submitRequest(request, 'insertURIhere')).to.emit(market, 'RequestConfigured');
+            expect(await market.submitRequest(0, request, 'insertURIhere')).to.emit(market, 'RequestConfigured');
         });
     });
 });

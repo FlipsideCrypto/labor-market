@@ -5,14 +5,10 @@ pragma solidity ^0.8.17;
 /// @dev Core dependencies.
 import { NBadgeAuthInterface } from '../interfaces/auth/NBadgeAuthInterface.sol';
 import { Initializable } from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
-import { NBadgeAuthority } from './NBadgeAuthority.sol';
 
 abstract contract NBadgeAuth is NBadgeAuthInterface, Initializable {
     /// @dev The address of the Labor Market deployer.
     address public deployer;
-
-    /// @dev The N-Badge module used for access management.
-    NBadgeAuthority public nBadgeAuthority;
 
     /// @dev The list of nodes that are allowed to call this contract.
     mapping(bytes4 => Node) internal sigToNode;
@@ -28,23 +24,19 @@ abstract contract NBadgeAuth is NBadgeAuthInterface, Initializable {
     /**
      * @notice Initialize the contract with the deployer and the N-Badge module.
      * @param _deployer The address of the deployer.
-     * @param _nBadgeAuthority The address of the N-Badge module.
+     * @param _sigs The list of function signatures N-Badge is applied to.
+     * @param _nodes The list of nodes that are allowed to call this contract.
      */
     function __NBadgeAuth_init(
         address _deployer,
-        NBadgeAuthority _nBadgeAuthority,
         bytes4[] calldata _sigs,
         Node[] calldata _nodes
     ) internal initializer {
         /// @notice Set the local deployer of the Labor Market.
         deployer = _deployer;
 
-        /// @notice Set the N-Badge module.
-        nBadgeAuthority = _nBadgeAuthority;
-
         /// @notice Announce the change in access configuration.
         emit OwnershipTransferred(address(0), _deployer);
-        emit AuthorityUpdated(address(0), _nBadgeAuthority);
 
         /// @dev Initialize the contract.
         __NBadgeAuth_init_unchained(_sigs, _nodes);
@@ -70,52 +62,54 @@ abstract contract NBadgeAuth is NBadgeAuthInterface, Initializable {
 
     /**
      * @dev Determines if a user has the required credentials to call a function.
+     * @param _node The node to check.
      * @param _user The user to check.
-     * @param _sig The signature of the function to check.
      * @return True if the user has the required credentials, false otherwise.
      */
     function _canCall(
+        Node memory _node,
         address _user,
-        address,
-        bytes4 _sig
+        address
     ) internal view returns (bool) {
-        /// @dev Load in the established for this function.
-        Node memory node = sigToNode[_sig];
-
         /// @dev Load in the first badge to warm the slot.
-        Badge memory badge = node.badges[0];
+        Badge memory badge = _node.badges[0];
 
         /// @dev Load in the stack.
         uint256 points;
         uint256 i;
 
         /// @dev Determine if the user has met the proper conditions of access.
-        for (i; i < node.badges.length; i++) {
+        for (i; i < _node.badges.length; i++) {
             /// @dev Step through the nodes until we have enough points or we run out.
-            badge = node.badges[i];
+            badge = _node.badges[i];
 
             /// @notice Determine the balance of the Badge the user.
             uint256 balance = badge.badge.balanceOf(_user, badge.id);
 
-            /// @dev If the user has sufficient balance, account for the balance in points.
+            /// @notice If the user has sufficient balance, account for the balance in points.
             if (badge.min <= balance && badge.max >= balance) points += badge.points;
 
-            /// @dev If enough points have been accumulated, return true.
-            if (points >= node.required) i = node.badges.length;
+            /// @notice If enough points have been accumulated, terminate the loop.
+            if (points >= _node.required) i = _node.badges.length;
 
-            /// @dev Keep on swimming.
+            /// @notice Keep on swimming.
         }
 
-        /// @dev Final check if no mandatory badges had an insufficient balance.
-        return points >= node.required;
+        /// @notice Return if the user has met the required points.
+        return points >= _node.required;
     }
 
-    function isAuthorized(address user, bytes4 functionSig) public view virtual returns (bool) {
-        /// @dev Memoize the authority to warm the slot.
-        NBadgeAuthority auth = nBadgeAuthority;
+    /**
+     * See {NBadgeAuthInterface-isAuthorized}.
+     */
+    function isAuthorized(address user, bytes4 _sig) public view virtual returns (bool) {
+        /// @notice Load in the established for this function.
+        Node memory node = sigToNode[_sig];
 
-        // Checking if the caller is the owner only after calling the authority saves gas in most cases, but be
-        // aware that this makes protected functions uncallable even to the owner if the authority is out of order.
-        return (address(auth) != address(0) && _canCall(user, address(this), functionSig)) || user == deployer;
+        /// @notice If no configuration was set, the access of the function is open to the public.
+        bool global = node.badges.length == 0;
+
+        /// @notice Determine and return if a user has permission to call the function.
+        return (global || _canCall(node, user, address(this))) || (user == deployer && node.deployerAllowed);
     }
 }
