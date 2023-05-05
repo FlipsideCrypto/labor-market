@@ -66,14 +66,16 @@ const config: HardhatUserConfig = {
             ],
         },
     },
-    abiExporter: {
-        path: 'package/abis',
-        runOnCompile: false,
-        clear: true,
-        flat: true,
-        spacing: 2,
-        format: 'json',
-    },
+    abiExporter: [
+        {
+            path: 'package/abis',
+            runOnCompile: false,
+            clear: true,
+            flat: true,
+            spacing: 2,
+            format: 'json',
+        },
+    ],
     contractSizer: {
         alphaSort: false,
         disambiguatePaths: true,

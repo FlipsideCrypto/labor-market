@@ -6,6 +6,8 @@ require('chai').use(require('chai-as-promised')).should();
 
 const ethers = hre.ethers;
 
+// import type { ServiceRequest } from '../package/types/src/LaborMarket/LaborMarket';
+
 async function getCurrentBlockTimestamp() {
     return hre.ethers.provider.getBlock('latest').then((block: any) => block.timestamp);
 }
@@ -38,7 +40,31 @@ describe('Labor Market', function () {
         return { factory, enforcement };
     }
 
-    async function createMarket(auxilaries: number[], alphas: number[], betas: number[]) {
+    async function deployCoins() {
+        const ERC20 = await ethers.getContractFactory('ERC20FreeMint');
+
+        const [PEPE, wETH, NEAR, USDC] = await Promise.all([
+            ERC20.deploy('PEPE', 'PEPE', 18),
+            ERC20.deploy('ETH', 'ETH', 18),
+            ERC20.deploy('NEAR', 'NEAR', 18),
+            ERC20.deploy('USDC', 'USDC', 6),
+        ]);
+
+        const [pepe, weth, near, usdc] = await Promise.all([
+            PEPE.deployed(),
+            wETH.deployed(),
+            NEAR.deployed(),
+            USDC.deployed(),
+        ]);
+
+        return { pepe, weth, near, usdc };
+    }
+
+    async function createMarket(
+        auxilaries: number[] = [4],
+        alphas: number[] = [0, 1, 2, 3, 4],
+        betas: number[] = [0, 0, 100, 200, 300],
+    ) {
         const { factory, enforcement } = await loadFixture(deployFactory);
         const { deployer } = await loadFixture(getSigners);
 
@@ -50,7 +76,7 @@ describe('Labor Market', function () {
         return { market, enforcement };
     }
 
-    describe('LaborMarket.sol', async () => {
+    describe('LaborMarketFactory.sol', async () => {
         it('call: createMarket()', async () => {
             const { factory, enforcement } = await loadFixture(deployFactory);
             const { deployer } = await loadFixture(getSigners);
@@ -64,6 +90,31 @@ describe('Labor Market', function () {
                 factory,
                 'LaborMarketCreated',
             );
+        });
+    });
+
+    describe('LaborMarket.sol', async () => {
+        it('call: submitRequest()', async () => {
+            const { market } = await loadFixture(createMarket);
+            const { pepe, usdc } = await loadFixture(deployCoins);
+
+            const now = await getCurrentBlockTimestamp();
+
+            const request = {
+                signalExp: now + 60 * 60 * 24 * 7, // uint48
+                submissionExp: now + 60 * 60 * 24 * 7, // uint48
+                enforcementExp: now + 60 * 60 * 24 * 7, // uint48
+                providerLimit: 100, // uint64
+                reviewerLimit: 100, // uint64
+                pTokenProviderTotal: 100, // uint256
+                pTokenReviewerTotal: 100, // uint256
+                pTokenProvider: pepe.address, // IERC20
+                pTokenReviewer: usdc.address, // IERC20
+            };
+
+            console.log('request', request);
+
+            await expect(market.submitRequest(request, 'insertURIhere')).to.emit(market, 'RequestConfigured');
         });
     });
 });
