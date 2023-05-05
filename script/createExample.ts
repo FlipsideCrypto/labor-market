@@ -2,8 +2,8 @@ const hre = require("hardhat");
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-import { LaborMarketConfigurationInterface } from "../../package/dist/types/src/LaborMarket/LaborMarket";
-import { LaborMarket, LaborMarketNetwork, ReputationModule, ConstantLikertEnforcement, PaymentModule, ReputationToken } from "../../package/dist";
+import { LaborMarketConfigurationInterface } from "../package/dist/types/src/LaborMarket/LaborMarket";
+import { LaborMarket, LaborMarketNetwork, ReputationModule, ConstantLikertEnforcement, PaymentModule, ReputationToken } from "../package/dist";
 
 async function create() {
     const [deployer] = await ethers.getSigners();

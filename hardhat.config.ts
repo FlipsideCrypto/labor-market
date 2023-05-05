@@ -1,19 +1,17 @@
-import fs from 'fs';
 import 'hardhat-gas-reporter';
 import 'hardhat-deploy';
 import 'hardhat-watcher';
 import 'hardhat-abi-exporter';
+import 'hardhat-contract-sizer';
+import 'hardhat-docgen';
 import '@nomiclabs/hardhat-waffle';
 import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-etherscan';
 import '@typechain/hardhat';
-import 'hardhat-preprocessor';
-import 'hardhat-abi-exporter';
-import 'hardhat-contract-sizer';
-import 'hardhat-docgen';
+import 'solidity-coverage';
+
 import { HardhatUserConfig } from 'hardhat/config';
 import { task } from 'hardhat/config';
-import 'solidity-coverage';
 
 require('dotenv').config();
 require('@nomicfoundation/hardhat-chai-matchers');
@@ -23,14 +21,6 @@ const POLYGONSCAN_API_KEY = process.env.POLYGONSCAN_API_KEY;
 const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY;
 const ALCHEMY_KEY = process.env.ALCHEMY_KEY;
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
-
-function getRemappings() {
-    return fs
-        .readFileSync('remappings.txt', 'utf8')
-        .split('\n')
-        .filter(Boolean) // remove empty lines
-        .map((line) => line.trim().split('='));
-}
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -133,7 +123,7 @@ const config: HardhatUserConfig = {
     paths: {
         sources: './src', // Use ./src rather than ./contracts as Hardhat expects
         cache: './cache_hardhat', // Use a different cache for Hardhat than Foundry
-        tests: './test/hardhat',
+        tests: './test/',
     },
     typechain: {
         outDir: 'package/types',
