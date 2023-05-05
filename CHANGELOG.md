@@ -19,8 +19,10 @@ The key for the types of changes are as follows:
 
 ## [2.0.2] - 2023-05-05
 
--   🎯 Colateral can optionally be configured to provide financialized obligation for signaled intent.
--   🎯 Added N-Badge Authority mechanism to allow for complex & configurable gating mechanisms.
+-   ✨ Added gating mechanism for `NetworkGovernor` to allow for complex & configurable gating mechanisms.
+-   ✨ Added gating mechanism for `RequestSponsor` to allow for complex & configurable gating mechanisms.
+-   ✨ Added gating mechanism for `Provider` to allow for complex & configurable gating mechanisms.
+-   ✨ Added gating mechanism for `Reviewer` to allow for complex & configurable gating mechanisms.
 -   ✨ Added single instance immutable factory.
 -   ✨ Added `EnforcementConfigured` and `SubmissionReviewed` events to `EnforcementCriteriaInterface`.
 -   👷 Updated file architecture to be more appropriate for the model being used.
