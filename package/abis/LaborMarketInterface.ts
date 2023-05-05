@@ -1,509 +1,293 @@
 export const abi = [
   {
-    "inputs": [],
-    "name": "getConfiguration",
-    "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "string",
-            "name": "marketUri",
-            "type": "string"
-          },
-          {
-            "internalType": "address",
-            "name": "owner",
-            "type": "address"
-          },
-          {
-            "components": [
-              {
-                "internalType": "address",
-                "name": "network",
-                "type": "address"
-              },
-              {
-                "internalType": "address",
-                "name": "reputation",
-                "type": "address"
-              },
-              {
-                "internalType": "address",
-                "name": "enforcement",
-                "type": "address"
-              },
-              {
-                "internalType": "bytes32",
-                "name": "enforcementKey",
-                "type": "bytes32"
-              }
-            ],
-            "internalType": "struct LaborMarketConfigurationInterface.Modules",
-            "name": "modules",
-            "type": "tuple"
-          },
-          {
-            "components": [
-              {
-                "internalType": "address",
-                "name": "token",
-                "type": "address"
-              },
-              {
-                "internalType": "uint256",
-                "name": "tokenId",
-                "type": "uint256"
-              }
-            ],
-            "internalType": "struct LaborMarketConfigurationInterface.BadgePair",
-            "name": "delegateBadge",
-            "type": "tuple"
-          },
-          {
-            "components": [
-              {
-                "internalType": "address",
-                "name": "token",
-                "type": "address"
-              },
-              {
-                "internalType": "uint256",
-                "name": "tokenId",
-                "type": "uint256"
-              }
-            ],
-            "internalType": "struct LaborMarketConfigurationInterface.BadgePair",
-            "name": "maintainerBadge",
-            "type": "tuple"
-          },
-          {
-            "components": [
-              {
-                "internalType": "address",
-                "name": "token",
-                "type": "address"
-              },
-              {
-                "internalType": "uint256",
-                "name": "tokenId",
-                "type": "uint256"
-              }
-            ],
-            "internalType": "struct LaborMarketConfigurationInterface.BadgePair",
-            "name": "reputationBadge",
-            "type": "tuple"
-          },
-          {
-            "components": [
-              {
-                "internalType": "uint256",
-                "name": "rewardPool",
-                "type": "uint256"
-              },
-              {
-                "internalType": "uint256",
-                "name": "provideStake",
-                "type": "uint256"
-              },
-              {
-                "internalType": "uint256",
-                "name": "reviewStake",
-                "type": "uint256"
-              },
-              {
-                "internalType": "uint256",
-                "name": "submitMin",
-                "type": "uint256"
-              },
-              {
-                "internalType": "uint256",
-                "name": "submitMax",
-                "type": "uint256"
-              }
-            ],
-            "internalType": "struct LaborMarketConfigurationInterface.ReputationParams",
-            "name": "reputationParams",
-            "type": "tuple"
-          }
-        ],
-        "internalType": "struct LaborMarketConfigurationInterface.LaborMarketConfiguration",
-        "name": "",
-        "type": "tuple"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
+    "anonymous": false,
     "inputs": [
       {
+        "indexed": false,
+        "internalType": "address",
+        "name": "deployer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "criteria",
+        "type": "address"
+      }
+    ],
+    "name": "LaborMarketConfigured",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "claimer",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "requestId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "settled",
+        "type": "bool"
+      }
+    ],
+    "name": "RemainderClaimed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "requester",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "requestId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint48",
+        "name": "signalExp",
+        "type": "uint48"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint48",
+        "name": "submissionExp",
+        "type": "uint48"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint48",
+        "name": "enforcementExp",
+        "type": "uint48"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "providerLimit",
+        "type": "uint64"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "reviewerLimit",
+        "type": "uint64"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "pTokenProviderTotal",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "pTokenReviewerTotal",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "contract IERC20",
+        "name": "pTokenProvider",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "contract IERC20",
+        "name": "pTokenReviewer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "uri",
+        "type": "string"
+      }
+    ],
+    "name": "RequestConfigured",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "fulfiller",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "requestId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "submissionId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "uri",
+        "type": "string"
+      }
+    ],
+    "name": "RequestFulfilled",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "claimer",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "requestId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "submissionId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "payAmount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      }
+    ],
+    "name": "RequestPayClaimed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "reviewer",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "requestId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "submissionId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "reviewScore",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "uri",
+        "type": "string"
+      }
+    ],
+    "name": "RequestReviewed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "signaler",
+        "type": "address"
+      },
+      {
+        "indexed": true,
         "internalType": "uint256",
         "name": "requestId",
         "type": "uint256"
       }
     ],
-    "name": "getRequest",
-    "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "address",
-            "name": "serviceRequester",
-            "type": "address"
-          },
-          {
-            "internalType": "address",
-            "name": "pToken",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "pTokenQ",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "signalExp",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "submissionExp",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "enforcementExp",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "submissionCount",
-            "type": "uint256"
-          },
-          {
-            "internalType": "string",
-            "name": "uri",
-            "type": "string"
-          }
-        ],
-        "internalType": "struct LaborMarketInterface.ServiceRequest",
-        "name": "",
-        "type": "tuple"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
+    "name": "RequestSignal",
+    "type": "event"
   },
   {
+    "anonymous": false,
     "inputs": [
       {
+        "indexed": true,
         "internalType": "uint256",
-        "name": "submissionId",
+        "name": "requestId",
         "type": "uint256"
       }
     ],
-    "name": "getSubmission",
-    "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "address",
-            "name": "serviceProvider",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "requestId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "timestamp",
-            "type": "uint256"
-          },
-          {
-            "internalType": "string",
-            "name": "uri",
-            "type": "string"
-          }
-        ],
-        "internalType": "struct LaborMarketInterface.ServiceSubmission",
-        "name": "",
-        "type": "tuple"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
+    "name": "RequestWithdrawn",
+    "type": "event"
   },
   {
+    "anonymous": false,
     "inputs": [
       {
-        "components": [
-          {
-            "internalType": "string",
-            "name": "marketUri",
-            "type": "string"
-          },
-          {
-            "internalType": "address",
-            "name": "owner",
-            "type": "address"
-          },
-          {
-            "components": [
-              {
-                "internalType": "address",
-                "name": "network",
-                "type": "address"
-              },
-              {
-                "internalType": "address",
-                "name": "reputation",
-                "type": "address"
-              },
-              {
-                "internalType": "address",
-                "name": "enforcement",
-                "type": "address"
-              },
-              {
-                "internalType": "bytes32",
-                "name": "enforcementKey",
-                "type": "bytes32"
-              }
-            ],
-            "internalType": "struct LaborMarketConfigurationInterface.Modules",
-            "name": "modules",
-            "type": "tuple"
-          },
-          {
-            "components": [
-              {
-                "internalType": "address",
-                "name": "token",
-                "type": "address"
-              },
-              {
-                "internalType": "uint256",
-                "name": "tokenId",
-                "type": "uint256"
-              }
-            ],
-            "internalType": "struct LaborMarketConfigurationInterface.BadgePair",
-            "name": "delegateBadge",
-            "type": "tuple"
-          },
-          {
-            "components": [
-              {
-                "internalType": "address",
-                "name": "token",
-                "type": "address"
-              },
-              {
-                "internalType": "uint256",
-                "name": "tokenId",
-                "type": "uint256"
-              }
-            ],
-            "internalType": "struct LaborMarketConfigurationInterface.BadgePair",
-            "name": "maintainerBadge",
-            "type": "tuple"
-          },
-          {
-            "components": [
-              {
-                "internalType": "address",
-                "name": "token",
-                "type": "address"
-              },
-              {
-                "internalType": "uint256",
-                "name": "tokenId",
-                "type": "uint256"
-              }
-            ],
-            "internalType": "struct LaborMarketConfigurationInterface.BadgePair",
-            "name": "reputationBadge",
-            "type": "tuple"
-          },
-          {
-            "components": [
-              {
-                "internalType": "uint256",
-                "name": "rewardPool",
-                "type": "uint256"
-              },
-              {
-                "internalType": "uint256",
-                "name": "provideStake",
-                "type": "uint256"
-              },
-              {
-                "internalType": "uint256",
-                "name": "reviewStake",
-                "type": "uint256"
-              },
-              {
-                "internalType": "uint256",
-                "name": "submitMin",
-                "type": "uint256"
-              },
-              {
-                "internalType": "uint256",
-                "name": "submitMax",
-                "type": "uint256"
-              }
-            ],
-            "internalType": "struct LaborMarketConfigurationInterface.ReputationParams",
-            "name": "reputationParams",
-            "type": "tuple"
-          }
-        ],
-        "internalType": "struct LaborMarketConfigurationInterface.LaborMarketConfiguration",
-        "name": "_configuration",
-        "type": "tuple"
-      }
-    ],
-    "name": "initialize",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
+        "indexed": true,
+        "internalType": "address",
+        "name": "signaler",
+        "type": "address"
+      },
       {
-        "components": [
-          {
-            "internalType": "string",
-            "name": "marketUri",
-            "type": "string"
-          },
-          {
-            "internalType": "address",
-            "name": "owner",
-            "type": "address"
-          },
-          {
-            "components": [
-              {
-                "internalType": "address",
-                "name": "network",
-                "type": "address"
-              },
-              {
-                "internalType": "address",
-                "name": "reputation",
-                "type": "address"
-              },
-              {
-                "internalType": "address",
-                "name": "enforcement",
-                "type": "address"
-              },
-              {
-                "internalType": "bytes32",
-                "name": "enforcementKey",
-                "type": "bytes32"
-              }
-            ],
-            "internalType": "struct LaborMarketConfigurationInterface.Modules",
-            "name": "modules",
-            "type": "tuple"
-          },
-          {
-            "components": [
-              {
-                "internalType": "address",
-                "name": "token",
-                "type": "address"
-              },
-              {
-                "internalType": "uint256",
-                "name": "tokenId",
-                "type": "uint256"
-              }
-            ],
-            "internalType": "struct LaborMarketConfigurationInterface.BadgePair",
-            "name": "delegateBadge",
-            "type": "tuple"
-          },
-          {
-            "components": [
-              {
-                "internalType": "address",
-                "name": "token",
-                "type": "address"
-              },
-              {
-                "internalType": "uint256",
-                "name": "tokenId",
-                "type": "uint256"
-              }
-            ],
-            "internalType": "struct LaborMarketConfigurationInterface.BadgePair",
-            "name": "maintainerBadge",
-            "type": "tuple"
-          },
-          {
-            "components": [
-              {
-                "internalType": "address",
-                "name": "token",
-                "type": "address"
-              },
-              {
-                "internalType": "uint256",
-                "name": "tokenId",
-                "type": "uint256"
-              }
-            ],
-            "internalType": "struct LaborMarketConfigurationInterface.BadgePair",
-            "name": "reputationBadge",
-            "type": "tuple"
-          },
-          {
-            "components": [
-              {
-                "internalType": "uint256",
-                "name": "rewardPool",
-                "type": "uint256"
-              },
-              {
-                "internalType": "uint256",
-                "name": "provideStake",
-                "type": "uint256"
-              },
-              {
-                "internalType": "uint256",
-                "name": "reviewStake",
-                "type": "uint256"
-              },
-              {
-                "internalType": "uint256",
-                "name": "submitMin",
-                "type": "uint256"
-              },
-              {
-                "internalType": "uint256",
-                "name": "submitMax",
-                "type": "uint256"
-              }
-            ],
-            "internalType": "struct LaborMarketConfigurationInterface.ReputationParams",
-            "name": "reputationParams",
-            "type": "tuple"
-          }
-        ],
-        "internalType": "struct LaborMarketConfigurationInterface.LaborMarketConfiguration",
-        "name": "_configuration",
-        "type": "tuple"
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "requestId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "quantity",
+        "type": "uint256"
       }
     ],
-    "name": "setConfiguration",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
+    "name": "ReviewSignal",
+    "type": "event"
   }
 ] as const

@@ -14,25 +14,6 @@ const _abi = [
     anonymous: false,
     inputs: [
       {
-        indexed: true,
-        internalType: "address",
-        name: "user",
-        type: "address",
-      },
-      {
-        indexed: true,
-        internalType: "contract NBadgeAuthority",
-        name: "newAuthority",
-        type: "address",
-      },
-    ],
-    name: "AuthorityUpdated",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
         indexed: false,
         internalType: "uint8",
         name: "version",
@@ -83,7 +64,7 @@ const _abi = [
       },
       {
         internalType: "bytes4",
-        name: "functionSig",
+        name: "_sig",
         type: "bytes4",
       },
     ],
@@ -93,19 +74,6 @@ const _abi = [
         internalType: "bool",
         name: "",
         type: "bool",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "nBadgeAuthority",
-    outputs: [
-      {
-        internalType: "contract NBadgeAuthority",
-        name: "",
-        type: "address",
       },
     ],
     stateMutability: "view",

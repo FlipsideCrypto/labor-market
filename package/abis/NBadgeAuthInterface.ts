@@ -1,17 +1,4 @@
-[
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint8",
-        "name": "version",
-        "type": "uint8"
-      }
-    ],
-    "name": "Initialized",
-    "type": "event"
-  },
+export const abi = [
   {
     "anonymous": false,
     "inputs": [
@@ -32,19 +19,6 @@
     "type": "event"
   },
   {
-    "inputs": [],
-    "name": "deployer",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "address",
@@ -53,7 +27,7 @@
       },
       {
         "internalType": "bytes4",
-        "name": "_sig",
+        "name": "sig",
         "type": "bytes4"
       }
     ],
@@ -61,11 +35,11 @@
     "outputs": [
       {
         "internalType": "bool",
-        "name": "",
+        "name": "authorized",
         "type": "bool"
       }
     ],
     "stateMutability": "view",
     "type": "function"
   }
-]
+] as const

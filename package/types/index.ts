@@ -26,18 +26,12 @@ export type { ERC165 } from "./@openzeppelin/contracts/utils/introspection/ERC16
 export { ERC165__factory } from "./factories/@openzeppelin/contracts/utils/introspection/ERC165__factory";
 export type { IERC165 } from "./@openzeppelin/contracts/utils/introspection/IERC165";
 export { IERC165__factory } from "./factories/@openzeppelin/contracts/utils/introspection/IERC165__factory";
-export type { NBadge } from "./src/auth/NBadge";
-export { NBadge__factory } from "./factories/src/auth/NBadge__factory";
 export type { NBadgeAuth } from "./src/auth/NBadgeAuth";
 export { NBadgeAuth__factory } from "./factories/src/auth/NBadgeAuth__factory";
-export type { NBadgeAuthority } from "./src/auth/NBadgeAuthority";
-export { NBadgeAuthority__factory } from "./factories/src/auth/NBadgeAuthority__factory";
 export type { ScalableLikertEnforcement } from "./src/enforcement/ScalableLikertEnforcement";
 export { ScalableLikertEnforcement__factory } from "./factories/src/enforcement/ScalableLikertEnforcement__factory";
 export type { NBadgeAuthInterface } from "./src/interfaces/auth/NBadgeAuthInterface";
 export { NBadgeAuthInterface__factory } from "./factories/src/interfaces/auth/NBadgeAuthInterface__factory";
-export type { NBadgeAuthorityInterface } from "./src/interfaces/auth/NBadgeAuthorityInterface";
-export { NBadgeAuthorityInterface__factory } from "./factories/src/interfaces/auth/NBadgeAuthorityInterface__factory";
 export type { EnforcementCriteriaInterface } from "./src/interfaces/enforcement/EnforcementCriteriaInterface";
 export { EnforcementCriteriaInterface__factory } from "./factories/src/interfaces/enforcement/EnforcementCriteriaInterface__factory";
 export type { LaborMarketFactoryInterface } from "./src/interfaces/LaborMarketFactoryInterface";

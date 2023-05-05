@@ -10,7 +10,7 @@ export const abi = [
       {
         "indexed": true,
         "internalType": "address",
-        "name": "owner",
+        "name": "account",
         "type": "address"
       },
       {
@@ -59,7 +59,7 @@ export const abi = [
       {
         "indexed": false,
         "internalType": "uint256[]",
-        "name": "amounts",
+        "name": "values",
         "type": "uint256[]"
       }
     ],
@@ -96,7 +96,7 @@ export const abi = [
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "amount",
+        "name": "value",
         "type": "uint256"
       }
     ],
@@ -126,12 +126,12 @@ export const abi = [
     "inputs": [
       {
         "internalType": "address",
-        "name": "",
+        "name": "account",
         "type": "address"
       },
       {
         "internalType": "uint256",
-        "name": "",
+        "name": "id",
         "type": "uint256"
       }
     ],
@@ -150,7 +150,7 @@ export const abi = [
     "inputs": [
       {
         "internalType": "address[]",
-        "name": "owners",
+        "name": "accounts",
         "type": "address[]"
       },
       {
@@ -163,7 +163,7 @@ export const abi = [
     "outputs": [
       {
         "internalType": "uint256[]",
-        "name": "balances",
+        "name": "",
         "type": "uint256[]"
       }
     ],
@@ -243,12 +243,12 @@ export const abi = [
     "inputs": [
       {
         "internalType": "address",
-        "name": "",
+        "name": "account",
         "type": "address"
       },
       {
         "internalType": "address",
-        "name": "",
+        "name": "operator",
         "type": "address"
       }
     ],

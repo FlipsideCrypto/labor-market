@@ -69,7 +69,7 @@ const config: HardhatUserConfig = {
     abiExporter: [
         {
             path: 'package/abis',
-            runOnCompile: false,
+            runOnCompile: true,
             clear: true,
             flat: true,
             spacing: 2,

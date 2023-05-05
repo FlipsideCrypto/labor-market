@@ -67,7 +67,9 @@ export interface LaborMarketInterface extends utils.Interface {
   functions: {
     "claim(uint256,uint256)": FunctionFragment;
     "claimRemainder(uint256)": FunctionFragment;
+    "deployer()": FunctionFragment;
     "initialize(address,address,uint256[],uint256[],uint256[])": FunctionFragment;
+    "isAuthorized(address,bytes4)": FunctionFragment;
     "provide(uint256,string)": FunctionFragment;
     "requestIdToAddressToPerformance(uint256,address)": FunctionFragment;
     "requestIdToRequest(uint256)": FunctionFragment;
@@ -75,7 +77,7 @@ export interface LaborMarketInterface extends utils.Interface {
     "review(uint256,uint256,uint256,string)": FunctionFragment;
     "signal(uint256)": FunctionFragment;
     "signalReview(uint256,uint24)": FunctionFragment;
-    "submitRequest((uint48,uint48,uint48,uint64,uint64,uint256,uint256,address,address),string)": FunctionFragment;
+    "submitRequest(uint8,(uint48,uint48,uint48,uint64,uint64,uint256,uint256,address,address),string)": FunctionFragment;
     "withdrawRequest(uint256)": FunctionFragment;
   };
 
@@ -83,7 +85,9 @@ export interface LaborMarketInterface extends utils.Interface {
     nameOrSignatureOrTopic:
       | "claim"
       | "claimRemainder"
+      | "deployer"
       | "initialize"
+      | "isAuthorized"
       | "provide"
       | "requestIdToAddressToPerformance"
       | "requestIdToRequest"
@@ -103,6 +107,7 @@ export interface LaborMarketInterface extends utils.Interface {
     functionFragment: "claimRemainder",
     values: [PromiseOrValue<BigNumberish>]
   ): string;
+  encodeFunctionData(functionFragment: "deployer", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "initialize",
     values: [
@@ -112,6 +117,10 @@ export interface LaborMarketInterface extends utils.Interface {
       PromiseOrValue<BigNumberish>[],
       PromiseOrValue<BigNumberish>[]
     ]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "isAuthorized",
+    values: [PromiseOrValue<string>, PromiseOrValue<BytesLike>]
   ): string;
   encodeFunctionData(
     functionFragment: "provide",
@@ -148,7 +157,11 @@ export interface LaborMarketInterface extends utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "submitRequest",
-    values: [LaborMarketInterface.ServiceRequestStruct, PromiseOrValue<string>]
+    values: [
+      PromiseOrValue<BigNumberish>,
+      LaborMarketInterface.ServiceRequestStruct,
+      PromiseOrValue<string>
+    ]
   ): string;
   encodeFunctionData(
     functionFragment: "withdrawRequest",
@@ -160,7 +173,12 @@ export interface LaborMarketInterface extends utils.Interface {
     functionFragment: "claimRemainder",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "deployer", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "isAuthorized",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "provide", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "requestIdToAddressToPerformance",
@@ -192,6 +210,7 @@ export interface LaborMarketInterface extends utils.Interface {
   events: {
     "Initialized(uint8)": EventFragment;
     "LaborMarketConfigured(address,address)": EventFragment;
+    "OwnershipTransferred(address,address)": EventFragment;
     "RemainderClaimed(address,uint256,address,bool)": EventFragment;
     "RequestConfigured(address,uint256,uint48,uint48,uint48,uint64,uint64,uint256,uint256,address,address,string)": EventFragment;
     "RequestFulfilled(address,uint256,uint256,string)": EventFragment;
@@ -204,6 +223,7 @@ export interface LaborMarketInterface extends utils.Interface {
 
   getEvent(nameOrSignatureOrTopic: "Initialized"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "LaborMarketConfigured"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "RemainderClaimed"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "RequestConfigured"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "RequestFulfilled"): EventFragment;
@@ -232,6 +252,18 @@ export type LaborMarketConfiguredEvent = TypedEvent<
 
 export type LaborMarketConfiguredEventFilter =
   TypedEventFilter<LaborMarketConfiguredEvent>;
+
+export interface OwnershipTransferredEventObject {
+  user: string;
+  newOwner: string;
+}
+export type OwnershipTransferredEvent = TypedEvent<
+  [string, string],
+  OwnershipTransferredEventObject
+>;
+
+export type OwnershipTransferredEventFilter =
+  TypedEventFilter<OwnershipTransferredEvent>;
 
 export interface RemainderClaimedEventObject {
   claimer: string;
@@ -397,6 +429,8 @@ export interface LaborMarket extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
+    deployer(overrides?: CallOverrides): Promise<[string]>;
+
     initialize(
       _deployer: PromiseOrValue<string>,
       _criteria: PromiseOrValue<string>,
@@ -405,6 +439,12 @@ export interface LaborMarket extends BaseContract {
       _betas: PromiseOrValue<BigNumberish>[],
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
+
+    isAuthorized(
+      user: PromiseOrValue<string>,
+      _sig: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<[boolean]>;
 
     provide(
       _requestId: PromiseOrValue<BigNumberish>,
@@ -477,6 +517,7 @@ export interface LaborMarket extends BaseContract {
     ): Promise<ContractTransaction>;
 
     submitRequest(
+      _blockNonce: PromiseOrValue<BigNumberish>,
       _request: LaborMarketInterface.ServiceRequestStruct,
       _uri: PromiseOrValue<string>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
@@ -499,6 +540,8 @@ export interface LaborMarket extends BaseContract {
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
+  deployer(overrides?: CallOverrides): Promise<string>;
+
   initialize(
     _deployer: PromiseOrValue<string>,
     _criteria: PromiseOrValue<string>,
@@ -507,6 +550,12 @@ export interface LaborMarket extends BaseContract {
     _betas: PromiseOrValue<BigNumberish>[],
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
+
+  isAuthorized(
+    user: PromiseOrValue<string>,
+    _sig: PromiseOrValue<BytesLike>,
+    overrides?: CallOverrides
+  ): Promise<boolean>;
 
   provide(
     _requestId: PromiseOrValue<BigNumberish>,
@@ -579,6 +628,7 @@ export interface LaborMarket extends BaseContract {
   ): Promise<ContractTransaction>;
 
   submitRequest(
+    _blockNonce: PromiseOrValue<BigNumberish>,
     _request: LaborMarketInterface.ServiceRequestStruct,
     _uri: PromiseOrValue<string>,
     overrides?: Overrides & { from?: PromiseOrValue<string> }
@@ -608,6 +658,8 @@ export interface LaborMarket extends BaseContract {
       }
     >;
 
+    deployer(overrides?: CallOverrides): Promise<string>;
+
     initialize(
       _deployer: PromiseOrValue<string>,
       _criteria: PromiseOrValue<string>,
@@ -616,6 +668,12 @@ export interface LaborMarket extends BaseContract {
       _betas: PromiseOrValue<BigNumberish>[],
       overrides?: CallOverrides
     ): Promise<void>;
+
+    isAuthorized(
+      user: PromiseOrValue<string>,
+      _sig: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
+    ): Promise<boolean>;
 
     provide(
       _requestId: PromiseOrValue<BigNumberish>,
@@ -688,6 +746,7 @@ export interface LaborMarket extends BaseContract {
     ): Promise<void>;
 
     submitRequest(
+      _blockNonce: PromiseOrValue<BigNumberish>,
       _request: LaborMarketInterface.ServiceRequestStruct,
       _uri: PromiseOrValue<string>,
       overrides?: CallOverrides
@@ -711,6 +770,15 @@ export interface LaborMarket extends BaseContract {
       deployer?: null,
       criteria?: null
     ): LaborMarketConfiguredEventFilter;
+
+    "OwnershipTransferred(address,address)"(
+      user?: PromiseOrValue<string> | null,
+      newOwner?: PromiseOrValue<string> | null
+    ): OwnershipTransferredEventFilter;
+    OwnershipTransferred(
+      user?: PromiseOrValue<string> | null,
+      newOwner?: PromiseOrValue<string> | null
+    ): OwnershipTransferredEventFilter;
 
     "RemainderClaimed(address,uint256,address,bool)"(
       claimer?: PromiseOrValue<string> | null,
@@ -837,6 +905,8 @@ export interface LaborMarket extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
+    deployer(overrides?: CallOverrides): Promise<BigNumber>;
+
     initialize(
       _deployer: PromiseOrValue<string>,
       _criteria: PromiseOrValue<string>,
@@ -844,6 +914,12 @@ export interface LaborMarket extends BaseContract {
       _alphas: PromiseOrValue<BigNumberish>[],
       _betas: PromiseOrValue<BigNumberish>[],
       overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
+    isAuthorized(
+      user: PromiseOrValue<string>,
+      _sig: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
     ): Promise<BigNumber>;
 
     provide(
@@ -888,6 +964,7 @@ export interface LaborMarket extends BaseContract {
     ): Promise<BigNumber>;
 
     submitRequest(
+      _blockNonce: PromiseOrValue<BigNumberish>,
       _request: LaborMarketInterface.ServiceRequestStruct,
       _uri: PromiseOrValue<string>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }
@@ -911,6 +988,8 @@ export interface LaborMarket extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 
+    deployer(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
     initialize(
       _deployer: PromiseOrValue<string>,
       _criteria: PromiseOrValue<string>,
@@ -918,6 +997,12 @@ export interface LaborMarket extends BaseContract {
       _alphas: PromiseOrValue<BigNumberish>[],
       _betas: PromiseOrValue<BigNumberish>[],
       overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
+    isAuthorized(
+      user: PromiseOrValue<string>,
+      _sig: PromiseOrValue<BytesLike>,
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     provide(
@@ -962,6 +1047,7 @@ export interface LaborMarket extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     submitRequest(
+      _blockNonce: PromiseOrValue<BigNumberish>,
       _request: LaborMarketInterface.ServiceRequestStruct,
       _uri: PromiseOrValue<string>,
       overrides?: Overrides & { from?: PromiseOrValue<string> }

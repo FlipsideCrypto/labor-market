@@ -1,5 +1,24 @@
 [
   {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -7,21 +26,16 @@
         "type": "address"
       },
       {
-        "internalType": "address",
-        "name": "target",
-        "type": "address"
-      },
-      {
         "internalType": "bytes4",
-        "name": "functionSig",
+        "name": "sig",
         "type": "bytes4"
       }
     ],
-    "name": "canCall",
+    "name": "isAuthorized",
     "outputs": [
       {
         "internalType": "bool",
-        "name": "",
+        "name": "authorized",
         "type": "bool"
       }
     ],

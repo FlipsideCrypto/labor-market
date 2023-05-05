@@ -2,4 +2,3 @@
 /* tslint:disable */
 /* eslint-disable */
 export { NBadgeAuthInterface__factory } from "./NBadgeAuthInterface__factory";
-export { NBadgeAuthorityInterface__factory } from "./NBadgeAuthorityInterface__factory";

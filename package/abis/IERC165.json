@@ -2,22 +2,12 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "src",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "dst",
-        "type": "address"
-      },
-      {
         "internalType": "bytes4",
-        "name": "sig",
+        "name": "interfaceId",
         "type": "bytes4"
       }
     ],
-    "name": "canCall",
+    "name": "supportsInterface",
     "outputs": [
       {
         "internalType": "bool",

@@ -53,17 +53,9 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IERC165__factory>;
     getContractFactory(
-      name: "NBadge",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.NBadge__factory>;
-    getContractFactory(
       name: "NBadgeAuth",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.NBadgeAuth__factory>;
-    getContractFactory(
-      name: "NBadgeAuthority",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.NBadgeAuthority__factory>;
     getContractFactory(
       name: "ScalableLikertEnforcement",
       signerOrOptions?: ethers.Signer | FactoryOptions
@@ -72,10 +64,6 @@ declare module "hardhat/types/runtime" {
       name: "NBadgeAuthInterface",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.NBadgeAuthInterface__factory>;
-    getContractFactory(
-      name: "NBadgeAuthorityInterface",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.NBadgeAuthorityInterface__factory>;
     getContractFactory(
       name: "EnforcementCriteriaInterface",
       signerOrOptions?: ethers.Signer | FactoryOptions
@@ -156,20 +144,10 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.IERC165>;
     getContractAt(
-      name: "NBadge",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.NBadge>;
-    getContractAt(
       name: "NBadgeAuth",
       address: string,
       signer?: ethers.Signer
     ): Promise<Contracts.NBadgeAuth>;
-    getContractAt(
-      name: "NBadgeAuthority",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.NBadgeAuthority>;
     getContractAt(
       name: "ScalableLikertEnforcement",
       address: string,
@@ -180,11 +158,6 @@ declare module "hardhat/types/runtime" {
       address: string,
       signer?: ethers.Signer
     ): Promise<Contracts.NBadgeAuthInterface>;
-    getContractAt(
-      name: "NBadgeAuthorityInterface",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.NBadgeAuthorityInterface>;
     getContractAt(
       name: "EnforcementCriteriaInterface",
       address: string,

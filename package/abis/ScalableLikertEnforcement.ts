@@ -1,18 +1,87 @@
 export const abi = [
   {
+    "anonymous": false,
     "inputs": [
       {
+        "indexed": true,
         "internalType": "address",
-        "name": "_laborMarket",
+        "name": "_market",
         "type": "address"
       },
       {
+        "indexed": false,
+        "internalType": "uint256[]",
+        "name": "_auxiliaries",
+        "type": "uint256[]"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[]",
+        "name": "_alphas",
+        "type": "uint256[]"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[]",
+        "name": "_betas",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "EnforcementConfigured",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "_market",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "_requestId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
         "internalType": "uint256",
         "name": "_submissionId",
         "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "intentChange",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "earnings",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "remainder",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "newSubmission",
+        "type": "bool"
       }
     ],
-    "name": "getPaymentReward",
+    "name": "SubmissionReviewed",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "MATH_AVG_DECIMALS",
     "outputs": [
       {
         "internalType": "uint256",
@@ -26,8 +95,52 @@ export const abi = [
   {
     "inputs": [
       {
+        "internalType": "uint256",
+        "name": "_requestId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_submissionId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_score",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_availableShare",
+        "type": "uint256"
+      },
+      {
         "internalType": "address",
-        "name": "_laborMarket",
+        "name": "_enforcer",
+        "type": "address"
+      }
+    ],
+    "name": "enforce",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint24",
+        "name": "",
+        "type": "uint24"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_market",
         "type": "address"
       },
       {
@@ -44,39 +157,20 @@ export const abi = [
         "type": "uint256"
       }
     ],
-    "stateMutability": "view",
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [
       {
         "internalType": "address",
-        "name": "_laborMarket",
+        "name": "_market",
         "type": "address"
       },
       {
         "internalType": "uint256",
-        "name": "_submissionId",
+        "name": "_requestId",
         "type": "uint256"
-      }
-    ],
-    "name": "getReputationReward",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_laborMarket",
-        "type": "address"
       },
       {
         "internalType": "uint256",
@@ -90,14 +184,9 @@ export const abi = [
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
       }
     ],
-    "stateMutability": "view",
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -106,23 +195,13 @@ export const abi = [
         "internalType": "address",
         "name": "",
         "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
       }
     ],
-    "name": "requests",
+    "name": "marketToMaxScore",
     "outputs": [
       {
         "internalType": "uint256",
-        "name": "scaledAvgSum",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "qualifyingCount",
+        "name": "",
         "type": "uint256"
       }
     ],
@@ -133,26 +212,56 @@ export const abi = [
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_submissionId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_score",
+        "name": "_requestId",
         "type": "uint256"
       }
     ],
-    "name": "review",
-    "outputs": [],
+    "name": "remainder",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [
       {
-        "internalType": "bytes32",
-        "name": "_key",
-        "type": "bytes32"
+        "internalType": "uint256",
+        "name": "_requestId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_submissionId",
+        "type": "uint256"
+      }
+    ],
+    "name": "rewards",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "requiresSubmission",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "_auxilaries",
+        "type": "uint256[]"
       },
       {
         "internalType": "uint256[]",
@@ -165,48 +274,9 @@ export const abi = [
         "type": "uint256[]"
       }
     ],
-    "name": "setBuckets",
+    "name": "setConfiguration",
     "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "submissionToScore",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "reviewCount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "reviewSum",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "avg",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bool",
-        "name": "qualified",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   }
 ] as const

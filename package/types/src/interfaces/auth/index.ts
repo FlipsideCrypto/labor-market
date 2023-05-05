@@ -2,4 +2,3 @@
 /* tslint:disable */
 /* eslint-disable */
 export type { NBadgeAuthInterface } from "./NBadgeAuthInterface";
-export type { NBadgeAuthorityInterface } from "./NBadgeAuthorityInterface";

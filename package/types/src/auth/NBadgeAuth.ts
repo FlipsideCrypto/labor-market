@@ -28,11 +28,10 @@ export interface NBadgeAuthInterface extends utils.Interface {
   functions: {
     "deployer()": FunctionFragment;
     "isAuthorized(address,bytes4)": FunctionFragment;
-    "nBadgeAuthority()": FunctionFragment;
   };
 
   getFunction(
-    nameOrSignatureOrTopic: "deployer" | "isAuthorized" | "nBadgeAuthority"
+    nameOrSignatureOrTopic: "deployer" | "isAuthorized"
   ): FunctionFragment;
 
   encodeFunctionData(functionFragment: "deployer", values?: undefined): string;
@@ -40,43 +39,21 @@ export interface NBadgeAuthInterface extends utils.Interface {
     functionFragment: "isAuthorized",
     values: [PromiseOrValue<string>, PromiseOrValue<BytesLike>]
   ): string;
-  encodeFunctionData(
-    functionFragment: "nBadgeAuthority",
-    values?: undefined
-  ): string;
 
   decodeFunctionResult(functionFragment: "deployer", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "isAuthorized",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(
-    functionFragment: "nBadgeAuthority",
-    data: BytesLike
-  ): Result;
 
   events: {
-    "AuthorityUpdated(address,address)": EventFragment;
     "Initialized(uint8)": EventFragment;
     "OwnershipTransferred(address,address)": EventFragment;
   };
 
-  getEvent(nameOrSignatureOrTopic: "AuthorityUpdated"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Initialized"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
 }
-
-export interface AuthorityUpdatedEventObject {
-  user: string;
-  newAuthority: string;
-}
-export type AuthorityUpdatedEvent = TypedEvent<
-  [string, string],
-  AuthorityUpdatedEventObject
->;
-
-export type AuthorityUpdatedEventFilter =
-  TypedEventFilter<AuthorityUpdatedEvent>;
 
 export interface InitializedEventObject {
   version: number;
@@ -128,45 +105,30 @@ export interface NBadgeAuth extends BaseContract {
 
     isAuthorized(
       user: PromiseOrValue<string>,
-      functionSig: PromiseOrValue<BytesLike>,
+      _sig: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
     ): Promise<[boolean]>;
-
-    nBadgeAuthority(overrides?: CallOverrides): Promise<[string]>;
   };
 
   deployer(overrides?: CallOverrides): Promise<string>;
 
   isAuthorized(
     user: PromiseOrValue<string>,
-    functionSig: PromiseOrValue<BytesLike>,
+    _sig: PromiseOrValue<BytesLike>,
     overrides?: CallOverrides
   ): Promise<boolean>;
-
-  nBadgeAuthority(overrides?: CallOverrides): Promise<string>;
 
   callStatic: {
     deployer(overrides?: CallOverrides): Promise<string>;
 
     isAuthorized(
       user: PromiseOrValue<string>,
-      functionSig: PromiseOrValue<BytesLike>,
+      _sig: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
     ): Promise<boolean>;
-
-    nBadgeAuthority(overrides?: CallOverrides): Promise<string>;
   };
 
   filters: {
-    "AuthorityUpdated(address,address)"(
-      user?: PromiseOrValue<string> | null,
-      newAuthority?: PromiseOrValue<string> | null
-    ): AuthorityUpdatedEventFilter;
-    AuthorityUpdated(
-      user?: PromiseOrValue<string> | null,
-      newAuthority?: PromiseOrValue<string> | null
-    ): AuthorityUpdatedEventFilter;
-
     "Initialized(uint8)"(version?: null): InitializedEventFilter;
     Initialized(version?: null): InitializedEventFilter;
 
@@ -185,11 +147,9 @@ export interface NBadgeAuth extends BaseContract {
 
     isAuthorized(
       user: PromiseOrValue<string>,
-      functionSig: PromiseOrValue<BytesLike>,
+      _sig: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
-
-    nBadgeAuthority(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   populateTransaction: {
@@ -197,10 +157,8 @@ export interface NBadgeAuth extends BaseContract {
 
     isAuthorized(
       user: PromiseOrValue<string>,
-      functionSig: PromiseOrValue<BytesLike>,
+      _sig: PromiseOrValue<BytesLike>,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
-
-    nBadgeAuthority(overrides?: CallOverrides): Promise<PopulatedTransaction>;
   };
 }
