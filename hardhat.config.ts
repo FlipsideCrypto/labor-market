@@ -16,6 +16,7 @@ import { task } from 'hardhat/config';
 import 'solidity-coverage';
 
 require('dotenv').config();
+require('@nomicfoundation/hardhat-chai-matchers');
 
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
 const POLYGONSCAN_API_KEY = process.env.POLYGONSCAN_API_KEY;
@@ -77,7 +78,7 @@ const config: HardhatUserConfig = {
     },
     abiExporter: {
         path: 'package/abis',
-        runOnCompile: true,
+        runOnCompile: false,
         clear: true,
         flat: true,
         spacing: 2,
@@ -91,7 +92,7 @@ const config: HardhatUserConfig = {
     docgen: {
         path: './docs',
         clear: true,
-        runOnCompile: true,
+        runOnCompile: false,
     },
     etherscan: {
         apiKey: {
@@ -108,8 +109,7 @@ const config: HardhatUserConfig = {
             gasPrice: 'auto',
             saveDeployments: false,
             mining: {
-                auto: false,
-                interval: 1500,
+                auto: true,
             },
         },
         sepolia: {
@@ -137,22 +137,6 @@ const config: HardhatUserConfig = {
     },
     typechain: {
         outDir: 'package/types',
-    },
-    // This fully resolves paths for imports in the ./lib directory for Hardhat
-    preprocess: {
-        eachLine: (hre) => ({
-            transform: (line: string) => {
-                if (line.match(/^\s*import /i)) {
-                    for (const [from, to] of getRemappings()) {
-                        if (line.includes(from) && !line.includes('openzeppelin') && !line.includes('@prb/math')) {
-                            line = line.replace(from, to);
-                            break;
-                        }
-                    }
-                }
-                return line;
-            },
-        }),
     },
 };
 

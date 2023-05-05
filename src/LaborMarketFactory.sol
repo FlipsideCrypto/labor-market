@@ -5,15 +5,16 @@ pragma solidity ^0.8.17;
 /// @dev Core dependencies.
 import { LaborMarket } from './LaborMarket.sol';
 import { LaborMarketFactoryInterface } from './interfaces/LaborMarketFactoryInterface.sol';
-import { Ownable } from '@openzeppelin/contracts/access/Ownable.sol';
 
 /// @dev Helpers interfaces.
-import { EnforcementCriteriaInterface } from './interfaces/Enforcement/EnforcementCriteriaInterface.sol';
+import { EnforcementCriteriaInterface } from './interfaces/enforcement/EnforcementCriteriaInterface.sol';
 
 /// @dev Helper libraries.
 import { Clones } from '@openzeppelin/contracts/proxy/Clones.sol';
 
-contract LaborMarketFactory is LaborMarketFactoryInterface, Ownable {
+// TODO: Add a disclaimer to the top of this contract warning people to not use it unless they want to watch their money vanish as this is unaudited
+
+contract LaborMarketFactory is LaborMarketFactoryInterface {
     using Clones for address;
 
     /// @notice The address of the source contract for the paternal Labor Market.

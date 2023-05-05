@@ -3,7 +3,7 @@
 pragma solidity ^0.8.17;
 
 /// @dev Core dependencies.
-import { EnforcementCriteriaInterface } from '../interfaces/Enforcement/EnforcementCriteriaInterface.sol';
+import { EnforcementCriteriaInterface } from '../interfaces/enforcement/EnforcementCriteriaInterface.sol';
 
 /// @dev Helper libraries.
 import { EnumerableSet } from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';

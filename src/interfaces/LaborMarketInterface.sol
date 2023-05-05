@@ -5,7 +5,7 @@ pragma solidity ^0.8.17;
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 /// @dev Helper interfaces.
-import { EnforcementCriteriaInterface } from './Enforcement/EnforcementCriteriaInterface.sol';
+import { EnforcementCriteriaInterface } from './enforcement/EnforcementCriteriaInterface.sol';
 
 interface LaborMarketInterface {
     struct ServiceRequest {
@@ -28,7 +28,7 @@ interface LaborMarketInterface {
     }
 
     /// @notice Emitted when labor market parameters are updated.
-    event LaborMarketConfigured(address deployer, EnforcementCriteriaInterface criteria);
+    event LaborMarketConfigured(address deployer, address criteria);
 
     /// @notice emitted when a new service request is made.
     event RequestConfigured(

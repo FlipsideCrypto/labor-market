@@ -3,7 +3,7 @@
 pragma solidity ^0.8.17;
 
 /// @dev Helpers interfaces.
-import { EnforcementCriteriaInterface } from './Enforcement/EnforcementCriteriaInterface.sol';
+import { EnforcementCriteriaInterface } from './enforcement/EnforcementCriteriaInterface.sol';
 
 interface LaborMarketFactoryInterface {
     /// @dev Announces when a new Labor Market is created through the protocol Factory.
@@ -18,5 +18,5 @@ interface LaborMarketFactoryInterface {
         uint256[] calldata _auxilaries,
         uint256[] calldata _alphas,
         uint256[] calldata _betas
-    ) external returns (address);
+    ) external returns (address laborMarketAddress);
 }

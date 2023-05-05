@@ -5,19 +5,15 @@ pragma solidity ^0.8.17;
 /// @dev Core dependencies.
 import { LaborMarketInterface } from './interfaces/LaborMarketInterface.sol';
 import { Initializable } from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
-import { Context } from '@openzeppelin/contracts/utils/Context.sol';
 
 /// @dev Helper interfaces
-import { EnforcementCriteriaInterface } from './interfaces/Enforcement/EnforcementCriteriaInterface.sol';
+import { EnforcementCriteriaInterface } from './interfaces/enforcement/EnforcementCriteriaInterface.sol';
 
 /// @dev Helper libraries.
 import { EnumerableSet } from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
-contract LaborMarket is LaborMarketInterface, Initializable, Context {
+contract LaborMarket is LaborMarketInterface, Initializable {
     using EnumerableSet for EnumerableSet.AddressSet;
-
-    /// @dev The address of the Labor Market deployer.
-    address public deployer;
 
     /// @dev The enforcement criteria module used for this Labor Market.
     EnforcementCriteriaInterface internal criteria;
@@ -54,8 +50,8 @@ contract LaborMarket is LaborMarketInterface, Initializable, Context {
         uint256[] calldata _alphas,
         uint256[] calldata _betas
     ) external initializer {
-        /// @dev Set the deployer.
-        deployer = _deployer;
+        // TODO: uncomment -- just wanted to see if this was the only thing preventing compilation.
+        // __NBadgeAuth_init(_deployer);
 
         /// @dev Configure the Labor Market state control.
         criteria = _criteria;
@@ -70,7 +66,7 @@ contract LaborMarket is LaborMarketInterface, Initializable, Context {
         criteria.setConfiguration(_auxilaries, _alphas, _betas);
 
         /// @dev Announce the configuration of the Labor Market.
-        emit LaborMarketConfigured(_deployer, _criteria);
+        emit LaborMarketConfigured(_deployer, address(criteria));
     }
 
     /**
@@ -100,14 +96,14 @@ contract LaborMarket is LaborMarketInterface, Initializable, Context {
         require(_request.providerLimit > 0 && _request.reviewerLimit > 0, 'LaborMarket::submitRequest: Invalid limits');
 
         /// @dev Generate the uuid for the request using the timestamp and address.
-        requestId = uint256(keccak256(abi.encodePacked(uint96(block.timestamp), uint160(_msgSender()))));
+        requestId = uint256(keccak256(abi.encodePacked(uint96(block.timestamp), uint160(msg.sender))));
 
         /// @notice Store the request in the Labor Market.
         requestIdToRequest[requestId] = _request;
 
         /// @notice Announce the creation of a new request in the Labor Market.
         emit RequestConfigured(
-            _msgSender(),
+            msg.sender,
             requestId,
             _request.signalExp,
             _request.submissionExp,
@@ -124,13 +120,13 @@ contract LaborMarket is LaborMarketInterface, Initializable, Context {
         /// @notice Provide the funding for the request.
         if (_request.pTokenProviderTotal > 0) {
             /// @dev Transfer the provider tokens that support the compensation of the Request.
-            _request.pTokenProvider.transferFrom(_msgSender(), address(this), _request.pTokenProviderTotal);
+            _request.pTokenProvider.transferFrom(msg.sender, address(this), _request.pTokenProviderTotal);
         }
 
         /// @notice Provide the funding for the request.
         if (_request.pTokenReviewerTotal > 0) {
             /// @dev Transfer the reviewer tokens that support the compensation of the Request.
-            _request.pTokenReviewer.transferFrom(_msgSender(), address(this), _request.pTokenReviewerTotal);
+            _request.pTokenReviewer.transferFrom(msg.sender, address(this), _request.pTokenReviewerTotal);
         }
     }
 
@@ -163,7 +159,7 @@ contract LaborMarket is LaborMarketInterface, Initializable, Context {
         ++signalState.providers;
 
         /// @notice Get the performance state of the user.
-        uint24 performance = requestIdToAddressToPerformance[_requestId][_msgSender()];
+        uint24 performance = requestIdToAddressToPerformance[_requestId][msg.sender];
 
         /// @notice Require the user has not signaled.
         /// @dev Get the first bit of the user's signal value.
@@ -171,14 +167,14 @@ contract LaborMarket is LaborMarketInterface, Initializable, Context {
 
         /// @notice Set the first two bits of the performance state to 1 to indicate the user has signaled
         ///         without affecting the rest of the performance state.
-        requestIdToAddressToPerformance[_requestId][_msgSender()] =
+        requestIdToAddressToPerformance[_requestId][msg.sender] =
             /// @dev Keep the last 22 bits but clear the first two bits.
             (performance & 0xFFFFFC) |
             /// @dev Set the first two bits of the performance state to 1 to indicate the user has signaled.
             0x1;
 
         /// @notice Announce the signalling of a service provider.
-        emit RequestSignal(_msgSender(), _requestId);
+        emit RequestSignal(msg.sender, _requestId);
     }
 
     /**
@@ -209,7 +205,7 @@ contract LaborMarket is LaborMarketInterface, Initializable, Context {
         signalState.reviewers += _quantity;
 
         /// @notice Get the performance state of the user.
-        uint24 performance = requestIdToAddressToPerformance[_requestId][_msgSender()];
+        uint24 performance = requestIdToAddressToPerformance[_requestId][msg.sender];
 
         /// @notice Get the intent of the maintainer.
         /// @dev Shift the performance value to the right by two bits and then mask down to
@@ -225,14 +221,14 @@ contract LaborMarket is LaborMarketInterface, Initializable, Context {
 
         /// @notice Update the intent of reviewing by summing already signaled quantity with the new quantity
         ///         and then shift it to the left by two bits to make room for the intent of providing.
-        requestIdToAddressToPerformance[_requestId][_msgSender()] =
+        requestIdToAddressToPerformance[_requestId][msg.sender] =
             /// @dev Set the last 22 bits of the performance state to the sum of the current intent and the new quantity.
             ((reviewIntent + _quantity) << 2) |
             /// @dev Keep the first two bits of the performance state the same.
             (performance & 0x3);
 
         /// @notice Announce the signalling of a service reviewer.
-        emit ReviewSignal(_msgSender(), _requestId, _quantity);
+        emit ReviewSignal(msg.sender, _requestId, _quantity);
     }
 
     /**
@@ -254,7 +250,7 @@ contract LaborMarket is LaborMarketInterface, Initializable, Context {
         require(block.timestamp <= request.submissionExp, 'LaborMarket::provide: Submission deadline passed');
 
         /// @notice Get the performance state of the user.
-        uint24 performance = requestIdToAddressToPerformance[_requestId][_msgSender()];
+        uint24 performance = requestIdToAddressToPerformance[_requestId][msg.sender];
 
         /// @notice Ensure that the provider has signaled, but has not already submitted.
         /// @dev Get the first two bits of the user's performance value.
@@ -262,13 +258,13 @@ contract LaborMarket is LaborMarketInterface, Initializable, Context {
         require(performance & 0x3 == 1, 'LaborMarket::provide: Not signaled');
 
         /// @dev Add the Provider to the list of submissions.
-        requestIdToProviders[_requestId].add(_msgSender());
+        requestIdToProviders[_requestId].add(msg.sender);
 
         /// @dev Set the submission ID to reflect the providers address.
-        submissionId = uint256(uint160(_msgSender()));
+        submissionId = uint256(uint160(msg.sender));
 
         /// @dev Provider has submitted and set the value of the first two bits to 2.
-        requestIdToAddressToPerformance[_requestId][_msgSender()] =
+        requestIdToAddressToPerformance[_requestId][msg.sender] =
             /// @dev Keep the last 22 bits but clear the first two bits.
             (performance & 0xFFFFFC) |
             /// @dev Set the first two bits to 2.
@@ -278,7 +274,7 @@ contract LaborMarket is LaborMarketInterface, Initializable, Context {
         requestIdToSignalState[_requestId].providersArrived += 1;
 
         /// @notice Announce the submission of a service provider.
-        emit RequestFulfilled(_msgSender(), _requestId, submissionId, _uri);
+        emit RequestFulfilled(msg.sender, _requestId, submissionId, _uri);
     }
 
     /**
@@ -300,7 +296,7 @@ contract LaborMarket is LaborMarketInterface, Initializable, Context {
         string calldata _uri
     ) public virtual {
         /// @notice Ensure that no one is grading their own submission.
-        require(_submissionId != uint256(uint160(_msgSender())), 'LaborMarket::review: Cannot review own submission');
+        require(_submissionId != uint256(uint160(msg.sender)), 'LaborMarket::review: Cannot review own submission');
 
         /// @notice Get the request out of storage to warm the slot.
         ServiceRequest storage request = requestIdToRequest[_requestId];
@@ -314,7 +310,7 @@ contract LaborMarket is LaborMarketInterface, Initializable, Context {
             _submissionId,
             _score,
             request.pTokenProviderTotal / request.providerLimit,
-            _msgSender()
+            msg.sender
         );
 
         /// @notice If the user is scoring a new submission, then deduct their signal.
@@ -324,12 +320,12 @@ contract LaborMarket is LaborMarketInterface, Initializable, Context {
         ///       return `true` to indicate signal deduction is owed.
         if (newSubmission) {
             /// @notice Calculate the active intent value of the maintainer.
-            uint24 intent = requestIdToAddressToPerformance[_requestId][_msgSender()];
+            uint24 intent = requestIdToAddressToPerformance[_requestId][msg.sender];
 
             /// @notice Get the remaining signal value of the maintainer.
             /// @dev Uses the last 22 bits of the performance value by shifting over 2 values and then
             ///      masking down to the last 22 bits with an overlap of 0x3fffff.
-            uint24 remainingIntent = (requestIdToAddressToPerformance[_requestId][_msgSender()] >> 2) & 0x3fffff;
+            uint24 remainingIntent = (requestIdToAddressToPerformance[_requestId][msg.sender] >> 2) & 0x3fffff;
 
             /// @notice Ensure the maintainer is not exceeding their signaled intent.
             require(remainingIntent > 0, 'LaborMarket::review: Not signaled');
@@ -338,7 +334,7 @@ contract LaborMarket is LaborMarketInterface, Initializable, Context {
             ///         the caller for this request.
             /// @dev This bitwise shifts shifts 22 bits to the left to clear the previous value
             ///      and then bitwise ORs the remaining signal value minus 1 to the left by 2 bits.
-            requestIdToAddressToPerformance[_requestId][_msgSender()] =
+            requestIdToAddressToPerformance[_requestId][msg.sender] =
                 /// @dev Keep all the bits besides the 22 bits that represent the remaining signal value.
                 (intent & 0x3) |
                 /// @dev Shift the remaining signal value minus 1 to the left by 2 bits to fill the 22.
@@ -352,12 +348,12 @@ contract LaborMarket is LaborMarketInterface, Initializable, Context {
                 /// @notice Transfer the tokens from the Market to the Reviewer.
                 request.pTokenReviewer.transferFrom(
                     address(this),
-                    _msgSender(),
+                    msg.sender,
                     request.pTokenReviewerTotal / request.reviewerLimit
                 );
 
             /// @notice Announce the new submission of a score by a maintainer.
-            emit RequestReviewed(_msgSender(), _requestId, _submissionId, _score, _uri);
+            emit RequestReviewed(msg.sender, _requestId, _submissionId, _score, _uri);
         }
     }
 
@@ -404,7 +400,7 @@ contract LaborMarket is LaborMarketInterface, Initializable, Context {
             success = true;
 
             /// @notice Announce the claiming of a service provider reward.
-            emit RequestPayClaimed(_msgSender(), _requestId, _submissionId, amount, provider);
+            emit RequestPayClaimed(msg.sender, _requestId, _submissionId, amount, provider);
         }
 
         /// @notice If there were no funds to claim, acknowledge the failure of the transfer
@@ -491,7 +487,7 @@ contract LaborMarket is LaborMarketInterface, Initializable, Context {
             bool settled = pTokenProviderSurplus == 0 && pTokenReviewerSurplus == 0;
 
             /// @notice Announce the claiming of a service requester reward.
-            emit RemainderClaimed(_msgSender(), _requestId, requester, settled);
+            emit RemainderClaimed(msg.sender, _requestId, requester, settled);
         }
 
         /// @notice If there were no funds to reclaim, acknowledge the failure of the claim
@@ -511,7 +507,7 @@ contract LaborMarket is LaborMarketInterface, Initializable, Context {
         ServiceRequest storage request = requestIdToRequest[_requestId];
 
         /// @dev Ensure that only the Requester may withdraw the request.
-        require(address(uint160(_requestId)) == _msgSender(), 'LaborMarket::withdrawRequest: Not requester');
+        require(address(uint160(_requestId)) == msg.sender, 'LaborMarket::withdrawRequest: Not requester');
 
         /// @dev Require the request has not been signaled.
         require(
@@ -532,12 +528,12 @@ contract LaborMarket is LaborMarketInterface, Initializable, Context {
 
         if (request.pTokenProviderTotal > 0) {
             /// @notice Return the $pToken back to the Requester.
-            request.pTokenProvider.transferFrom(address(this), _msgSender(), request.pTokenProviderTotal);
+            request.pTokenProvider.transferFrom(address(this), msg.sender, request.pTokenProviderTotal);
         }
 
         if (request.pTokenReviewerTotal > 0) {
             /// @dev Transfer the reviewer tokens that support the compensation of the Request.
-            request.pTokenReviewer.transferFrom(address(this), _msgSender(), request.pTokenReviewerTotal);
+            request.pTokenReviewer.transferFrom(address(this), msg.sender, request.pTokenReviewerTotal);
         }
 
         /// @dev Announce the withdrawal of a request.
