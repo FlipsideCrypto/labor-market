@@ -3,7 +3,7 @@
 pragma solidity ^0.8.17;
 
 /// @dev Core dependencies.
-import { LaborMarket } from './LaborMarket/LaborMarket.sol';
+import { LaborMarket } from './LaborMarket.sol';
 import { LaborMarketFactoryInterface } from './interfaces/LaborMarketFactoryInterface.sol';
 import { Ownable } from '@openzeppelin/contracts/access/Ownable.sol';
 
