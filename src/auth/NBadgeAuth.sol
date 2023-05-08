@@ -31,7 +31,7 @@ abstract contract NBadgeAuth is NBadgeAuthInterface, Initializable {
         address _deployer,
         bytes4[] calldata _sigs,
         Node[] calldata _nodes
-    ) internal initializer {
+    ) internal onlyInitializing {
         /// @notice Set the local deployer of the Labor Market.
         deployer = _deployer;
 
@@ -46,7 +46,7 @@ abstract contract NBadgeAuth is NBadgeAuthInterface, Initializable {
      * @notice Initialize the contract with the deployer and the N-Badge module.
      * @param _nodes The list of nodes that are allowed to call this contract.
      */
-    function __NBadgeAuth_init_unchained(bytes4[] calldata _sigs, Node[] calldata _nodes) internal initializer {
+    function __NBadgeAuth_init_unchained(bytes4[] calldata _sigs, Node[] calldata _nodes) internal onlyInitializing {
         /// @notice Ensure that the arrays provided are of equal lengths.
         require(_sigs.length == _nodes.length, 'NBadgeAuth::__NBadgeAuth_init_unchained: Invalid input');
 

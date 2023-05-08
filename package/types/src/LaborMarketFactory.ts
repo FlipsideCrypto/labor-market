@@ -27,9 +27,49 @@ import type {
   PromiseOrValue,
 } from "../common";
 
+export declare namespace NBadgeAuthInterface {
+  export type BadgeStruct = {
+    badge: PromiseOrValue<string>;
+    id: PromiseOrValue<BigNumberish>;
+    min: PromiseOrValue<BigNumberish>;
+    max: PromiseOrValue<BigNumberish>;
+    points: PromiseOrValue<BigNumberish>;
+  };
+
+  export type BadgeStructOutput = [
+    string,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    BigNumber
+  ] & {
+    badge: string;
+    id: BigNumber;
+    min: BigNumber;
+    max: BigNumber;
+    points: BigNumber;
+  };
+
+  export type NodeStruct = {
+    deployerAllowed: PromiseOrValue<boolean>;
+    required: PromiseOrValue<BigNumberish>;
+    badges: NBadgeAuthInterface.BadgeStruct[];
+  };
+
+  export type NodeStructOutput = [
+    boolean,
+    BigNumber,
+    NBadgeAuthInterface.BadgeStructOutput[]
+  ] & {
+    deployerAllowed: boolean;
+    required: BigNumber;
+    badges: NBadgeAuthInterface.BadgeStructOutput[];
+  };
+}
+
 export interface LaborMarketFactoryInterface extends utils.Interface {
   functions: {
-    "createLaborMarket(address,address,uint256[],uint256[],uint256[])": FunctionFragment;
+    "createLaborMarket(address,address,uint256[],uint256[],uint256[],bytes4[],(bool,uint256,(address,uint256,uint256,uint256,uint256)[])[])": FunctionFragment;
     "implementation()": FunctionFragment;
   };
 
@@ -44,7 +84,9 @@ export interface LaborMarketFactoryInterface extends utils.Interface {
       PromiseOrValue<string>,
       PromiseOrValue<BigNumberish>[],
       PromiseOrValue<BigNumberish>[],
-      PromiseOrValue<BigNumberish>[]
+      PromiseOrValue<BigNumberish>[],
+      PromiseOrValue<BytesLike>[],
+      NBadgeAuthInterface.NodeStruct[]
     ]
   ): string;
   encodeFunctionData(
@@ -114,6 +156,8 @@ export interface LaborMarketFactory extends BaseContract {
       _auxilaries: PromiseOrValue<BigNumberish>[],
       _alphas: PromiseOrValue<BigNumberish>[],
       _betas: PromiseOrValue<BigNumberish>[],
+      _sigs: PromiseOrValue<BytesLike>[],
+      _nodes: NBadgeAuthInterface.NodeStruct[],
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
@@ -126,6 +170,8 @@ export interface LaborMarketFactory extends BaseContract {
     _auxilaries: PromiseOrValue<BigNumberish>[],
     _alphas: PromiseOrValue<BigNumberish>[],
     _betas: PromiseOrValue<BigNumberish>[],
+    _sigs: PromiseOrValue<BytesLike>[],
+    _nodes: NBadgeAuthInterface.NodeStruct[],
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
@@ -138,6 +184,8 @@ export interface LaborMarketFactory extends BaseContract {
       _auxilaries: PromiseOrValue<BigNumberish>[],
       _alphas: PromiseOrValue<BigNumberish>[],
       _betas: PromiseOrValue<BigNumberish>[],
+      _sigs: PromiseOrValue<BytesLike>[],
+      _nodes: NBadgeAuthInterface.NodeStruct[],
       overrides?: CallOverrides
     ): Promise<string>;
 
@@ -164,6 +212,8 @@ export interface LaborMarketFactory extends BaseContract {
       _auxilaries: PromiseOrValue<BigNumberish>[],
       _alphas: PromiseOrValue<BigNumberish>[],
       _betas: PromiseOrValue<BigNumberish>[],
+      _sigs: PromiseOrValue<BytesLike>[],
+      _nodes: NBadgeAuthInterface.NodeStruct[],
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
@@ -177,6 +227,8 @@ export interface LaborMarketFactory extends BaseContract {
       _auxilaries: PromiseOrValue<BigNumberish>[],
       _alphas: PromiseOrValue<BigNumberish>[],
       _betas: PromiseOrValue<BigNumberish>[],
+      _sigs: PromiseOrValue<BytesLike>[],
+      _nodes: NBadgeAuthInterface.NodeStruct[],
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 

@@ -8,6 +8,7 @@ import { LaborMarketFactoryInterface } from './interfaces/LaborMarketFactoryInte
 
 /// @dev Helpers interfaces.
 import { EnforcementCriteriaInterface } from './interfaces/enforcement/EnforcementCriteriaInterface.sol';
+import { NBadgeAuthInterface } from './interfaces/auth/NBadgeAuthInterface.sol';
 
 /// @dev Helper libraries.
 import { Clones } from '@openzeppelin/contracts/proxy/Clones.sol';
@@ -28,7 +29,7 @@ contract LaborMarketFactory is LaborMarketFactoryInterface {
     /**
      * @notice Allows an individual to deploy a new Labor Market given they meet version and badge requirements.
      * @param _deployer The address of the individual intended to own the Labor Market.
-     * @param _criteria The address of the Enforcement Criteria contract.
+     * @param _criteria The address of cement Criteria contract.
      * @param _auxilaries The array of uints configuring the application of enforcement.
      * @param _alphas The array of uints configuring the application of enforcement.
      * @param _betas The array of uints configuring the application of enforcement.
@@ -39,7 +40,9 @@ contract LaborMarketFactory is LaborMarketFactoryInterface {
         EnforcementCriteriaInterface _criteria,
         uint256[] calldata _auxilaries,
         uint256[] calldata _alphas,
-        uint256[] calldata _betas
+        uint256[] calldata _betas,
+        bytes4[] calldata _sigs,
+        NBadgeAuthInterface.Node[] calldata _nodes
     ) public virtual returns (address laborMarketAddress) {
         /// @notice Get the address of the target.
         address marketAddress = implementation.clone();
@@ -48,7 +51,7 @@ contract LaborMarketFactory is LaborMarketFactoryInterface {
         LaborMarket laborMarket = LaborMarket(marketAddress);
 
         /// @notice Deploy the clone contract to serve as the Labor Market.
-        laborMarket.initialize(_deployer, _criteria, _auxilaries, _alphas, _betas);
+        laborMarket.initialize(_deployer, _criteria, _auxilaries, _alphas, _betas, _sigs, _nodes);
 
         /// @notice Announce the creation of the Labor Market.
         emit LaborMarketCreated(marketAddress, _deployer, implementation);

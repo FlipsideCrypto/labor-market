@@ -27,6 +27,46 @@ import type {
   PromiseOrValue,
 } from "../common";
 
+export declare namespace NBadgeAuthInterface {
+  export type BadgeStruct = {
+    badge: PromiseOrValue<string>;
+    id: PromiseOrValue<BigNumberish>;
+    min: PromiseOrValue<BigNumberish>;
+    max: PromiseOrValue<BigNumberish>;
+    points: PromiseOrValue<BigNumberish>;
+  };
+
+  export type BadgeStructOutput = [
+    string,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    BigNumber
+  ] & {
+    badge: string;
+    id: BigNumber;
+    min: BigNumber;
+    max: BigNumber;
+    points: BigNumber;
+  };
+
+  export type NodeStruct = {
+    deployerAllowed: PromiseOrValue<boolean>;
+    required: PromiseOrValue<BigNumberish>;
+    badges: NBadgeAuthInterface.BadgeStruct[];
+  };
+
+  export type NodeStructOutput = [
+    boolean,
+    BigNumber,
+    NBadgeAuthInterface.BadgeStructOutput[]
+  ] & {
+    deployerAllowed: boolean;
+    required: BigNumber;
+    badges: NBadgeAuthInterface.BadgeStructOutput[];
+  };
+}
+
 export declare namespace LaborMarketInterface {
   export type ServiceRequestStruct = {
     signalExp: PromiseOrValue<BigNumberish>;
@@ -68,7 +108,7 @@ export interface LaborMarketInterface extends utils.Interface {
     "claim(uint256,uint256)": FunctionFragment;
     "claimRemainder(uint256)": FunctionFragment;
     "deployer()": FunctionFragment;
-    "initialize(address,address,uint256[],uint256[],uint256[])": FunctionFragment;
+    "initialize(address,address,uint256[],uint256[],uint256[],bytes4[],(bool,uint256,(address,uint256,uint256,uint256,uint256)[])[])": FunctionFragment;
     "isAuthorized(address,bytes4)": FunctionFragment;
     "provide(uint256,string)": FunctionFragment;
     "requestIdToAddressToPerformance(uint256,address)": FunctionFragment;
@@ -115,7 +155,9 @@ export interface LaborMarketInterface extends utils.Interface {
       PromiseOrValue<string>,
       PromiseOrValue<BigNumberish>[],
       PromiseOrValue<BigNumberish>[],
-      PromiseOrValue<BigNumberish>[]
+      PromiseOrValue<BigNumberish>[],
+      PromiseOrValue<BytesLike>[],
+      NBadgeAuthInterface.NodeStruct[]
     ]
   ): string;
   encodeFunctionData(
@@ -437,6 +479,8 @@ export interface LaborMarket extends BaseContract {
       _auxilaries: PromiseOrValue<BigNumberish>[],
       _alphas: PromiseOrValue<BigNumberish>[],
       _betas: PromiseOrValue<BigNumberish>[],
+      _sigs: PromiseOrValue<BytesLike>[],
+      _nodes: NBadgeAuthInterface.NodeStruct[],
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
@@ -548,6 +592,8 @@ export interface LaborMarket extends BaseContract {
     _auxilaries: PromiseOrValue<BigNumberish>[],
     _alphas: PromiseOrValue<BigNumberish>[],
     _betas: PromiseOrValue<BigNumberish>[],
+    _sigs: PromiseOrValue<BytesLike>[],
+    _nodes: NBadgeAuthInterface.NodeStruct[],
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
@@ -666,6 +712,8 @@ export interface LaborMarket extends BaseContract {
       _auxilaries: PromiseOrValue<BigNumberish>[],
       _alphas: PromiseOrValue<BigNumberish>[],
       _betas: PromiseOrValue<BigNumberish>[],
+      _sigs: PromiseOrValue<BytesLike>[],
+      _nodes: NBadgeAuthInterface.NodeStruct[],
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -913,6 +961,8 @@ export interface LaborMarket extends BaseContract {
       _auxilaries: PromiseOrValue<BigNumberish>[],
       _alphas: PromiseOrValue<BigNumberish>[],
       _betas: PromiseOrValue<BigNumberish>[],
+      _sigs: PromiseOrValue<BytesLike>[],
+      _nodes: NBadgeAuthInterface.NodeStruct[],
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
@@ -996,6 +1046,8 @@ export interface LaborMarket extends BaseContract {
       _auxilaries: PromiseOrValue<BigNumberish>[],
       _alphas: PromiseOrValue<BigNumberish>[],
       _betas: PromiseOrValue<BigNumberish>[],
+      _sigs: PromiseOrValue<BytesLike>[],
+      _nodes: NBadgeAuthInterface.NodeStruct[],
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 

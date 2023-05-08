@@ -32,7 +32,7 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
 
     /// @dev Prevent implementation from being initialized.
     constructor() {
-        _disableInitializers();
+        // _disableInitializers();
     }
 
     /**
@@ -48,10 +48,12 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
         EnforcementCriteriaInterface _criteria,
         uint256[] calldata _auxilaries,
         uint256[] calldata _alphas,
-        uint256[] calldata _betas
+        uint256[] calldata _betas,
+        bytes4[] calldata _sigs,
+        Node[] calldata _nodes
     ) external initializer {
-        // TODO: uncomment -- just wanted to see if this was the only thing preventing compilation.
-        // __NBadgeAuth_init(_deployer);
+        /// @dev Initialize the access controls
+        __NBadgeAuth_init(_deployer, _sigs, _nodes);
 
         /// @dev Configure the Labor Market state control.
         criteria = _criteria;

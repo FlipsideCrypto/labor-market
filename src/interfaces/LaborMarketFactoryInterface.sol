@@ -4,6 +4,7 @@ pragma solidity ^0.8.17;
 
 /// @dev Helpers interfaces.
 import { EnforcementCriteriaInterface } from './enforcement/EnforcementCriteriaInterface.sol';
+import { NBadgeAuthInterface } from './auth/NBadgeAuthInterface.sol';
 
 interface LaborMarketFactoryInterface {
     /// @dev Announces when a new Labor Market is created through the protocol Factory.
@@ -17,6 +18,8 @@ interface LaborMarketFactoryInterface {
         EnforcementCriteriaInterface _criteria,
         uint256[] calldata _auxilaries,
         uint256[] calldata _alphas,
-        uint256[] calldata _betas
+        uint256[] calldata _betas,
+        bytes4[] calldata _sigs,
+        NBadgeAuthInterface.Node[] calldata _nodes
     ) external returns (address laborMarketAddress);
 }
