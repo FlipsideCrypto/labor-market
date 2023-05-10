@@ -331,9 +331,6 @@ describe('Labor Market', function () {
             const claim = await market.connect(provider).claim(requestId, submissionId);
             await claim.wait();
 
-            const expected = await market.callStatic.claimRemainder(requestId);
-            console.log('expected', expected);
-
             const claimRemainder = await market.connect(requester).claimRemainder(requestId);
             await claimRemainder.wait();
 
@@ -351,7 +348,7 @@ describe('Labor Market', function () {
             expect(marketUsdcAfter).to.eq(ethers.utils.parseEther('0'));
             expect(marketPepeAfter).to.eq(ethers.utils.parseEther('0'));
             expect(requesterPepeBalanceAfter).to.eq(requesterPepeBalanceBefore.add(ethers.utils.parseEther('99')));
-            // expect(requesterUsdcBalanceAfter).to.eq(requesterUsdcBalanceBefore.add(ethers.utils.parseEther('99')));
+            expect(requesterUsdcBalanceAfter).to.eq(requesterUsdcBalanceBefore.add(ethers.utils.parseEther('99')));
         });
         it('call: withdrawRequest()', async () => {
             let { market, requestId, ERC20s } = await loadFixture(createMarketWithRequest);
@@ -378,6 +375,18 @@ describe('Labor Market', function () {
             expect(marketPepeAfter).to.eq(ethers.utils.parseEther('0'));
             expect(requesterPepeBalanceAfter).to.eq(requesterPepeBalanceBefore.add(ethers.utils.parseEther('100')));
             expect(requesterUsdcBalanceAfter).to.eq(requesterUsdcBalanceBefore.add(ethers.utils.parseEther('100')));
+        });
+        it('fail: withdrawRequest() - already active', async () => {
+            let { market, requestId } = await loadFixture(createMarketWithRequest);
+
+            const [requester, provider] = await ethers.getSigners();
+
+            const signal = await market.connect(provider).signal(requestId);
+            await signal.wait();
+
+            await expect(market.connect(requester).withdrawRequest(requestId)).to.be.revertedWith(
+                'LaborMarket::withdrawRequest: Already active',
+            );
         });
     });
 });

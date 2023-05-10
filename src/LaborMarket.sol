@@ -102,7 +102,7 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
         require(_request.providerLimit > 0 && _request.reviewerLimit > 0, 'LaborMarket::submitRequest: Invalid limits');
 
         /// @notice Generate the uuid for the request using the timestamp and address.
-        requestId = uint256(keccak256(abi.encodePacked(_blockNonce, uint88(block.timestamp), uint160(msg.sender))));
+        requestId = uint256(bytes32(abi.encodePacked(_blockNonce, uint88(block.timestamp), uint160(msg.sender))));
 
         /// @notice Ensure the request does not already exist.
         require(requestIdToRequest[requestId].signalExp == 0, 'LaborMarket::submitRequest: Request already exists');
@@ -416,6 +416,7 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
     }
 
     /**
+     * TODO: They can currently call this multiple times to drain the contract. Delete the request?
      * @notice Allows a service requester to claim the remainder of funds not allocated to service providers.
      * @param _requestId The id of the service request.
      *
@@ -450,8 +451,6 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
             (request.providerLimit - signalState.providersArrived) *
             (request.pTokenProviderTotal / request.providerLimit);
 
-        console.log('shares never redeemed', pTokenProviderSurplus);
-
         /// @notice Determine the amount of available reviewer shares never redeemed.
         pTokenReviewerSurplus =
             (request.reviewerLimit - signalState.reviewersArrived) *
@@ -461,13 +460,6 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
         /// @dev This accounts for funds that were attempted to be earned, but failed to be by
         ///      not meeting the enforcement standards of the criteria module enabled.
         pTokenProviderSurplus += criteria.remainder(_requestId);
-
-        uint256 remainder = criteria.remainder(_requestId);
-        console.log('remainder', remainder);
-        console.log('pTokenProviderSurplus', pTokenProviderSurplus);
-        console.log('does this work', address(uint160(_requestId)));
-        console.log('msg.sender', msg.sender);
-        console.log('requestId', _requestId);
 
         /// @dev Pull the address of the requester out of storage.
         address requester = address(uint160(_requestId));
@@ -521,11 +513,18 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
         /// @dev Ensure that only the Requester may withdraw the request.
         require(address(uint160(_requestId)) == msg.sender, 'LaborMarket::withdrawRequest: Not requester');
 
-        /// @dev Require the request has not been signaled.
+        /// @dev Require that the request does not have any signal state.
         require(
-            keccak256(abi.encode(requestIdToSignalState[_requestId])) == bytes32(0),
+            (requestIdToSignalState[_requestId].providers |
+                requestIdToSignalState[_requestId].reviewers |
+                requestIdToSignalState[_requestId].providersArrived |
+                requestIdToSignalState[_requestId].reviewersArrived) == 0,
             'LaborMarket::withdrawRequest: Already active'
         );
+
+        /// @dev Initialize the refund amounts before clearing storage.
+        uint256 pTokenProviderRemainder = request.pTokenProviderTotal;
+        uint256 pTokenReviewerRemainder = request.pTokenReviewerTotal;
 
         /// @notice Delete the request and prevent further action.
         delete request.signalExp;
@@ -535,18 +534,16 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
         delete request.reviewerLimit;
         delete request.pTokenProviderTotal;
         delete request.pTokenReviewerTotal;
+
+        /// @notice Return the provider payment token back to the Requester.
+        if (pTokenProviderRemainder > 0) request.pTokenProvider.transfer(msg.sender, pTokenProviderRemainder);
+
+        /// @notice Return the reviewer payment token back to the Requester.
+        if (pTokenReviewerRemainder > 0) request.pTokenReviewer.transfer(msg.sender, pTokenReviewerRemainder);
+
+        /// @dev Delete the pToken interfaces now.
         delete request.pTokenProvider;
         delete request.pTokenReviewer;
-
-        if (request.pTokenProviderTotal > 0) {
-            /// @notice Return the $pToken back to the Requester.
-            request.pTokenProvider.transferFrom(address(this), msg.sender, request.pTokenProviderTotal);
-        }
-
-        if (request.pTokenReviewerTotal > 0) {
-            /// @dev Transfer the reviewer tokens that support the compensation of the Request.
-            request.pTokenReviewer.transferFrom(address(this), msg.sender, request.pTokenReviewerTotal);
-        }
 
         /// @dev Announce the withdrawal of a request.
         emit RequestWithdrawn(_requestId);

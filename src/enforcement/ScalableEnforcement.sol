@@ -137,9 +137,6 @@ contract ScalableEnforcement is EnforcementCriteriaInterface {
         /// @notice Keep a global tracker of the total remainder available to enable Requester reclaims.
         request.remainder += score.remainder;
 
-        console.log('score.earnings: %s', score.earnings);
-        console.log('score.remainder: %s', score.remainder);
-
         /// @notice Announce the update in the reviewing status of the submission.
         emit SubmissionReviewed(msg.sender, _requestId, _submissionId, 1, score.earnings, score.remainder, true);
 

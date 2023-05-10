@@ -68,17 +68,13 @@ describe('Enforcement', function () {
         return { factory, enforcement, laborMarketSingleton, ERC20s };
     }
 
-    async function createMarket() {
+    async function createMarket(auxilaries: number[] = [1], alphas: number[] = [0, 1], betas: number[] = [0, 1]) {
         const { factory, enforcement, ERC20s } = await loadFixture(deployFactory);
         const [deployer] = await ethers.getSigners();
 
         const criteria = enforcement.address; // EnforcementCriteriaInterface _criteria,
         const sigs: any = [];
         const nodes: any = [];
-
-        const auxilaries = [4];
-        const alphas = [0, 1, 2, 3, 4];
-        const betas = [0, 0, 100, 200, 300];
 
         const args = [
             deployer.address, // address _deployer,
@@ -111,23 +107,29 @@ describe('Enforcement', function () {
         return { market, factory, enforcement, deployer, ERC20s };
     }
 
-    async function createMarketWithSubmission() {
-        let { market, requestId, ERC20s } = await loadFixture(createMarketWithRequest);
+    describe('Pass Fail Enforcement', async () => {
+        it('Pass Fail', async () => {
+            const { market, ERC20s } = await loadFixture(createMarket);
 
-        const [, provider] = await ethers.getSigners();
+            // Create a pass fail request
+            const now = await getCurrentBlockTimestamp();
 
-        market = market.connect(provider);
+            const request: LaborMarketInterface.ServiceRequestStruct = {
+                signalExp: now + 1000, // uint48
+                submissionExp: now + 2000, // uint48
+                enforcementExp: now + 3000, // uint48
+                providerLimit: 100, // uint64
+                reviewerLimit: 100, // uint64
+                pTokenProviderTotal: ethers.utils.parseEther('100'), // uint256
+                pTokenReviewerTotal: ethers.utils.parseEther('100'), // uint256
+                pTokenProvider: ERC20s.pepe.address, // IERC20
+                pTokenReviewer: ERC20s.usdc.address, // IERC20
+            };
 
-        const signal = await market.signal(requestId);
-        await signal.wait();
+            const tx = await market.submitRequest(0, request, 'uri');
+            const receipt = await tx.wait();
 
-        const submissionId = await market.callStatic.provide(requestId, 'uri');
-
-        const provide = await market.provide(requestId, 'uri');
-        await provide.wait();
-
-        return { market, requestId, submissionId, ERC20s };
-    }
-
-    describe('LaborMarketFactory.sol', async () => {});
+            const requestId = receipt.events.find((e: any) => e.event === 'RequestConfigured').args.requestId;
+        });
+    });
 });

@@ -22,7 +22,9 @@ The key for the types of changes are as follows:
 -   👷 Changed `transferFrom` to `transfer` in LaborMarket to prevent the need for approval.
     -   ERC20 approval in transferFrom does not account for caller being msg.sender
 -   🐛 Fixed `claimRemainder` calculations not accounting for the difference in limits and how many arrived.
--   👷 Changed `ScalableLikertEnforcement` to `ScalableEnforcement`
+-   👷 Renamed `ScalableLikertEnforcement` to `ScalableEnforcement`.
+-   🐛 Fixed packing of ids are now not hashed in order to be able to resolve properly later on. 
+-   🐛 Fixed bug with using storage state in withdrawRequest after deleting it.
 
 ## [2.0.3] - 2023-05-08
 

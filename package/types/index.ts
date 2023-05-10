@@ -28,8 +28,8 @@ export type { IERC165 } from "./@openzeppelin/contracts/utils/introspection/IERC
 export { IERC165__factory } from "./factories/@openzeppelin/contracts/utils/introspection/IERC165__factory";
 export type { NBadgeAuth } from "./src/auth/NBadgeAuth";
 export { NBadgeAuth__factory } from "./factories/src/auth/NBadgeAuth__factory";
-export type { ScalableEnforcement } from "./src/enforcement/ScalableLikertEnforcement.sol/ScalableEnforcement";
-export { ScalableEnforcement__factory } from "./factories/src/enforcement/ScalableLikertEnforcement.sol/ScalableEnforcement__factory";
+export type { ScalableEnforcement } from "./src/enforcement/ScalableEnforcement";
+export { ScalableEnforcement__factory } from "./factories/src/enforcement/ScalableEnforcement__factory";
 export type { NBadgeAuthInterface } from "./src/interfaces/auth/NBadgeAuthInterface";
 export { NBadgeAuthInterface__factory } from "./factories/src/interfaces/auth/NBadgeAuthInterface__factory";
 export type { EnforcementCriteriaInterface } from "./src/interfaces/enforcement/EnforcementCriteriaInterface";
