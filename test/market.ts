@@ -13,35 +13,8 @@ async function getCurrentBlockTimestamp() {
 }
 
 describe('Labor Market', function () {
-    async function getSigners() {
-        const [deployer, reviewer, provider1, provider2, badActor] = await ethers.getSigners();
-        return { deployer, reviewer, provider1, provider2, badActor };
-    }
-
-    async function deployLaborMarketSingleton() {
-        const LaborMarket = await ethers.getContractFactory('LaborMarket');
-        const laborMarketSingleton = await LaborMarket.deploy();
-        await laborMarketSingleton.deployed();
-
-        return { laborMarketSingleton };
-    }
-
-    async function deployFactory() {
-        const { laborMarketSingleton } = await loadFixture(deployLaborMarketSingleton);
-
-        const Factory = await ethers.getContractFactory('LaborMarketFactory');
-        const factory = await Factory.deploy(laborMarketSingleton.address);
-        await factory.deployed();
-
-        const EnforcementCriteria = await ethers.getContractFactory('ScalableLikertEnforcement');
-        const enforcement = await EnforcementCriteria.deploy();
-        await enforcement.deployed();
-
-        return { laborMarketSingleton, factory, enforcement };
-    }
-
     async function deployCoins() {
-        const { deployer } = await loadFixture(getSigners);
+        const [deployer] = await ethers.getSigners();
 
         const ERC20 = await ethers.getContractFactory('ERC20FreeMint');
 
@@ -49,7 +22,7 @@ describe('Labor Market', function () {
             ERC20.deploy('PEPE', 'PEPE', 18),
             ERC20.deploy('ETH', 'ETH', 18),
             ERC20.deploy('NEAR', 'NEAR', 18),
-            ERC20.deploy('USDC', 'USDC', 6),
+            ERC20.deploy('USDC', 'USDC', 18),
         ]);
 
         const [pepe, weth, near, usdc] = await Promise.all([
@@ -71,21 +44,45 @@ describe('Labor Market', function () {
         return { pepe, weth, near, usdc };
     }
 
-    async function createMarket(
-        auxilaries: number[] = [4],
-        alphas: number[] = [0, 1, 2, 3, 4],
-        betas: number[] = [0, 0, 100, 200, 300],
-    ) {
-        const { factory, enforcement, laborMarketSingleton } = await loadFixture(deployFactory);
-        const signers = await loadFixture(getSigners);
+    async function deployLaborMarketSingleton() {
+        const ERC20s = await loadFixture(deployCoins);
 
+        const LaborMarket = await ethers.getContractFactory('LaborMarket');
+        const laborMarketSingleton = await LaborMarket.deploy();
+        await laborMarketSingleton.deployed();
+
+        return { laborMarketSingleton, ERC20s };
+    }
+
+    async function deployFactory() {
+        const { laborMarketSingleton, ERC20s } = await loadFixture(deployLaborMarketSingleton);
+
+        const Factory = await ethers.getContractFactory('LaborMarketFactory');
+        const factory = await Factory.deploy(laborMarketSingleton.address);
+        await factory.deployed();
+
+        const EnforcementCriteria = await ethers.getContractFactory('ScalableLikertEnforcement');
+        const enforcement = await EnforcementCriteria.deploy();
+        await enforcement.deployed();
+
+        return { factory, enforcement, laborMarketSingleton, ERC20s };
+    }
+
+    async function createMarket() {
+        const { factory, enforcement, ERC20s } = await loadFixture(deployFactory);
+        const [deployer] = await ethers.getSigners();
+
+        const criteria = enforcement.address; // EnforcementCriteriaInterface _criteria,
         const sigs: any = [];
-
         const nodes: any = [];
 
+        const auxilaries = [4];
+        const alphas = [0, 1, 2, 3, 4];
+        const betas = [0, 0, 100, 200, 300];
+
         const args = [
-            signers.deployer.address, // address _deployer,
-            enforcement.address, // EnforcementCriteriaInterface _criteria,
+            deployer.address, // address _deployer,
+            criteria, // EnforcementCriteriaInterface _criteria,
             auxilaries, // uint256[] memory _auxilaries,
             alphas, // uint256[] memory _alphas,
             betas, // uint256[] memory _betas
@@ -93,59 +90,75 @@ describe('Labor Market', function () {
             nodes, // Node[] memory _nodes,
         ];
 
-        const marketAddress = await factory.callStatic.createLaborMarket(...args);
+        const tx = await factory.createLaborMarket(...args);
+        const receipt = await tx.wait();
 
-        console.log('marketAddress', marketAddress);
+        const event = receipt.events.find((e: any) => e.event === 'LaborMarketCreated');
 
-        await expect(factory.createLaborMarket(...args))
-            .to.emit(factory, 'LaborMarketCreated')
-            .withArgs(marketAddress, signers.deployer.address, laborMarketSingleton.address);
+        const marketAddress = event.args.marketAddress;
 
         const market = await ethers.getContractAt('LaborMarket', marketAddress);
 
-        return { market, factory, enforcement, ...signers };
+        const [pepeApproval, usdcApproval, wethApproval, nearApproval] = await Promise.all([
+            ERC20s.pepe.connect(deployer).approve(market.address, ethers.utils.parseEther('10000000000')),
+            ERC20s.usdc.connect(deployer).approve(market.address, ethers.utils.parseEther('10000000000')),
+            ERC20s.weth.connect(deployer).approve(market.address, ethers.utils.parseEther('10000000000')),
+            ERC20s.near.connect(deployer).approve(market.address, ethers.utils.parseEther('10000000000')),
+        ]);
+
+        await Promise.all([pepeApproval.wait(), usdcApproval.wait(), wethApproval.wait(), nearApproval.wait()]);
+
+        return { market, factory, enforcement, deployer, ERC20s };
     }
 
     async function createMarketWithRequest() {
-        const { market, deployer } = await loadFixture(createMarket);
-        const { pepe, usdc } = await loadFixture(deployCoins);
-        const signers = await loadFixture(getSigners);
+        const { market, deployer, ERC20s } = await loadFixture(createMarket);
 
         const now = await getCurrentBlockTimestamp();
 
-        await (await pepe.approve(market.address, ethers.utils.parseEther('1000000'))).wait();
-        await (await usdc.approve(market.address, ethers.utils.parseEther('1000000'))).wait();
-
+        // TODO: Do we have an underflow if pTokenProviderTotal and pTokenReviewerTotal are less than a full token? (with proper decimals)
         const request: LaborMarketInterface.ServiceRequestStruct = {
             signalExp: now + 1000, // uint48
             submissionExp: now + 2000, // uint48
             enforcementExp: now + 3000, // uint48
             providerLimit: 100, // uint64
             reviewerLimit: 100, // uint64
-            pTokenProviderTotal: 100, // uint256
-            pTokenReviewerTotal: 100, // uint256
-            pTokenProvider: pepe.address, // IERC20
-            pTokenReviewer: usdc.address, // IERC20
+            pTokenProviderTotal: ethers.utils.parseEther('100'), // uint256
+            pTokenReviewerTotal: ethers.utils.parseEther('100'), // uint256
+            pTokenProvider: ERC20s.pepe.address, // IERC20
+            pTokenReviewer: ERC20s.usdc.address, // IERC20
         };
 
-        console.log('request', request);
+        const tx = await market.submitRequest(0, request, 'insertURIhere');
+        const receipt = await tx.wait();
 
-        const requestId = await market.connect(deployer).callStatic.submitRequest(0, request, 'insertURIhere');
+        const requestId = receipt.events.find((e: any) => e.event === 'RequestConfigured').args.requestId;
 
-        // const requestId = 0;
+        return { market, requestId, ERC20s, deployer };
+    }
 
-        // const tx = await market.connect(deployer).submitRequest(0, request, 'insertURIhere');
-        // const receipt = await tx.wait();
-        // console.log(receipt);
-        // expect(await market.submitRequest(0, request, 'insertURIhere')).to.emit(market, 'RequestConfigured');
+    async function createMarketWithSubmission() {
+        let { market, requestId, ERC20s } = await loadFixture(createMarketWithRequest);
 
-        return { market, requestId, ...signers };
+        const [, provider] = await ethers.getSigners();
+
+        market = market.connect(provider);
+
+        const signal = await market.signal(requestId);
+        await signal.wait();
+
+        const submissionId = await market.callStatic.provide(requestId, 'uri');
+
+        const provide = await market.provide(requestId, 'uri');
+        await provide.wait();
+
+        return { market, requestId, submissionId, ERC20s };
     }
 
     describe('LaborMarketFactory.sol', async () => {
-        it('call: createMarket()', async () => {
+        it('call: createLaborMarket()', async () => {
             const { factory, enforcement, laborMarketSingleton } = await loadFixture(deployFactory);
-            const { deployer } = await loadFixture(getSigners);
+            const [deployer] = await ethers.getSigners();
 
             const criteria = enforcement.address; // EnforcementCriteriaInterface _criteria,
             const auxilaries = [4];
@@ -174,38 +187,197 @@ describe('Labor Market', function () {
 
     describe('LaborMarket.sol', async () => {
         it('call: submitRequest()', async () => {
-            const { market } = await loadFixture(createMarket);
-            const { pepe, usdc } = await loadFixture(deployCoins);
+            const { market, ERC20s } = await loadFixture(createMarket);
+
+            const [deployer] = await ethers.getSigners();
+
             const now = await getCurrentBlockTimestamp();
+
+            const [usdcBalanceBefore, pepeBalanceBefore] = await Promise.all([
+                ERC20s.usdc.balanceOf(deployer.address),
+                ERC20s.pepe.balanceOf(deployer.address),
+            ]);
+
             const request: LaborMarketInterface.ServiceRequestStruct = {
-                signalExp: now + 1000, // uint48
-                submissionExp: now + 2000, // uint48
-                enforcementExp: now + 3000, // uint48
+                signalExp: now + 10000, // uint48
+                submissionExp: now + 20000, // uint48
+                enforcementExp: now + 30000, // uint48
                 providerLimit: 100, // uint64
                 reviewerLimit: 100, // uint64
-                pTokenProviderTotal: 100, // uint256
-                pTokenReviewerTotal: 100, // uint256
-                pTokenProvider: pepe.address, // IERC20
-                pTokenReviewer: usdc.address, // IERC20
+                pTokenProviderTotal: ethers.utils.parseEther('100'), // uint256
+                pTokenReviewerTotal: ethers.utils.parseEther('1'), // uint256
+                pTokenProvider: ERC20s.pepe.address, // IERC20
+                pTokenReviewer: ERC20s.usdc.address, // IERC20
             };
-            expect(await market.submitRequest(0, request, 'insertURIhere')).to.emit(market, 'RequestConfigured');
-        });
-        it('call: signal()', async () => {
-            const { market, requestId, provider1 } = await loadFixture(createMarketWithRequest);
 
-            console.log('requestId', requestId);
-
-            await expect(market.signal(0)).to.emit(market, 'RequestSignal').withArgs(provider1.address, 0);
-
-            await expect(market.requestIdToRequest(0).then((r: any) => r.providerTotal)).to.equal(
-                ethers.utils.parseEther('1000000'),
+            expect(await market.connect(deployer).submitRequest(0, request, 'insertURIhere')).to.emit(
+                market,
+                'RequestConfigured',
             );
+
+            const [usdcBalanceAfter, pepeBalanceAfter] = await Promise.all([
+                ERC20s.usdc.balanceOf(deployer.address),
+                ERC20s.pepe.balanceOf(deployer.address),
+            ]);
+
+            expect(pepeBalanceAfter).to.eq(pepeBalanceBefore.sub(request.pTokenProviderTotal));
+            expect(usdcBalanceAfter).to.eq(usdcBalanceBefore.sub(request.pTokenReviewerTotal));
         });
-        it('call: signalReview()', async () => {});
-        it('call: provide()', async () => {});
-        it('call: review()', async () => {});
-        it('call: claim()', async () => {});
-        it('call: claimRemainder()', async () => {});
-        it('call: withdrawRequest()', async () => {});
+
+        it('call: signal()', async () => {
+            const { market, requestId } = await loadFixture(createMarketWithRequest);
+
+            const [, provider] = await ethers.getSigners();
+
+            await expect(market.connect(provider).signal(requestId))
+                .to.emit(market, 'RequestSignal')
+                .withArgs(provider.address, requestId);
+        });
+
+        it('call: provide()', async () => {
+            let { market, requestId } = await loadFixture(createMarketWithRequest);
+
+            const provider = (await ethers.getSigners())[1];
+
+            market = market.connect(provider);
+
+            const signal = await market.signal(requestId);
+            await signal.wait();
+
+            const submissionId = await market.callStatic.provide(requestId, 'uri');
+
+            await expect(market.provide(requestId, 'uri'))
+                .to.emit(market, 'RequestFulfilled')
+                .withArgs(provider.address, requestId, submissionId, 'uri');
+        });
+
+        it('call: signalReview()', async () => {
+            const { market, requestId } = await loadFixture(createMarketWithRequest);
+            const reviewer = (await ethers.getSigners())[2];
+
+            expect(await market.connect(reviewer).signalReview(requestId, 10))
+                .to.emit('ReviewSignal')
+                .withArgs(reviewer.address, requestId, 10);
+        });
+
+        it('call: review()', async () => {
+            let { market, requestId, submissionId, ERC20s } = await loadFixture(createMarketWithSubmission);
+
+            const reviewer = (await ethers.getSigners())[2];
+
+            const signal = await market.connect(reviewer).signalReview(requestId, 10);
+            await signal.wait();
+
+            expect(await market.connect(reviewer).review(requestId, submissionId, 4, 'review'))
+                .to.emit(market, 'RequestReviewed')
+                .withArgs(reviewer.address, requestId, submissionId, 4, 'review');
+        });
+        it('call: claim()', async () => {
+            let { market, requestId, submissionId, ERC20s } = await loadFixture(createMarketWithSubmission);
+
+            const provider = (await ethers.getSigners())[1];
+            const reviewer = (await ethers.getSigners())[2];
+
+            const [providerPepeBalanceBefore, reviewerUsdcBalanceBefore, marketUsdcBefore, marketPepeBefore] =
+                await Promise.all([
+                    ERC20s.pepe.balanceOf(provider.address),
+                    ERC20s.usdc.balanceOf(reviewer.address),
+                    ERC20s.usdc.balanceOf(market.address),
+                    ERC20s.pepe.balanceOf(market.address),
+                ]);
+
+            const signal = await market.connect(reviewer).signalReview(requestId, 10);
+            await signal.wait();
+
+            const review = await market.connect(reviewer).review(requestId, submissionId, 4, 'review');
+            await review.wait();
+
+            await mine(10000);
+
+            const claim = await market.connect(provider).claim(requestId, submissionId);
+            await claim.wait();
+
+            const [providerPepeBalanceAfter, reviewerUsdcBalanceAfter, marketUsdcAfter, marketPepeAfter] =
+                await Promise.all([
+                    ERC20s.pepe.balanceOf(provider.address),
+                    ERC20s.usdc.balanceOf(reviewer.address),
+                    ERC20s.usdc.balanceOf(market.address),
+                    ERC20s.pepe.balanceOf(market.address),
+                ]);
+
+            expect(providerPepeBalanceAfter).to.eq(providerPepeBalanceBefore.add(ethers.utils.parseEther('1')));
+            expect(reviewerUsdcBalanceAfter).to.eq(reviewerUsdcBalanceBefore.add(ethers.utils.parseEther('1')));
+            expect(marketUsdcAfter).to.eq(marketUsdcBefore.sub(ethers.utils.parseEther('1')));
+            expect(marketPepeAfter).to.eq(marketPepeBefore.sub(ethers.utils.parseEther('1')));
+        });
+        it('call: claimRemainder()', async () => {
+            let { market, requestId, submissionId, ERC20s } = await loadFixture(createMarketWithSubmission);
+
+            const [requester, provider, reviewer] = await ethers.getSigners();
+
+            const [requesterPepeBalanceBefore, requesterUsdcBalanceBefore] = await Promise.all([
+                ERC20s.pepe.balanceOf(requester.address),
+                ERC20s.usdc.balanceOf(requester.address),
+            ]);
+
+            const signal = await market.connect(reviewer).signalReview(requestId, 10);
+            await signal.wait();
+
+            const review = await market.connect(reviewer).review(requestId, submissionId, 4, 'review');
+            await review.wait();
+
+            await mine(10000);
+
+            const claim = await market.connect(provider).claim(requestId, submissionId);
+            await claim.wait();
+
+            const expected = await market.callStatic.claimRemainder(requestId);
+            console.log('expected', expected);
+
+            const claimRemainder = await market.connect(requester).claimRemainder(requestId);
+            await claimRemainder.wait();
+
+            const [requesterPepeBalanceAfter, requesterUsdcBalanceAfter, marketUsdcAfter, marketPepeAfter] =
+                await Promise.all([
+                    ERC20s.pepe.balanceOf(requester.address),
+                    ERC20s.usdc.balanceOf(requester.address),
+                    ERC20s.usdc.balanceOf(market.address),
+                    ERC20s.pepe.balanceOf(market.address),
+                ]);
+
+            console.log('net change', requesterPepeBalanceBefore, requesterPepeBalanceAfter);
+            console.log('reviewer payment', requesterUsdcBalanceBefore, requesterUsdcBalanceAfter);
+
+            expect(marketUsdcAfter).to.eq(ethers.utils.parseEther('0'));
+            expect(marketPepeAfter).to.eq(ethers.utils.parseEther('0'));
+            expect(requesterPepeBalanceAfter).to.eq(requesterPepeBalanceBefore.add(ethers.utils.parseEther('99')));
+            // expect(requesterUsdcBalanceAfter).to.eq(requesterUsdcBalanceBefore.add(ethers.utils.parseEther('99')));
+        });
+        it('call: withdrawRequest()', async () => {
+            let { market, requestId, ERC20s } = await loadFixture(createMarketWithRequest);
+
+            const [requester] = await ethers.getSigners();
+
+            const [requesterPepeBalanceBefore, requesterUsdcBalanceBefore] = await Promise.all([
+                ERC20s.pepe.balanceOf(requester.address),
+                ERC20s.usdc.balanceOf(requester.address),
+            ]);
+
+            const withdrawRequest = await market.connect(requester).withdrawRequest(requestId);
+            await withdrawRequest.wait();
+
+            const [requesterPepeBalanceAfter, requesterUsdcBalanceAfter, marketUsdcAfter, marketPepeAfter] =
+                await Promise.all([
+                    ERC20s.pepe.balanceOf(requester.address),
+                    ERC20s.usdc.balanceOf(requester.address),
+                    ERC20s.usdc.balanceOf(market.address),
+                    ERC20s.pepe.balanceOf(market.address),
+                ]);
+
+            expect(marketUsdcAfter).to.eq(ethers.utils.parseEther('0'));
+            expect(marketPepeAfter).to.eq(ethers.utils.parseEther('0'));
+            expect(requesterPepeBalanceAfter).to.eq(requesterPepeBalanceBefore.add(ethers.utils.parseEther('100')));
+            expect(requesterUsdcBalanceAfter).to.eq(requesterUsdcBalanceBefore.add(ethers.utils.parseEther('100')));
+        });
     });
 });

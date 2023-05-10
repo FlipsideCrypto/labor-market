@@ -8,6 +8,8 @@ import { EnforcementCriteriaInterface } from '../interfaces/enforcement/Enforcem
 /// @dev Helper libraries.
 import { EnumerableSet } from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
+import 'hardhat/console.sol';
+
 contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -123,17 +125,23 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
         /// @dev This is padded with decimals to increase the level of precision when applying buckets.
         uint256 avgWithDecimals = (MATH_AVG_DECIMALS * score.reviewSum) / score.enforcers.length();
 
+        /// @notice Determine the bucket weight for the average score.
+        uint256 bucketWeight = _getScoreToBucket(buckets, avgWithDecimals);
+
         /// @notice Scale the average by the corresponsing bucket weight for the score.
-        uint256 scaledAvg = ((avgWithDecimals * _getScoreToBucket(buckets, avgWithDecimals)) / MATH_AVG_DECIMALS);
+        uint256 scaledAvg = ((avgWithDecimals * bucketWeight) / MATH_AVG_DECIMALS);
 
         /// @notice Calculate the amount owed to the Provider for their contribution.
-        score.earnings = (scaledAvg * _availableShare) / buckets.maxScore;
+        score.earnings = (scaledAvg * _availableShare) / buckets.maxScore / bucketWeight;
 
         /// @dev Determine the amount of funding should be refunded to the Requester
         score.remainder = _availableShare - score.earnings;
 
         /// @notice Keep a global tracker of the total remainder available to enable Requester reclaims.
         request.remainder += score.remainder;
+
+        console.log('score.earnings: %s', score.earnings);
+        console.log('score.remainder: %s', score.remainder);
 
         /// @notice Announce the update in the reviewing status of the submission.
         emit SubmissionReviewed(msg.sender, _requestId, _submissionId, 1, score.earnings, score.remainder, true);

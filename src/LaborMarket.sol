@@ -12,6 +12,10 @@ import { EnforcementCriteriaInterface } from './interfaces/enforcement/Enforceme
 /// @dev Helper libraries.
 import { EnumerableSet } from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
+import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+
+import 'hardhat/console.sol';
+
 contract LaborMarket is LaborMarketInterface, NBadgeAuth {
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -351,11 +355,7 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
             /// @notice Determine if the request incentivized reviewers to participate.
             if (request.pTokenReviewerTotal > 0)
                 /// @notice Transfer the tokens from the Market to the Reviewer.
-                request.pTokenReviewer.transferFrom(
-                    address(this),
-                    msg.sender,
-                    request.pTokenReviewerTotal / request.reviewerLimit
-                );
+                request.pTokenReviewer.transfer(msg.sender, request.pTokenReviewerTotal / request.reviewerLimit);
 
             /// @notice Announce the new submission of a score by a maintainer.
             emit RequestReviewed(msg.sender, _requestId, _submissionId, _score, _uri);
@@ -445,22 +445,29 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
         /// @notice Get the signal state of the request.
         ServiceSignalState storage signalState = requestIdToSignalState[_requestId];
 
-        /// @notice Determine how many of the expected providers never showed up.
-        uint64 unarrivedProviders = signalState.providers - signalState.providersArrived;
-
         /// @notice Determine the amount of available provider shares never redeemed.
-        pTokenProviderSurplus = unarrivedProviders * (request.pTokenProviderTotal / request.providerLimit);
+        pTokenProviderSurplus =
+            (request.providerLimit - signalState.providersArrived) *
+            (request.pTokenProviderTotal / request.providerLimit);
 
-        /// @notice Determine how many of the expected reviewers never showed up.
-        uint64 unarrivedReviewers = signalState.reviewers - signalState.reviewersArrived;
+        console.log('shares never redeemed', pTokenProviderSurplus);
 
         /// @notice Determine the amount of available reviewer shares never redeemed.
-        pTokenReviewerSurplus = unarrivedReviewers * (request.pTokenReviewerTotal / request.reviewerLimit);
+        pTokenReviewerSurplus =
+            (request.reviewerLimit - signalState.reviewersArrived) *
+            (request.pTokenReviewerTotal / request.reviewerLimit);
 
         /// @notice Determine the amount of undistributed money remaining in the request.
         /// @dev This accounts for funds that were attempted to be earned, but failed to be by
         ///      not meeting the enforcement standards of the criteria module enabled.
         pTokenProviderSurplus += criteria.remainder(_requestId);
+
+        uint256 remainder = criteria.remainder(_requestId);
+        console.log('remainder', remainder);
+        console.log('pTokenProviderSurplus', pTokenProviderSurplus);
+        console.log('does this work', address(uint160(_requestId)));
+        console.log('msg.sender', msg.sender);
+        console.log('requestId', _requestId);
 
         /// @dev Pull the address of the requester out of storage.
         address requester = address(uint160(_requestId));

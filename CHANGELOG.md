@@ -17,6 +17,20 @@ The key for the types of changes are as follows:
 
 -   CINAD (sigh-nad): Chain Is Not A Database
 
+## [2.0.3] - 2023-05-10
+
+-   👷 Changed `transferFrom` to `transfer` in LaborMarket to prevent the need for approval.
+    -   ERC20 approval in transferFrom does not account for caller being msg.sender
+-   🐛 Fixed `claimRemainder` calculations not accounting for the difference in limits and how many arrived.
+
+## [2.0.3] - 2023-05-08
+
+-   ✨ Base test suite in `market.ts`.
+-   ✨ Added new tests to `market.ts` for all run-through.
+-   🐛 Changed initializer tags on `__NBadgeAuth_init` and `__NBadgeAuth_init_unchained` in NBadgeAuth to
+    onlyInitializing.
+-   🐛 `initialize` in LaborMarket now has the initializer akin to the OwnableUpgradeablePattern.
+
 ## [2.0.2] - 2023-05-05
 
 -   ✨ Added gating mechanism for `NetworkGovernor` to allow for complex & configurable gating mechanisms.
