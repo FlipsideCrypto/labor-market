@@ -17,11 +17,12 @@ The key for the types of changes are as follows:
 
 -   CINAD (sigh-nad): Chain Is Not A Database
 
-## [2.0.3] - 2023-05-10
+## [2.0.4] - 2023-05-10
 
 -   👷 Changed `transferFrom` to `transfer` in LaborMarket to prevent the need for approval.
     -   ERC20 approval in transferFrom does not account for caller being msg.sender
 -   🐛 Fixed `claimRemainder` calculations not accounting for the difference in limits and how many arrived.
+-   👷 Changed `ScalableLikertEnforcement` to `ScalableEnforcement`
 
 ## [2.0.3] - 2023-05-08
 

@@ -57,9 +57,9 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.NBadgeAuth__factory>;
     getContractFactory(
-      name: "ScalableLikertEnforcement",
+      name: "ScalableEnforcement",
       signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.ScalableLikertEnforcement__factory>;
+    ): Promise<Contracts.ScalableEnforcement__factory>;
     getContractFactory(
       name: "NBadgeAuthInterface",
       signerOrOptions?: ethers.Signer | FactoryOptions
@@ -149,10 +149,10 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.NBadgeAuth>;
     getContractAt(
-      name: "ScalableLikertEnforcement",
+      name: "ScalableEnforcement",
       address: string,
       signer?: ethers.Signer
-    ): Promise<Contracts.ScalableLikertEnforcement>;
+    ): Promise<Contracts.ScalableEnforcement>;
     getContractAt(
       name: "NBadgeAuthInterface",
       address: string,

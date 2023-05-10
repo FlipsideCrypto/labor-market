@@ -25,9 +25,9 @@ import type {
   TypedListener,
   OnEvent,
   PromiseOrValue,
-} from "../../common";
+} from "../../../common";
 
-export interface ScalableLikertEnforcementInterface extends utils.Interface {
+export interface ScalableEnforcementInterface extends utils.Interface {
   functions: {
     "MATH_AVG_DECIMALS()": FunctionFragment;
     "enforce(uint256,uint256,uint256,uint256,address)": FunctionFragment;
@@ -159,12 +159,12 @@ export type SubmissionReviewedEvent = TypedEvent<
 export type SubmissionReviewedEventFilter =
   TypedEventFilter<SubmissionReviewedEvent>;
 
-export interface ScalableLikertEnforcement extends BaseContract {
+export interface ScalableEnforcement extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
   attach(addressOrName: string): this;
   deployed(): Promise<this>;
 
-  interface: ScalableLikertEnforcementInterface;
+  interface: ScalableEnforcementInterface;
 
   queryFilter<TEvent extends TypedEvent>(
     event: TypedEventFilter<TEvent>,

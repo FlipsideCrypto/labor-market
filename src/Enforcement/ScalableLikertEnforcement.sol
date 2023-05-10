@@ -10,7 +10,7 @@ import { EnumerableSet } from '@openzeppelin/contracts/utils/structs/EnumerableS
 
 import 'hardhat/console.sol';
 
-contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
+contract ScalableEnforcement is EnforcementCriteriaInterface {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     /// @dev The definition how the scoring rubric is applied to a submission.
@@ -59,18 +59,18 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
         Buckets storage buckets = marketToBuckets[msg.sender];
 
         /// @dev Criteria can only be set once.
-        require(buckets.maxScore == 0, 'ScalableLikertEnforcement::setBuckets: Criteria already in use');
+        require(buckets.maxScore == 0, 'ScalableEnforcement::setBuckets: Criteria already in use');
 
         /// @notice Ensure a value for max score has been provided.
-        require(_auxilaries[0] != 0, 'ScalableLikertEnforcement::setBuckets: Max score not set');
+        require(_auxilaries[0] != 0, 'ScalableEnforcement::setBuckets: Max score not set');
 
         /// @dev The ranges and weights must be the same length.
-        require(_ranges.length == _weights.length, 'ScalableLikertEnforcement::setBuckets: Invalid input');
+        require(_ranges.length == _weights.length, 'ScalableEnforcement::setBuckets: Invalid input');
 
         /// @dev The ranges must be in ascending order.
         for (uint256 i; i < _ranges.length - 1; i++) {
             /// @dev Confirm the ranges are sequential.
-            require(_ranges[i] < _ranges[i + 1], 'ScalableLikertEnforcement::setBuckets: Buckets not sequential');
+            require(_ranges[i] < _ranges[i + 1], 'ScalableEnforcement::setBuckets: Buckets not sequential');
         }
 
         /// @dev Set the criteria.
@@ -96,16 +96,13 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
         Score storage score = marketToRequestIdToRequest[msg.sender][_requestId].scores[_submissionId];
 
         /// @notice Confirm that a score for this submission and enforcer is not already submitted.
-        require(
-            !score.enforcers.contains(_enforcer),
-            'ScalableLikertEnforcement::review: Enforcer already submit a review'
-        );
+        require(!score.enforcers.contains(_enforcer), 'ScalableEnforcement::review: Enforcer already submit a review');
 
         /// @dev Retrieve the buckets state from the storage slot.
         Buckets storage buckets = marketToBuckets[msg.sender];
 
         /// @notice Confirm the score stays within bounds of defintion.
-        require(_score <= buckets.maxScore, 'ScalableLikertEnforcement::review: Invalid score');
+        require(_score <= buckets.maxScore, 'ScalableEnforcement::review: Invalid score');
 
         /// @notice Add the enforcer to the list of enforcers to prevent double-reviewing.
         score.enforcers.add(_enforcer);
@@ -236,7 +233,7 @@ contract ScalableLikertEnforcement is EnforcementCriteriaInterface {
         /// @dev Loop through the buckets from the end and return the first weight that the range is less than the score.
         uint256 i = _buckets.ranges.length;
 
-        /// @dev If the buckets are not configured, utilize a scalable likert scale.
+        /// @dev If the buckets are not configured, utilize a scalable  scale.
         if (i == 0) return 1;
 
         /// @notice Loop down through the bucket to find the one it belongs to.

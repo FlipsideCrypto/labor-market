@@ -61,7 +61,7 @@ describe('Labor Market', function () {
         const factory = await Factory.deploy(laborMarketSingleton.address);
         await factory.deployed();
 
-        const EnforcementCriteria = await ethers.getContractFactory('ScalableLikertEnforcement');
+        const EnforcementCriteria = await ethers.getContractFactory('ScalableEnforcement');
         const enforcement = await EnforcementCriteria.deploy();
         await enforcement.deployed();
 
