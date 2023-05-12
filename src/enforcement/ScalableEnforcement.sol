@@ -187,15 +187,28 @@ contract ScalableEnforcement is EnforcementCriteriaInterface {
         delete marketToRequestIdToRequest[msg.sender][_requestId].remainder;
     }
 
+    /**
+     * @notice Get the rewarded payment token amount for a submission.
+     * @param _market The address of the Labor Market to check the Submission of.
+     * @param _requestId The id of the Request the Submission is related to.
+     * @param _submissionId The id of the Submission to check the rewards of.
+     * @return The amount of payment tokens earned by the Submission.
+     */
     function getRewards(
         address _market,
         uint256 _requestId,
         uint256 _submissionId
     ) public virtual returns (uint256) {
-        console.log('get id', _submissionId);
         return _rewards(_market, _requestId, _submissionId);
     }
 
+    /**
+     * @notice Get the amount of payment tokens that were unearned by participating providers.
+     * @dev Does not include the remainder left over from expected submissions that were not made.
+     * @param _market The address of the Labor Market to check the Request of.
+     * @param _requestId The id of the request the submission is related to.
+     * @return The amount of payment tokens that were unearned by participating providers.
+     */
     function getRemainder(address _market, uint256 _requestId) public virtual returns (uint256) {
         return _remainder(_market, _requestId);
     }
