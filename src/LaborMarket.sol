@@ -12,8 +12,6 @@ import { EnforcementCriteriaInterface } from './interfaces/enforcement/Enforceme
 /// @dev Helper libraries.
 import { EnumerableSet } from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
-import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-
 import 'hardhat/console.sol';
 
 contract LaborMarket is LaborMarketInterface, NBadgeAuth {
@@ -34,9 +32,9 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
     /// @dev Definition of active Provider submissions for a request.
     mapping(uint256 => EnumerableSet.AddressSet) internal requestIdToProviders;
 
-    /// @dev Prevent implementation from being initialized.
     constructor() {
-        // _disableInitializers();
+        /// @dev Prevent implementation from being initialized.
+        _disableInitializers();
     }
 
     /**
@@ -416,7 +414,6 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
     }
 
     /**
-     * TODO: They can currently call this multiple times to drain the contract. Delete the request?
      * @notice Allows a service requester to claim the remainder of funds not allocated to service providers.
      * @param _requestId The id of the service request.
      *

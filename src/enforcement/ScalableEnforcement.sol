@@ -125,11 +125,21 @@ contract ScalableEnforcement is EnforcementCriteriaInterface {
         /// @notice Determine the bucket weight for the average score.
         uint256 bucketWeight = _getScoreToBucket(buckets, avgWithDecimals);
 
+        // TODO: This math is messed up and needs to be fixed.
+
         /// @notice Scale the average by the corresponsing bucket weight for the score.
-        uint256 scaledAvg = ((avgWithDecimals * bucketWeight) / MATH_AVG_DECIMALS);
+        uint256 scaledAvg = ((avgWithDecimals * bucketWeight));
+
+        console.log('Scaled avg %s', scaledAvg);
+
+        uint256 scaleDown = MATH_AVG_DECIMALS * buckets.maxScore * bucketWeight;
 
         /// @notice Calculate the amount owed to the Provider for their contribution.
-        score.earnings = (scaledAvg * _availableShare) / buckets.maxScore / bucketWeight;
+        /// @dev A weight of 0 would result in a division by 0 error.
+        score.earnings = scaleDown > 0 ? (scaledAvg * _availableShare) / scaleDown : 0;
+
+        console.log('Earnings: %s', score.earnings);
+        console.log('submission id: %s', _submissionId);
 
         /// @dev Determine the amount of funding should be refunded to the Requester
         score.remainder = _availableShare - score.earnings;
@@ -137,6 +147,7 @@ contract ScalableEnforcement is EnforcementCriteriaInterface {
         /// @notice Keep a global tracker of the total remainder available to enable Requester reclaims.
         request.remainder += score.remainder;
 
+        console.log('Available Share %s', _availableShare);
         /// @notice Announce the update in the reviewing status of the submission.
         emit SubmissionReviewed(msg.sender, _requestId, _submissionId, 1, score.earnings, score.remainder, true);
 
@@ -181,6 +192,7 @@ contract ScalableEnforcement is EnforcementCriteriaInterface {
         uint256 _requestId,
         uint256 _submissionId
     ) public virtual returns (uint256) {
+        console.log('get id', _submissionId);
         return _rewards(_market, _requestId, _submissionId);
     }
 
@@ -226,12 +238,15 @@ contract ScalableEnforcement is EnforcementCriteriaInterface {
      * @param _buckets The distribution buckets applied to the score.
      * @param _score The score to get the weight for.
      */
-    function _getScoreToBucket(Buckets memory _buckets, uint256 _score) internal pure returns (uint256) {
+    function _getScoreToBucket(Buckets memory _buckets, uint256 _score) internal view returns (uint256) {
         /// @dev Loop through the buckets from the end and return the first weight that the range is less than the score.
         uint256 i = _buckets.ranges.length;
 
         /// @dev If the buckets are not configured, utilize a scalable  scale.
         if (i == 0) return 1;
+
+        console.log('Score to bucket %s', _score);
+        console.log('math avg decimals %s', MATH_AVG_DECIMALS);
 
         /// @notice Loop down through the bucket to find the one it belongs to.
         /// @dev Elementary loop employed due to the non-standard spacing of bucket ranges.

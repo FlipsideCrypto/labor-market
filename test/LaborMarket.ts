@@ -342,8 +342,8 @@ describe('Labor Market', function () {
                     ERC20s.pepe.balanceOf(market.address),
                 ]);
 
-            console.log('net change', requesterPepeBalanceBefore, requesterPepeBalanceAfter);
-            console.log('reviewer payment', requesterUsdcBalanceBefore, requesterUsdcBalanceAfter);
+            // console.log('net change', requesterPepeBalanceBefore, requesterPepeBalanceAfter);
+            // console.log('reviewer payment', requesterUsdcBalanceBefore, requesterUsdcBalanceAfter);
 
             expect(marketUsdcAfter).to.eq(ethers.utils.parseEther('0'));
             expect(marketPepeAfter).to.eq(ethers.utils.parseEther('0'));
