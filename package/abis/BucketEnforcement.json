@@ -80,19 +80,6 @@
     "type": "event"
   },
   {
-    "inputs": [],
-    "name": "MATH_AVG_DECIMALS",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "uint256",

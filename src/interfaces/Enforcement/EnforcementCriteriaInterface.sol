@@ -3,9 +3,10 @@
 pragma solidity ^0.8.17;
 
 interface EnforcementCriteriaInterface {
+    /// @notice Announces the definition of the criteria configuration.
     event EnforcementConfigured(address indexed _market, uint256[] _auxiliaries, uint256[] _alphas, uint256[] _betas);
 
-    /// @notice Announces change in submission reviews to enable earnings over time.
+    /// @notice Announces change in Submission reviews.
     event SubmissionReviewed(
         address indexed _market,
         uint256 indexed _requestId,

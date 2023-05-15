@@ -8,9 +8,7 @@ import { EnforcementCriteriaInterface } from '../interfaces/enforcement/Enforcem
 /// @dev Helper libraries.
 import { EnumerableSet } from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
-import 'hardhat/console.sol';
-
-contract ScalableEnforcement is EnforcementCriteriaInterface {
+contract BucketEnforcement is EnforcementCriteriaInterface {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     /// @dev The definition how the scoring rubric is applied to a submission.
@@ -34,9 +32,6 @@ contract ScalableEnforcement is EnforcementCriteriaInterface {
         uint256 remainder;
         mapping(uint256 => Score) scores;
     }
-
-    /// @dev The number of decimals to use for the average score.
-    uint256 public constant MATH_AVG_DECIMALS = 1e8;
 
     /// @notice The maximum score that can be provided relative to a market.
     mapping(address => uint256) public marketToMaxScore;
@@ -118,26 +113,11 @@ contract ScalableEnforcement is EnforcementCriteriaInterface {
         ///      about to change and we want to update the value on request 1:1.
         request.remainder -= score.remainder;
 
-        /// @notice Determine the average score for the submission.
-        /// @dev This is padded with decimals to increase the level of precision when applying buckets.
-        uint256 avgWithDecimals = (MATH_AVG_DECIMALS * score.reviewSum) / score.enforcers.length();
-
         /// @notice Determine the bucket weight for the average score.
-        uint256 bucketWeight = _getScoreToBucket(buckets, avgWithDecimals);
-
-        // TODO: This math is messed up and needs to be fixed.
-        /// @notice Scale the average by the corresponsing bucket weight for the score.
-        uint256 scaledAvg = ((avgWithDecimals * bucketWeight));
-
-        /// @notice Scale down the average by the maximum score and the bucket weight.
-        uint256 scaleDown = MATH_AVG_DECIMALS * buckets.maxScore * bucketWeight;
+        uint256 bucketWeight = _getScoreToBucket(buckets, score.reviewSum / score.enforcers.length());
 
         /// @notice Calculate the amount owed to the Provider for their contribution.
-        /// @dev A weight of 0 would result in a division by 0 error.
-        score.earnings = scaleDown > 0 ? (scaledAvg * _availableShare) / scaleDown : 0;
-
-        console.log('Earnings: %s', score.earnings);
-        console.log('submission id: %s', _submissionId);
+        score.earnings = (_availableShare * bucketWeight) / buckets.maxScore;
 
         /// @dev Determine the amount of funding should be refunded to the Requester
         score.remainder = _availableShare - score.earnings;
@@ -145,7 +125,6 @@ contract ScalableEnforcement is EnforcementCriteriaInterface {
         /// @notice Keep a global tracker of the total remainder available to enable Requester reclaims.
         request.remainder += score.remainder;
 
-        console.log('Available Share %s', _availableShare);
         /// @notice Announce the update in the reviewing status of the submission.
         emit SubmissionReviewed(msg.sender, _requestId, _submissionId, 1, score.earnings, score.remainder, true);
 
@@ -249,20 +228,17 @@ contract ScalableEnforcement is EnforcementCriteriaInterface {
      * @param _buckets The distribution buckets applied to the score.
      * @param _score The score to get the weight for.
      */
-    function _getScoreToBucket(Buckets memory _buckets, uint256 _score) internal view returns (uint256) {
+    function _getScoreToBucket(Buckets memory _buckets, uint256 _score) internal pure returns (uint256) {
         /// @dev Loop through the buckets from the end and return the first weight that the range is less than the score.
         uint256 i = _buckets.ranges.length;
 
-        /// @dev If the buckets are not configured, utilize a scalable  scale.
+        /// @dev If the buckets are not configured, utilize a scalable scale.
         if (i == 0) return 1;
-
-        console.log('Score to bucket %s', _score);
-        console.log('math avg decimals %s', MATH_AVG_DECIMALS);
 
         /// @notice Loop down through the bucket to find the one it belongs to.
         /// @dev Elementary loop employed due to the non-standard spacing of bucket ranges.
         for (i; i > 0; i--) {
-            if (_score > _buckets.ranges[i - 1]) return _buckets.weights[i - 1];
+            if (_score >= _buckets.ranges[i - 1]) return _buckets.weights[i - 1];
         }
 
         /// @dev If the score is less than the first bucket, return the first weight.

@@ -31,8 +31,8 @@ async function getRandomSigners(amount: number): Promise<Wallet[]> {
     return signers;
 }
 
-function getRandomScoreInRange(min: number, max: number): number {
-    return Math.floor(Math.random() * (max - min + 1) + min);
+function getRandomScoreInRange(range: number[]): number {
+    return range[Math.floor(Math.random() * range.length)];
 }
 
 describe('Likert Enforcement', function () {
@@ -84,7 +84,7 @@ describe('Likert Enforcement', function () {
         const factory = await Factory.deploy(laborMarketSingleton.address);
         await factory.deployed();
 
-        const EnforcementCriteria = await ethers.getContractFactory('ScalableEnforcement');
+        const EnforcementCriteria = await ethers.getContractFactory('BucketEnforcement');
         const enforcement = await EnforcementCriteria.deploy();
         await enforcement.deployed();
 
@@ -148,18 +148,15 @@ describe('Likert Enforcement', function () {
             // Max Value: 1
             // Possible Scores: 0, 1
             // Weights: 0, 1
-            const possibleScores = [0, 1, 2, 3, 4];
-            const weights = [0, 1, 2, 3, 4];
+            const maxScore = [100];
+            const scoreRanges = [0, 25, 50, 75, 90];
+            const weights = [0, 25, 50, 75, 100];
 
             const reviewsPerReviewer = Math.floor(reviewerLimit / participatingReviewers);
 
             //////////////////////////
 
-            const { market, ERC20s, enforcement, deployer } = await createMarket(
-                [Math.max(...possibleScores)],
-                possibleScores,
-                weights,
-            );
+            const { market, ERC20s, enforcement, deployer } = await createMarket(maxScore, scoreRanges, weights);
 
             // Create a pass fail request
             const now = await getCurrentBlockTimestamp();
@@ -215,9 +212,7 @@ describe('Likert Enforcement', function () {
                 return {
                     id: event.args.submissionId,
                     provider: providers.find((provider) => provider.address === event.args.fulfiller),
-                    scores: reviewers.map(() =>
-                        getRandomScoreInRange(possibleScores[0], possibleScores[possibleScores.length - 1]),
-                    ),
+                    scores: reviewers.map(() => getRandomScoreInRange(scoreRanges)),
                 };
             });
 
@@ -246,31 +241,29 @@ describe('Likert Enforcement', function () {
             await mine(ethers.BigNumber.from(request.enforcementExp).sub(ethers.BigNumber.from(now)).toNumber() + 1);
 
             // Payment Checking
-            const rewards = await Promise.all(
+            const expectedRewards = await Promise.all(
                 submissions.map((submission) =>
                     enforcement.callStatic.getRewards(market.address, requestId, submission.id),
                 ),
             );
 
             // total earned by providers
-            const totalRewards = rewards.reduce((a, b) => a.add(b), ethers.BigNumber.from('0'));
+            const totalRewards = expectedRewards.reduce((a, b) => a.add(b), ethers.BigNumber.from('0'));
 
             console.table({
                 'Review Count': submissions.map((submission) => submission.scores.length),
-                'Average Score': submissions.map((submission) => submission.scores.reduce((a, b) => a + b, 0) / 10),
-                'Reward': rewards.map((reward) => ethers.utils.formatEther(reward)),
-                'Scores': submissions.map((submission) => submission.scores),
+                'Review Sum': submissions.map((submission) => submission.scores.reduce((a, b) => a + b, 0)),
+                'Average Score': submissions.map(
+                    (submission) => submission.scores.reduce((a, b) => a + b, 0) / submission.scores.length,
+                ),
+                'Reward': expectedRewards.map((reward) => ethers.utils.formatEther(reward)),
             });
 
             // Run the claim transactions. Filter
-            const claims = await Promise.all(
-                submissions
-                    // .filter((submission) => submission.scores.reduce((a, b) => a + b, 0) > 0)
-                    .map((submission) => {
-                        return market.connect(submission.provider).claim(requestId, submission.id);
-                    }),
-            );
-            await claims.map((claim) => claim.wait());
+            submissions.forEach(async (submission) => {
+                const claim = await market.connect(submission.provider).claim(requestId, submission.id);
+                await claim.wait();
+            });
 
             // total tokens unused on less submissions than the limit
             // total / limit * (limit - participating)

@@ -252,12 +252,13 @@ export interface LaborMarketInterface extends utils.Interface {
   events: {
     "Initialized(uint8)": EventFragment;
     "LaborMarketConfigured(address,address)": EventFragment;
+    "NodesUpdated(bytes4[],tuple[])": EventFragment;
     "OwnershipTransferred(address,address)": EventFragment;
     "RemainderClaimed(address,uint256,address,bool)": EventFragment;
     "RequestConfigured(address,uint256,uint48,uint48,uint48,uint64,uint64,uint256,uint256,address,address,string)": EventFragment;
     "RequestFulfilled(address,uint256,uint256,string)": EventFragment;
     "RequestPayClaimed(address,uint256,uint256,uint256,address)": EventFragment;
-    "RequestReviewed(address,uint256,uint256,uint256,string)": EventFragment;
+    "RequestReviewed(address,uint256,uint256,uint256,uint256,string)": EventFragment;
     "RequestSignal(address,uint256)": EventFragment;
     "RequestWithdrawn(uint256)": EventFragment;
     "ReviewSignal(address,uint256,uint256)": EventFragment;
@@ -265,6 +266,7 @@ export interface LaborMarketInterface extends utils.Interface {
 
   getEvent(nameOrSignatureOrTopic: "Initialized"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "LaborMarketConfigured"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "NodesUpdated"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "RemainderClaimed"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "RequestConfigured"): EventFragment;
@@ -294,6 +296,17 @@ export type LaborMarketConfiguredEvent = TypedEvent<
 
 export type LaborMarketConfiguredEventFilter =
   TypedEventFilter<LaborMarketConfiguredEvent>;
+
+export interface NodesUpdatedEventObject {
+  sigs: string[];
+  nodes: NBadgeAuthInterface.NodeStructOutput[];
+}
+export type NodesUpdatedEvent = TypedEvent<
+  [string[], NBadgeAuthInterface.NodeStructOutput[]],
+  NodesUpdatedEventObject
+>;
+
+export type NodesUpdatedEventFilter = TypedEventFilter<NodesUpdatedEvent>;
 
 export interface OwnershipTransferredEventObject {
   user: string;
@@ -389,11 +402,12 @@ export interface RequestReviewedEventObject {
   reviewer: string;
   requestId: BigNumber;
   submissionId: BigNumber;
+  reviewId: BigNumber;
   reviewScore: BigNumber;
   uri: string;
 }
 export type RequestReviewedEvent = TypedEvent<
-  [string, BigNumber, BigNumber, BigNumber, string],
+  [string, BigNumber, BigNumber, BigNumber, BigNumber, string],
   RequestReviewedEventObject
 >;
 
@@ -819,6 +833,12 @@ export interface LaborMarket extends BaseContract {
       criteria?: null
     ): LaborMarketConfiguredEventFilter;
 
+    "NodesUpdated(bytes4[],tuple[])"(
+      sigs?: null,
+      nodes?: null
+    ): NodesUpdatedEventFilter;
+    NodesUpdated(sigs?: null, nodes?: null): NodesUpdatedEventFilter;
+
     "OwnershipTransferred(address,address)"(
       user?: PromiseOrValue<string> | null,
       newOwner?: PromiseOrValue<string> | null
@@ -829,21 +849,21 @@ export interface LaborMarket extends BaseContract {
     ): OwnershipTransferredEventFilter;
 
     "RemainderClaimed(address,uint256,address,bool)"(
-      claimer?: PromiseOrValue<string> | null,
+      claimer?: null,
       requestId?: PromiseOrValue<BigNumberish> | null,
       to?: PromiseOrValue<string> | null,
-      settled?: null
+      settled?: PromiseOrValue<boolean> | null
     ): RemainderClaimedEventFilter;
     RemainderClaimed(
-      claimer?: PromiseOrValue<string> | null,
+      claimer?: null,
       requestId?: PromiseOrValue<BigNumberish> | null,
       to?: PromiseOrValue<string> | null,
-      settled?: null
+      settled?: PromiseOrValue<boolean> | null
     ): RemainderClaimedEventFilter;
 
     "RequestConfigured(address,uint256,uint48,uint48,uint48,uint64,uint64,uint256,uint256,address,address,string)"(
       requester?: PromiseOrValue<string> | null,
-      requestId?: null,
+      requestId?: PromiseOrValue<BigNumberish> | null,
       signalExp?: null,
       submissionExp?: null,
       enforcementExp?: null,
@@ -851,13 +871,13 @@ export interface LaborMarket extends BaseContract {
       reviewerLimit?: null,
       pTokenProviderTotal?: null,
       pTokenReviewerTotal?: null,
-      pTokenProvider?: PromiseOrValue<string> | null,
-      pTokenReviewer?: PromiseOrValue<string> | null,
+      pTokenProvider?: null,
+      pTokenReviewer?: null,
       uri?: null
     ): RequestConfiguredEventFilter;
     RequestConfigured(
       requester?: PromiseOrValue<string> | null,
-      requestId?: null,
+      requestId?: PromiseOrValue<BigNumberish> | null,
       signalExp?: null,
       submissionExp?: null,
       enforcementExp?: null,
@@ -865,8 +885,8 @@ export interface LaborMarket extends BaseContract {
       reviewerLimit?: null,
       pTokenProviderTotal?: null,
       pTokenReviewerTotal?: null,
-      pTokenProvider?: PromiseOrValue<string> | null,
-      pTokenReviewer?: PromiseOrValue<string> | null,
+      pTokenProvider?: null,
+      pTokenReviewer?: null,
       uri?: null
     ): RequestConfiguredEventFilter;
 
@@ -898,10 +918,11 @@ export interface LaborMarket extends BaseContract {
       to?: null
     ): RequestPayClaimedEventFilter;
 
-    "RequestReviewed(address,uint256,uint256,uint256,string)"(
+    "RequestReviewed(address,uint256,uint256,uint256,uint256,string)"(
       reviewer?: PromiseOrValue<string> | null,
       requestId?: PromiseOrValue<BigNumberish> | null,
       submissionId?: PromiseOrValue<BigNumberish> | null,
+      reviewId?: null,
       reviewScore?: null,
       uri?: null
     ): RequestReviewedEventFilter;
@@ -909,6 +930,7 @@ export interface LaborMarket extends BaseContract {
       reviewer?: PromiseOrValue<string> | null,
       requestId?: PromiseOrValue<BigNumberish> | null,
       submissionId?: PromiseOrValue<BigNumberish> | null,
+      reviewId?: null,
       reviewScore?: null,
       uri?: null
     ): RequestReviewedEventFilter;

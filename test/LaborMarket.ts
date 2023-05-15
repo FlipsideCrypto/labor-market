@@ -61,7 +61,7 @@ describe('Labor Market', function () {
         const factory = await Factory.deploy(laborMarketSingleton.address);
         await factory.deployed();
 
-        const EnforcementCriteria = await ethers.getContractFactory('ScalableEnforcement');
+        const EnforcementCriteria = await ethers.getContractFactory('BucketEnforcement');
         const enforcement = await EnforcementCriteria.deploy();
         await enforcement.deployed();
 
@@ -76,16 +76,16 @@ describe('Labor Market', function () {
         const sigs: any = [];
         const nodes: any = [];
 
-        const auxilaries = [4];
-        const alphas = [0, 1, 2, 3, 4];
-        const betas = [0, 0, 100, 200, 300];
+        const maxScore = [100];
+        const scoreRanges = [0, 25, 50, 70, 90];
+        const scoreWeights = [0, 25, 50, 75, 100];
 
         const args = [
             deployer.address, // address _deployer,
             criteria, // EnforcementCriteriaInterface _criteria,
-            auxilaries, // uint256[] memory _auxilaries,
-            alphas, // uint256[] memory _alphas,
-            betas, // uint256[] memory _betas
+            maxScore, // uint256[] memory _auxilaries,
+            scoreRanges, // uint256[] memory _alphas,
+            scoreWeights, // uint256[] memory _betas
             sigs, // bytes4[] memory _sigs,
             nodes, // Node[] memory _nodes,
         ];
@@ -116,7 +116,6 @@ describe('Labor Market', function () {
 
         const now = await getCurrentBlockTimestamp();
 
-        // TODO: Do we have an underflow if pTokenProviderTotal and pTokenReviewerTotal are less than a full token? (with proper decimals)
         const request: LaborMarketInterface.ServiceRequestStruct = {
             signalExp: now + 1000, // uint48
             submissionExp: now + 2000, // uint48
@@ -268,9 +267,9 @@ describe('Labor Market', function () {
             const signal = await market.connect(reviewer).signalReview(requestId, 10);
             await signal.wait();
 
-            expect(await market.connect(reviewer).review(requestId, submissionId, 4, 'review'))
+            expect(await market.connect(reviewer).review(requestId, submissionId, 100, 'review'))
                 .to.emit(market, 'RequestReviewed')
-                .withArgs(reviewer.address, requestId, submissionId, 4, 'review');
+                .withArgs(reviewer.address, requestId, submissionId, 100, 'review');
         });
         it('call: claim()', async () => {
             let { market, requestId, submissionId, ERC20s } = await loadFixture(createMarketWithSubmission);
@@ -289,7 +288,7 @@ describe('Labor Market', function () {
             const signal = await market.connect(reviewer).signalReview(requestId, 10);
             await signal.wait();
 
-            const review = await market.connect(reviewer).review(requestId, submissionId, 4, 'review');
+            const review = await market.connect(reviewer).review(requestId, submissionId, 100, 'review');
             await review.wait();
 
             await mine(10000);
@@ -310,6 +309,60 @@ describe('Labor Market', function () {
             expect(marketUsdcAfter).to.eq(marketUsdcBefore.sub(ethers.utils.parseEther('1')));
             expect(marketPepeAfter).to.eq(marketPepeBefore.sub(ethers.utils.parseEther('1')));
         });
+        it('call: claim() - multiple provider', async () => {
+            const { market, requestId, submissionId, ERC20s } = await loadFixture(createMarketWithSubmission);
+
+            const providers = (await ethers.getSigners()).slice(10, 14);
+
+            const signals = await Promise.all(
+                providers.map((provider: any) => market.connect(provider).signal(requestId)),
+            );
+            await Promise.all(signals.map((signal) => signal.wait()));
+
+            const submissionCalls = await Promise.all(
+                providers.map((provider: any) => market.connect(provider).provide(requestId, 'uri')),
+            );
+            const submissionReceipts = await Promise.all(submissionCalls.map((submission) => submission.wait()));
+
+            const submissions = [
+                ...submissionReceipts.map((receipt, idx: number) => {
+                    const event = receipt.events?.find((event: any) => event.event === 'RequestFulfilled');
+                    return {
+                        provider: providers[idx],
+                        fulfiller: event.args.fulfiller,
+                        submissionId: event.args.submissionId,
+                        score: (idx + 1) * 25,
+                    };
+                }),
+            ];
+
+            // Handle reviews
+            const reviewer = (await ethers.getSigners())[2];
+
+            const signalReview = await market.connect(reviewer).signalReview(requestId, 10);
+            await signalReview.wait();
+
+            const reviews = await Promise.all(
+                submissions.map((submission, idx: number) =>
+                    market.connect(reviewer).review(requestId, submission.submissionId, submission.score, 'review'),
+                ),
+            );
+            await Promise.all(reviews.map((review) => review.wait()));
+
+            await mine(10000);
+
+            for (let idx = 0; idx < submissions.length; idx++) {
+                await expect(market.connect(providers[idx]).claim(requestId, submissions[idx].submissionId))
+                    .to.emit(market, 'RequestPayClaimed')
+                    .withArgs(
+                        providers[idx].address,
+                        requestId,
+                        submissions[idx].submissionId,
+                        ethers.utils.parseEther(((idx + 1) * 0.25).toString()),
+                        providers[idx].address,
+                    );
+            }
+        });
         it('call: claimRemainder()', async () => {
             let { market, requestId, submissionId, ERC20s } = await loadFixture(createMarketWithSubmission);
 
@@ -323,7 +376,7 @@ describe('Labor Market', function () {
             const signal = await market.connect(reviewer).signalReview(requestId, 10);
             await signal.wait();
 
-            const review = await market.connect(reviewer).review(requestId, submissionId, 4, 'review');
+            const review = await market.connect(reviewer).review(requestId, submissionId, 100, 'review');
             await review.wait();
 
             await mine(10000);

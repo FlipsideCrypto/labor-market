@@ -4,6 +4,7 @@
 import type {
   BaseContract,
   BigNumber,
+  BigNumberish,
   BytesLike,
   CallOverrides,
   PopulatedTransaction,
@@ -24,6 +25,46 @@ import type {
   PromiseOrValue,
 } from "../../../common";
 
+export declare namespace NBadgeAuthInterface {
+  export type BadgeStruct = {
+    badge: PromiseOrValue<string>;
+    id: PromiseOrValue<BigNumberish>;
+    min: PromiseOrValue<BigNumberish>;
+    max: PromiseOrValue<BigNumberish>;
+    points: PromiseOrValue<BigNumberish>;
+  };
+
+  export type BadgeStructOutput = [
+    string,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    BigNumber
+  ] & {
+    badge: string;
+    id: BigNumber;
+    min: BigNumber;
+    max: BigNumber;
+    points: BigNumber;
+  };
+
+  export type NodeStruct = {
+    deployerAllowed: PromiseOrValue<boolean>;
+    required: PromiseOrValue<BigNumberish>;
+    badges: NBadgeAuthInterface.BadgeStruct[];
+  };
+
+  export type NodeStructOutput = [
+    boolean,
+    BigNumber,
+    NBadgeAuthInterface.BadgeStructOutput[]
+  ] & {
+    deployerAllowed: boolean;
+    required: BigNumber;
+    badges: NBadgeAuthInterface.BadgeStructOutput[];
+  };
+}
+
 export interface NBadgeAuthInterfaceInterface extends utils.Interface {
   functions: {
     "isAuthorized(address,bytes4)": FunctionFragment;
@@ -42,11 +83,24 @@ export interface NBadgeAuthInterfaceInterface extends utils.Interface {
   ): Result;
 
   events: {
+    "NodesUpdated(bytes4[],tuple[])": EventFragment;
     "OwnershipTransferred(address,address)": EventFragment;
   };
 
+  getEvent(nameOrSignatureOrTopic: "NodesUpdated"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
 }
+
+export interface NodesUpdatedEventObject {
+  sigs: string[];
+  nodes: NBadgeAuthInterface.NodeStructOutput[];
+}
+export type NodesUpdatedEvent = TypedEvent<
+  [string[], NBadgeAuthInterface.NodeStructOutput[]],
+  NodesUpdatedEventObject
+>;
+
+export type NodesUpdatedEventFilter = TypedEventFilter<NodesUpdatedEvent>;
 
 export interface OwnershipTransferredEventObject {
   user: string;
@@ -109,6 +163,12 @@ export interface NBadgeAuthInterface extends BaseContract {
   };
 
   filters: {
+    "NodesUpdated(bytes4[],tuple[])"(
+      sigs?: null,
+      nodes?: null
+    ): NodesUpdatedEventFilter;
+    NodesUpdated(sigs?: null, nodes?: null): NodesUpdatedEventFilter;
+
     "OwnershipTransferred(address,address)"(
       user?: PromiseOrValue<string> | null,
       newOwner?: PromiseOrValue<string> | null

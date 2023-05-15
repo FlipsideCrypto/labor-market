@@ -5,10 +5,19 @@ import type {
   BaseContract,
   BigNumber,
   BigNumberish,
+  BytesLike,
+  CallOverrides,
+  ContractTransaction,
+  Overrides,
+  PopulatedTransaction,
   Signer,
   utils,
 } from "ethers";
-import type { EventFragment } from "@ethersproject/abi";
+import type {
+  FunctionFragment,
+  Result,
+  EventFragment,
+} from "@ethersproject/abi";
 import type { Listener, Provider } from "@ethersproject/providers";
 import type {
   TypedEventFilter,
@@ -18,8 +27,183 @@ import type {
   PromiseOrValue,
 } from "../../common";
 
+export declare namespace NBadgeAuthInterface {
+  export type BadgeStruct = {
+    badge: PromiseOrValue<string>;
+    id: PromiseOrValue<BigNumberish>;
+    min: PromiseOrValue<BigNumberish>;
+    max: PromiseOrValue<BigNumberish>;
+    points: PromiseOrValue<BigNumberish>;
+  };
+
+  export type BadgeStructOutput = [
+    string,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    BigNumber
+  ] & {
+    badge: string;
+    id: BigNumber;
+    min: BigNumber;
+    max: BigNumber;
+    points: BigNumber;
+  };
+
+  export type NodeStruct = {
+    deployerAllowed: PromiseOrValue<boolean>;
+    required: PromiseOrValue<BigNumberish>;
+    badges: NBadgeAuthInterface.BadgeStruct[];
+  };
+
+  export type NodeStructOutput = [
+    boolean,
+    BigNumber,
+    NBadgeAuthInterface.BadgeStructOutput[]
+  ] & {
+    deployerAllowed: boolean;
+    required: BigNumber;
+    badges: NBadgeAuthInterface.BadgeStructOutput[];
+  };
+}
+
+export declare namespace LaborMarketInterface {
+  export type ServiceRequestStruct = {
+    signalExp: PromiseOrValue<BigNumberish>;
+    submissionExp: PromiseOrValue<BigNumberish>;
+    enforcementExp: PromiseOrValue<BigNumberish>;
+    providerLimit: PromiseOrValue<BigNumberish>;
+    reviewerLimit: PromiseOrValue<BigNumberish>;
+    pTokenProviderTotal: PromiseOrValue<BigNumberish>;
+    pTokenReviewerTotal: PromiseOrValue<BigNumberish>;
+    pTokenProvider: PromiseOrValue<string>;
+    pTokenReviewer: PromiseOrValue<string>;
+  };
+
+  export type ServiceRequestStructOutput = [
+    number,
+    number,
+    number,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    string,
+    string
+  ] & {
+    signalExp: number;
+    submissionExp: number;
+    enforcementExp: number;
+    providerLimit: BigNumber;
+    reviewerLimit: BigNumber;
+    pTokenProviderTotal: BigNumber;
+    pTokenReviewerTotal: BigNumber;
+    pTokenProvider: string;
+    pTokenReviewer: string;
+  };
+}
+
 export interface LaborMarketInterfaceInterface extends utils.Interface {
-  functions: {};
+  functions: {
+    "claim(uint256,uint256)": FunctionFragment;
+    "claimRemainder(uint256)": FunctionFragment;
+    "initialize(address,address,uint256[],uint256[],uint256[],bytes4[],(bool,uint256,(address,uint256,uint256,uint256,uint256)[])[])": FunctionFragment;
+    "provide(uint256,string)": FunctionFragment;
+    "review(uint256,uint256,uint256,string)": FunctionFragment;
+    "signal(uint256)": FunctionFragment;
+    "signalReview(uint256,uint24)": FunctionFragment;
+    "submitRequest(uint8,(uint48,uint48,uint48,uint64,uint64,uint256,uint256,address,address),string)": FunctionFragment;
+    "withdrawRequest(uint256)": FunctionFragment;
+  };
+
+  getFunction(
+    nameOrSignatureOrTopic:
+      | "claim"
+      | "claimRemainder"
+      | "initialize"
+      | "provide"
+      | "review"
+      | "signal"
+      | "signalReview"
+      | "submitRequest"
+      | "withdrawRequest"
+  ): FunctionFragment;
+
+  encodeFunctionData(
+    functionFragment: "claim",
+    values: [PromiseOrValue<BigNumberish>, PromiseOrValue<BigNumberish>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "claimRemainder",
+    values: [PromiseOrValue<BigNumberish>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "initialize",
+    values: [
+      PromiseOrValue<string>,
+      PromiseOrValue<string>,
+      PromiseOrValue<BigNumberish>[],
+      PromiseOrValue<BigNumberish>[],
+      PromiseOrValue<BigNumberish>[],
+      PromiseOrValue<BytesLike>[],
+      NBadgeAuthInterface.NodeStruct[]
+    ]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "provide",
+    values: [PromiseOrValue<BigNumberish>, PromiseOrValue<string>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "review",
+    values: [
+      PromiseOrValue<BigNumberish>,
+      PromiseOrValue<BigNumberish>,
+      PromiseOrValue<BigNumberish>,
+      PromiseOrValue<string>
+    ]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "signal",
+    values: [PromiseOrValue<BigNumberish>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "signalReview",
+    values: [PromiseOrValue<BigNumberish>, PromiseOrValue<BigNumberish>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "submitRequest",
+    values: [
+      PromiseOrValue<BigNumberish>,
+      LaborMarketInterface.ServiceRequestStruct,
+      PromiseOrValue<string>
+    ]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "withdrawRequest",
+    values: [PromiseOrValue<BigNumberish>]
+  ): string;
+
+  decodeFunctionResult(functionFragment: "claim", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "claimRemainder",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "provide", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "review", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "signal", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "signalReview",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "submitRequest",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "withdrawRequest",
+    data: BytesLike
+  ): Result;
 
   events: {
     "LaborMarketConfigured(address,address)": EventFragment;
@@ -27,7 +211,7 @@ export interface LaborMarketInterfaceInterface extends utils.Interface {
     "RequestConfigured(address,uint256,uint48,uint48,uint48,uint64,uint64,uint256,uint256,address,address,string)": EventFragment;
     "RequestFulfilled(address,uint256,uint256,string)": EventFragment;
     "RequestPayClaimed(address,uint256,uint256,uint256,address)": EventFragment;
-    "RequestReviewed(address,uint256,uint256,uint256,string)": EventFragment;
+    "RequestReviewed(address,uint256,uint256,uint256,uint256,string)": EventFragment;
     "RequestSignal(address,uint256)": EventFragment;
     "RequestWithdrawn(uint256)": EventFragment;
     "ReviewSignal(address,uint256,uint256)": EventFragment;
@@ -138,11 +322,12 @@ export interface RequestReviewedEventObject {
   reviewer: string;
   requestId: BigNumber;
   submissionId: BigNumber;
+  reviewId: BigNumber;
   reviewScore: BigNumber;
   uri: string;
 }
 export type RequestReviewedEvent = TypedEvent<
-  [string, BigNumber, BigNumber, BigNumber, string],
+  [string, BigNumber, BigNumber, BigNumber, BigNumber, string],
   RequestReviewedEventObject
 >;
 
@@ -208,9 +393,193 @@ export interface LaborMarketInterface extends BaseContract {
   once: OnEvent<this>;
   removeListener: OnEvent<this>;
 
-  functions: {};
+  functions: {
+    claim(
+      _requestId: PromiseOrValue<BigNumberish>,
+      _submissionId: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
 
-  callStatic: {};
+    claimRemainder(
+      _requestId: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+
+    initialize(
+      _deployer: PromiseOrValue<string>,
+      _criteria: PromiseOrValue<string>,
+      _auxilaries: PromiseOrValue<BigNumberish>[],
+      _alphas: PromiseOrValue<BigNumberish>[],
+      _betas: PromiseOrValue<BigNumberish>[],
+      _sigs: PromiseOrValue<BytesLike>[],
+      _nodes: NBadgeAuthInterface.NodeStruct[],
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+
+    provide(
+      _requestId: PromiseOrValue<BigNumberish>,
+      _uri: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+
+    review(
+      _requestId: PromiseOrValue<BigNumberish>,
+      _submissionId: PromiseOrValue<BigNumberish>,
+      _score: PromiseOrValue<BigNumberish>,
+      _uri: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+
+    signal(
+      _requestId: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+
+    signalReview(
+      _requestId: PromiseOrValue<BigNumberish>,
+      _quantity: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+
+    submitRequest(
+      _blockNonce: PromiseOrValue<BigNumberish>,
+      _request: LaborMarketInterface.ServiceRequestStruct,
+      _uri: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+
+    withdrawRequest(
+      _requestId: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+  };
+
+  claim(
+    _requestId: PromiseOrValue<BigNumberish>,
+    _submissionId: PromiseOrValue<BigNumberish>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
+  claimRemainder(
+    _requestId: PromiseOrValue<BigNumberish>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
+  initialize(
+    _deployer: PromiseOrValue<string>,
+    _criteria: PromiseOrValue<string>,
+    _auxilaries: PromiseOrValue<BigNumberish>[],
+    _alphas: PromiseOrValue<BigNumberish>[],
+    _betas: PromiseOrValue<BigNumberish>[],
+    _sigs: PromiseOrValue<BytesLike>[],
+    _nodes: NBadgeAuthInterface.NodeStruct[],
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
+  provide(
+    _requestId: PromiseOrValue<BigNumberish>,
+    _uri: PromiseOrValue<string>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
+  review(
+    _requestId: PromiseOrValue<BigNumberish>,
+    _submissionId: PromiseOrValue<BigNumberish>,
+    _score: PromiseOrValue<BigNumberish>,
+    _uri: PromiseOrValue<string>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
+  signal(
+    _requestId: PromiseOrValue<BigNumberish>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
+  signalReview(
+    _requestId: PromiseOrValue<BigNumberish>,
+    _quantity: PromiseOrValue<BigNumberish>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
+  submitRequest(
+    _blockNonce: PromiseOrValue<BigNumberish>,
+    _request: LaborMarketInterface.ServiceRequestStruct,
+    _uri: PromiseOrValue<string>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
+  withdrawRequest(
+    _requestId: PromiseOrValue<BigNumberish>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
+  callStatic: {
+    claim(
+      _requestId: PromiseOrValue<BigNumberish>,
+      _submissionId: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<[boolean, BigNumber] & { success: boolean; amount: BigNumber }>;
+
+    claimRemainder(
+      _requestId: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<
+      [boolean, boolean, BigNumber, BigNumber] & {
+        pTokenProviderSuccess: boolean;
+        pTokenReviewerSuccess: boolean;
+        pTokenProviderSurplus: BigNumber;
+        pTokenReviewerSurplus: BigNumber;
+      }
+    >;
+
+    initialize(
+      _deployer: PromiseOrValue<string>,
+      _criteria: PromiseOrValue<string>,
+      _auxilaries: PromiseOrValue<BigNumberish>[],
+      _alphas: PromiseOrValue<BigNumberish>[],
+      _betas: PromiseOrValue<BigNumberish>[],
+      _sigs: PromiseOrValue<BytesLike>[],
+      _nodes: NBadgeAuthInterface.NodeStruct[],
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    provide(
+      _requestId: PromiseOrValue<BigNumberish>,
+      _uri: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    review(
+      _requestId: PromiseOrValue<BigNumberish>,
+      _submissionId: PromiseOrValue<BigNumberish>,
+      _score: PromiseOrValue<BigNumberish>,
+      _uri: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    signal(
+      _requestId: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    signalReview(
+      _requestId: PromiseOrValue<BigNumberish>,
+      _quantity: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    submitRequest(
+      _blockNonce: PromiseOrValue<BigNumberish>,
+      _request: LaborMarketInterface.ServiceRequestStruct,
+      _uri: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    withdrawRequest(
+      _requestId: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<void>;
+  };
 
   filters: {
     "LaborMarketConfigured(address,address)"(
@@ -223,21 +592,21 @@ export interface LaborMarketInterface extends BaseContract {
     ): LaborMarketConfiguredEventFilter;
 
     "RemainderClaimed(address,uint256,address,bool)"(
-      claimer?: PromiseOrValue<string> | null,
+      claimer?: null,
       requestId?: PromiseOrValue<BigNumberish> | null,
       to?: PromiseOrValue<string> | null,
-      settled?: null
+      settled?: PromiseOrValue<boolean> | null
     ): RemainderClaimedEventFilter;
     RemainderClaimed(
-      claimer?: PromiseOrValue<string> | null,
+      claimer?: null,
       requestId?: PromiseOrValue<BigNumberish> | null,
       to?: PromiseOrValue<string> | null,
-      settled?: null
+      settled?: PromiseOrValue<boolean> | null
     ): RemainderClaimedEventFilter;
 
     "RequestConfigured(address,uint256,uint48,uint48,uint48,uint64,uint64,uint256,uint256,address,address,string)"(
       requester?: PromiseOrValue<string> | null,
-      requestId?: null,
+      requestId?: PromiseOrValue<BigNumberish> | null,
       signalExp?: null,
       submissionExp?: null,
       enforcementExp?: null,
@@ -245,13 +614,13 @@ export interface LaborMarketInterface extends BaseContract {
       reviewerLimit?: null,
       pTokenProviderTotal?: null,
       pTokenReviewerTotal?: null,
-      pTokenProvider?: PromiseOrValue<string> | null,
-      pTokenReviewer?: PromiseOrValue<string> | null,
+      pTokenProvider?: null,
+      pTokenReviewer?: null,
       uri?: null
     ): RequestConfiguredEventFilter;
     RequestConfigured(
       requester?: PromiseOrValue<string> | null,
-      requestId?: null,
+      requestId?: PromiseOrValue<BigNumberish> | null,
       signalExp?: null,
       submissionExp?: null,
       enforcementExp?: null,
@@ -259,8 +628,8 @@ export interface LaborMarketInterface extends BaseContract {
       reviewerLimit?: null,
       pTokenProviderTotal?: null,
       pTokenReviewerTotal?: null,
-      pTokenProvider?: PromiseOrValue<string> | null,
-      pTokenReviewer?: PromiseOrValue<string> | null,
+      pTokenProvider?: null,
+      pTokenReviewer?: null,
       uri?: null
     ): RequestConfiguredEventFilter;
 
@@ -292,10 +661,11 @@ export interface LaborMarketInterface extends BaseContract {
       to?: null
     ): RequestPayClaimedEventFilter;
 
-    "RequestReviewed(address,uint256,uint256,uint256,string)"(
+    "RequestReviewed(address,uint256,uint256,uint256,uint256,string)"(
       reviewer?: PromiseOrValue<string> | null,
       requestId?: PromiseOrValue<BigNumberish> | null,
       submissionId?: PromiseOrValue<BigNumberish> | null,
+      reviewId?: null,
       reviewScore?: null,
       uri?: null
     ): RequestReviewedEventFilter;
@@ -303,6 +673,7 @@ export interface LaborMarketInterface extends BaseContract {
       reviewer?: PromiseOrValue<string> | null,
       requestId?: PromiseOrValue<BigNumberish> | null,
       submissionId?: PromiseOrValue<BigNumberish> | null,
+      reviewId?: null,
       reviewScore?: null,
       uri?: null
     ): RequestReviewedEventFilter;
@@ -335,7 +706,125 @@ export interface LaborMarketInterface extends BaseContract {
     ): ReviewSignalEventFilter;
   };
 
-  estimateGas: {};
+  estimateGas: {
+    claim(
+      _requestId: PromiseOrValue<BigNumberish>,
+      _submissionId: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
 
-  populateTransaction: {};
+    claimRemainder(
+      _requestId: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
+    initialize(
+      _deployer: PromiseOrValue<string>,
+      _criteria: PromiseOrValue<string>,
+      _auxilaries: PromiseOrValue<BigNumberish>[],
+      _alphas: PromiseOrValue<BigNumberish>[],
+      _betas: PromiseOrValue<BigNumberish>[],
+      _sigs: PromiseOrValue<BytesLike>[],
+      _nodes: NBadgeAuthInterface.NodeStruct[],
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
+    provide(
+      _requestId: PromiseOrValue<BigNumberish>,
+      _uri: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
+    review(
+      _requestId: PromiseOrValue<BigNumberish>,
+      _submissionId: PromiseOrValue<BigNumberish>,
+      _score: PromiseOrValue<BigNumberish>,
+      _uri: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
+    signal(
+      _requestId: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
+    signalReview(
+      _requestId: PromiseOrValue<BigNumberish>,
+      _quantity: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
+    submitRequest(
+      _blockNonce: PromiseOrValue<BigNumberish>,
+      _request: LaborMarketInterface.ServiceRequestStruct,
+      _uri: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
+    withdrawRequest(
+      _requestId: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+  };
+
+  populateTransaction: {
+    claim(
+      _requestId: PromiseOrValue<BigNumberish>,
+      _submissionId: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
+    claimRemainder(
+      _requestId: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
+    initialize(
+      _deployer: PromiseOrValue<string>,
+      _criteria: PromiseOrValue<string>,
+      _auxilaries: PromiseOrValue<BigNumberish>[],
+      _alphas: PromiseOrValue<BigNumberish>[],
+      _betas: PromiseOrValue<BigNumberish>[],
+      _sigs: PromiseOrValue<BytesLike>[],
+      _nodes: NBadgeAuthInterface.NodeStruct[],
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
+    provide(
+      _requestId: PromiseOrValue<BigNumberish>,
+      _uri: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
+    review(
+      _requestId: PromiseOrValue<BigNumberish>,
+      _submissionId: PromiseOrValue<BigNumberish>,
+      _score: PromiseOrValue<BigNumberish>,
+      _uri: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
+    signal(
+      _requestId: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
+    signalReview(
+      _requestId: PromiseOrValue<BigNumberish>,
+      _quantity: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
+    submitRequest(
+      _blockNonce: PromiseOrValue<BigNumberish>,
+      _request: LaborMarketInterface.ServiceRequestStruct,
+      _uri: PromiseOrValue<string>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
+    withdrawRequest(
+      _requestId: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+  };
 }

@@ -27,7 +27,7 @@ import type {
   PromiseOrValue,
 } from "../../common";
 
-export interface ScalableEnforcementInterface extends utils.Interface {
+export interface BucketEnforcementInterface extends utils.Interface {
   functions: {
     "enforce(uint256,uint256,uint256,uint256,address)": FunctionFragment;
     "getRemainder(address,uint256)": FunctionFragment;
@@ -149,12 +149,12 @@ export type SubmissionReviewedEvent = TypedEvent<
 export type SubmissionReviewedEventFilter =
   TypedEventFilter<SubmissionReviewedEvent>;
 
-export interface ScalableEnforcement extends BaseContract {
+export interface BucketEnforcement extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
   attach(addressOrName: string): this;
   deployed(): Promise<this>;
 
-  interface: ScalableEnforcementInterface;
+  interface: BucketEnforcementInterface;
 
   queryFilter<TEvent extends TypedEvent>(
     event: TypedEventFilter<TEvent>,
