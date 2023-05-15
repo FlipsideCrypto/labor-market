@@ -32,12 +32,6 @@ async function getRandomSigners(amount: number): Promise<Wallet[]> {
 }
 
 describe('Pass Fail Enforcement', function () {
-    async function deployMulticall() {
-        const Multicall = await ethers.getContractFactory('Multicall3Mock');
-        const multicall = await Multicall.deploy();
-        return await multicall.deployed();
-    }
-
     async function deployCoins() {
         const [deployer] = await ethers.getSigners();
 
@@ -132,30 +126,41 @@ describe('Pass Fail Enforcement', function () {
 
     describe('Pass Fail Enforcement', async () => {
         it('Pass Fail', async () => {
+            //////////////////////////
+            //        CONFIG        //
+            //////////////////////////
+
             // Market Parameters
             const providerLimit = 20;
             const reviewerLimit = 100;
+            const pTokenProviderTotal = ethers.utils.parseEther('100000');
+            const pTokenReviewerTotal = ethers.utils.parseEther('1000');
+
             // Outcome parameters
             const participatingProviders = 8;
             const participatingReviewers = 4;
-
-            const reviewsPerReviewer = Math.floor(reviewerLimit / participatingReviewers);
 
             // Pass Fail Enforcement:
             // Max Value: 1
             // Possible Scores: 0, 1
             // Weights: 0, 1
-            const passFailConfig = [[1], [0, 1], [0, 1]];
+            const possibleScores = [0, 1];
+            const weights = [0, 1];
 
-            const { market, ERC20s, enforcement, deployer } = await createMarket(...passFailConfig);
-            const multicall = await loadFixture(deployMulticall);
+            const reviewsPerReviewer = Math.floor(reviewerLimit / participatingReviewers);
+
+            //////////////////////////
+
+            const { market, ERC20s, enforcement, deployer } = await createMarket(
+                [Math.max(...possibleScores)],
+                possibleScores,
+                weights,
+            );
 
             // Create a pass fail request
             const now = await getCurrentBlockTimestamp();
 
-            const pTokenProviderTotal = ethers.utils.parseEther('100000');
-            const pTokenReviewerTotal = ethers.utils.parseEther('1000');
-
+            // Configure the request
             const request: LaborMarketInterface.ServiceRequestStruct = {
                 signalExp: now + 1000, // uint48
                 submissionExp: now + 2000, // uint48
@@ -231,40 +236,6 @@ describe('Pass Fail Enforcement', function () {
             }
             await Promise.all(reviewPromises.map((review: any) => review.wait()));
 
-            // TODO: Fix this and replace above. A tx is failing somewhere.
-            // Build review calldata
-            // const reviewerCalldata = reviewers.map((reviewer: any, idx: number) => {
-            //     return submissions.map((submission) => {
-            //         return market
-            //             .connect(reviewer)
-            //             .interface.encodeFunctionData('review', [
-            //                 requestId,
-            //                 submission.id,
-            //                 submission.scores[idx],
-            //                 '0x',
-            //             ]);
-            //     });
-            // });
-
-            // // Build multicall calldata
-            // const multicallData = reviewerCalldata.map((data: any) => {
-            //     return data.map((call: any) => {
-            //         return {
-            //             target: market.address,
-            //             allowFailure: true,
-            //             callData: call,
-            //         };
-            //     });
-            // });
-
-            // // review
-            // const reviews = await Promise.all(
-            //     multicallData.map((data, idx: number) => {
-            //         return multicall.connect(reviewers[idx]).aggregate3(data);
-            //     }),
-            // );
-            // await Promise.all(reviews.map((review) => review.wait()));
-
             // skip ahead in time
             await mine(ethers.BigNumber.from(request.enforcementExp).sub(ethers.BigNumber.from(now)).toNumber() + 1);
 
@@ -278,6 +249,22 @@ describe('Pass Fail Enforcement', function () {
             // total earned by providers
             const totalRewards = rewards.reduce((a, b) => a.add(b), ethers.BigNumber.from('0'));
 
+            console.table({
+                'Review Count': submissions.map((submission) => submission.scores.length),
+                'Average Score': submissions.map((submission) => submission.scores.reduce((a, b) => a + b, 0) / 10),
+                'Reward': rewards.map((reward) => ethers.utils.formatEther(reward)),
+            });
+
+            // Run the claim transactions. Filter
+            const claims = await Promise.all(
+                submissions
+                    // .filter((submission) => submission.scores.reduce((a, b) => a + b, 0) > 0)
+                    .map((submission) => {
+                        return market.connect(submission.provider).claim(requestId, submission.id);
+                    }),
+            );
+            await claims.map((claim) => claim.wait());
+
             // total tokens unused on less submissions than the limit
             // total / limit * (limit - participating)
             const unusedProviderTokens = pTokenProviderTotal
@@ -287,13 +274,25 @@ describe('Pass Fail Enforcement', function () {
             // total remainder for the requester
             const totalProviderTokenRemainder = pTokenProviderTotal.sub(totalRewards);
 
-            // Run the claim transactions
-            const claims = await Promise.all(
-                submissions.map((submission) => {
-                    return market.connect(submission.provider).claim(requestId, submission.id);
-                }),
+            // total reviews on the request
+            const totalReviews = submissions.reduce((a, b) => a + b.scores.length, 0);
+
+            // payment per reviewer
+            const paymentPerReviewer = pTokenReviewerTotal.div(ethers.BigNumber.from(reviewerLimit));
+
+            // Unused reviewer pTokens
+            const totalReviewerTokenRemainder = pTokenReviewerTotal.sub(
+                paymentPerReviewer.mul(ethers.BigNumber.from(totalReviews)),
             );
-            await claims.map((claim) => claim.wait());
+
+            // Log our table for sanity
+            console.table({
+                'Provider Rewards': ethers.utils.formatEther(totalRewards),
+                'Provider Remainders': ethers.utils.formatEther(totalProviderTokenRemainder.sub(unusedProviderTokens)),
+                'Unused Provider Tokens': ethers.utils.formatEther(unusedProviderTokens),
+                'Provider Token Remainder': ethers.utils.formatEther(totalProviderTokenRemainder),
+                'Reviewer Token Remainder': ethers.utils.formatEther(totalReviewerTokenRemainder),
+            });
 
             // Run the claim remainder transaction
             const claimRemainder = await market.connect(deployer).claimRemainder(requestId);
@@ -309,61 +308,39 @@ describe('Pass Fail Enforcement', function () {
                 marketUsdc: await ERC20s.usdc.balanceOf(market.address),
             };
 
-            console.table({
-                'Review Count': submissions.map((submission) => submission.scores.length),
-                'Average Score': submissions.map((submission) => submission.scores.reduce((a, b) => a + b, 0) / 10),
-                'Reward': rewards.map((reward) => ethers.utils.formatEther(reward)),
-            });
-
-            console.table({
-                'Provider Rewards': ethers.utils.formatEther(totalRewards),
-                'Provider Remainders': ethers.utils.formatEther(totalProviderTokenRemainder.sub(unusedProviderTokens)),
-                'Unused Provider Tokens': ethers.utils.formatEther(unusedProviderTokens),
-                'Provider Token Remainder': ethers.utils.formatEther(totalProviderTokenRemainder),
-                'Reviewer Token Remainder': ethers.utils.formatEther(balancesAfter.marketUsdc),
-            });
-
             // Every provider received the right amount in their claim.
-            // assert(
-            //     balancesAfter.providers.every(
-            //         (balance, idx: number) =>
-            //             ethers.utils.parseEther(balance.sub(balancesBefore.providers[idx]).sub(rewards[idx])) === '0',
-            //     ),
-            //     'PassFail: Providers did not receive reward',
-            // );
-
-            const paymentPerReviewer = pTokenReviewerTotal.div(ethers.BigNumber.from(reviewerLimit));
+            assert(
+                balancesAfter.providers.every(
+                    (balance, idx: number) =>
+                        balance.sub(balancesBefore.providers[idx]).sub(rewards[idx]).toString() === '0',
+                ),
+                'PassFail: Providers did not receive reward',
+            );
 
             // Every reviewer received the right amount.
             assert(
-                balancesAfter.reviewers.every(
-                    (balance, idx: number) =>
-                        ethers.utils.formatEther(balance.sub(balancesBefore.reviewers[idx])) ===
-                        ethers.utils.formatEther(paymentPerReviewer.mul(submissions.length)),
+                balancesAfter.reviewers.every((balance, idx: number) =>
+                    balance.sub(balancesBefore.reviewers[idx]).eq(paymentPerReviewer.mul(submissions.length)),
                 ),
                 'PassFail: Reviewers did not receive reward',
             );
 
             // Make sure deployer was refunded unused pTokens.
             assert(
-                ethers.utils.parseEther(balancesAfter.deployerPepe.sub(balancesBefore.deployerPepe)) ===
-                    ethers.utils.parseEther(totalProviderTokenRemainder),
-                'PassFail: Deployer did not receive reviewer pToken remainder',
+                balancesBefore.deployerPepe.sub(balancesAfter.deployerPepe).eq(totalRewards),
+                'PassFail: Deployer did not receive provider pToken remainder',
             );
+
             assert(
-                ethers.utils.parseEther(balancesAfter.deployerUsdc.sub(balancesBefore.deployerUsdc)) === balancesBefore,
+                balancesBefore.deployerUsdc
+                    .sub(balancesAfter.deployerUsdc)
+                    .eq(pTokenReviewerTotal.sub(totalReviewerTokenRemainder)),
                 'PassFail: Deployer did not receive reviewer pToken remainder',
             );
 
-            // // Make sure contract is fully paid out.
-            // assert(
-            //     ethers.utils.parseEther(balancesAfter.deployerPepe) === '0',
-            //     'PassFail: Contract still has provider pToken',
-            // );
-            // assert(
-            //     ethers.utils.parseEther(balancesAfter.deployerUsdc) === '0',
-            //     'PassFail: Contract still has reviewer pToken',
-            // );
+            // Make sure contract is fully paid out.
+            assert(balancesAfter.marketPepe.eq(0), 'PassFail: Contract still has provider pToken');
+            assert(balancesAfter.marketUsdc.eq(0), 'PassFail: Contract still has reviewer pToken');
         });
     });
 });

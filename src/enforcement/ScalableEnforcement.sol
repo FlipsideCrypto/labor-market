@@ -126,12 +126,10 @@ contract ScalableEnforcement is EnforcementCriteriaInterface {
         uint256 bucketWeight = _getScoreToBucket(buckets, avgWithDecimals);
 
         // TODO: This math is messed up and needs to be fixed.
-
         /// @notice Scale the average by the corresponsing bucket weight for the score.
         uint256 scaledAvg = ((avgWithDecimals * bucketWeight));
 
-        console.log('Scaled avg %s', scaledAvg);
-
+        /// @notice Scale down the average by the maximum score and the bucket weight.
         uint256 scaleDown = MATH_AVG_DECIMALS * buckets.maxScore * bucketWeight;
 
         /// @notice Calculate the amount owed to the Provider for their contribution.
