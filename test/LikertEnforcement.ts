@@ -35,7 +35,7 @@ function getRandomScoreInRange(min: number, max: number): number {
     return Math.floor(Math.random() * (max - min + 1) + min);
 }
 
-describe('Pass Fail Enforcement', function () {
+describe('Likert Enforcement', function () {
     async function deployCoins() {
         const [deployer] = await ethers.getSigners();
 
@@ -128,8 +128,8 @@ describe('Pass Fail Enforcement', function () {
         return { market, factory, enforcement, deployer, ERC20s };
     }
 
-    describe('Pass Fail Enforcement', async () => {
-        it('Pass Fail Enforcement Simulation', async () => {
+    describe('Likert Enforcement', async () => {
+        it('Likert Enforcement Simulation', async () => {
             //////////////////////////
             //        CONFIG        //
             //////////////////////////
@@ -148,8 +148,8 @@ describe('Pass Fail Enforcement', function () {
             // Max Value: 1
             // Possible Scores: 0, 1
             // Weights: 0, 1
-            const possibleScores = [0, 1];
-            const weights = [0, 1];
+            const possibleScores = [0, 1, 2, 3, 4];
+            const weights = [0, 1, 2, 3, 4];
 
             const reviewsPerReviewer = Math.floor(reviewerLimit / participatingReviewers);
 
@@ -259,6 +259,7 @@ describe('Pass Fail Enforcement', function () {
                 'Review Count': submissions.map((submission) => submission.scores.length),
                 'Average Score': submissions.map((submission) => submission.scores.reduce((a, b) => a + b, 0) / 10),
                 'Reward': rewards.map((reward) => ethers.utils.formatEther(reward)),
+                'Scores': submissions.map((submission) => submission.scores),
             });
 
             // Run the claim transactions. Filter
