@@ -1,28 +1,28 @@
 {
-  "name": "labor-markets-abi",
-  "version": "1.6.0",
-  "description": "Labor Markets ABI and deployed contract addresses.",
-  "files": [
-    "dist"
-  ],
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc --build",
-    "clean": "tsc --build --clean"
-  },
-  "contributors": [
-    {
-      "name": "masonchain"
-    }, 
-    {
-      "name":"nftchance"
-    }, 
-    { 
-      "name": "thermohaline" 
-    }
-  ],
-  "license": "Apache-2.0",
-  "prepublish": "tsc"
+    "name": "labor-markets-abi",
+    "version": "2.0.5",
+    "description": "Labor Markets ABI and deployed contract addresses.",
+    "files": [
+        "dist"
+    ],
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "build": "tsc --build",
+        "clean": "tsc --build --clean"
+    },
+    "contributors": [
+        {
+            "name": "masonchain"
+        },
+        {
+            "name": "nftchance"
+        },
+        {
+            "name": "thermohaline"
+        }
+    ],
+    "license": "Apache-2.0",
+    "prepublish": "tsc"
 }

@@ -5,8 +5,7 @@ node_modules
 .env
 coverage
 coverage.json
-typechain
-typechain-types
+dist/
 
 # Forge files
 .gas-snapshot
@@ -17,6 +16,4 @@ report
 cache
 artifacts
 cache_hardhat
-abis/
-docs
 out
