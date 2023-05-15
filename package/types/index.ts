@@ -46,5 +46,3 @@ export type { ERC1155FreeMint } from "./src/mocks/ERC1155FreeMint";
 export { ERC1155FreeMint__factory } from "./factories/src/mocks/ERC1155FreeMint__factory";
 export type { ERC20FreeMint } from "./src/mocks/ERC20FreeMint";
 export { ERC20FreeMint__factory } from "./factories/src/mocks/ERC20FreeMint__factory";
-export type { Multicall3Mock } from "./src/mocks/Multicall3.sol/Multicall3Mock";
-export { Multicall3Mock__factory } from "./factories/src/mocks/Multicall3.sol/Multicall3Mock__factory";

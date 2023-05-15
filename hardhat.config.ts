@@ -85,7 +85,7 @@ const config: HardhatUserConfig = {
     docgen: {
         path: './docs',
         clear: true,
-        runOnCompile: false,
+        runOnCompile: true,
     },
     etherscan: {
         apiKey: {

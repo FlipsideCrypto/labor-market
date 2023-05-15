@@ -92,10 +92,6 @@ declare module "hardhat/types/runtime" {
       name: "ERC20FreeMint",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.ERC20FreeMint__factory>;
-    getContractFactory(
-      name: "Multicall3Mock",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.Multicall3Mock__factory>;
 
     getContractAt(
       name: "Initializable",
@@ -197,11 +193,6 @@ declare module "hardhat/types/runtime" {
       address: string,
       signer?: ethers.Signer
     ): Promise<Contracts.ERC20FreeMint>;
-    getContractAt(
-      name: "Multicall3Mock",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.Multicall3Mock>;
 
     // default types
     getContractFactory(
