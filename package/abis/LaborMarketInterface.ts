@@ -22,7 +22,7 @@ export const abi = [
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "address",
         "name": "claimer",
         "type": "address"
@@ -40,7 +40,7 @@ export const abi = [
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "bool",
         "name": "settled",
         "type": "bool"
@@ -59,7 +59,7 @@ export const abi = [
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "uint256",
         "name": "requestId",
         "type": "uint256"
@@ -107,13 +107,13 @@ export const abi = [
         "type": "uint256"
       },
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "contract IERC20",
         "name": "pTokenProvider",
         "type": "address"
       },
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "contract IERC20",
         "name": "pTokenReviewer",
         "type": "address"
@@ -220,6 +220,12 @@ export const abi = [
       {
         "indexed": false,
         "internalType": "uint256",
+        "name": "reviewId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
         "name": "reviewScore",
         "type": "uint256"
       },
@@ -289,5 +295,327 @@ export const abi = [
     ],
     "name": "ReviewSignal",
     "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_requestId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_submissionId",
+        "type": "uint256"
+      }
+    ],
+    "name": "claim",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "success",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_requestId",
+        "type": "uint256"
+      }
+    ],
+    "name": "claimRemainder",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "pTokenProviderSuccess",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "pTokenReviewerSuccess",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "pTokenProviderSurplus",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "pTokenReviewerSurplus",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_deployer",
+        "type": "address"
+      },
+      {
+        "internalType": "contract EnforcementCriteriaInterface",
+        "name": "_criteria",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_auxilaries",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_alphas",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_betas",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "bytes4[]",
+        "name": "_sigs",
+        "type": "bytes4[]"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bool",
+            "name": "deployerAllowed",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "required",
+            "type": "uint256"
+          },
+          {
+            "components": [
+              {
+                "internalType": "contract IERC1155",
+                "name": "badge",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "id",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "min",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "max",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "points",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct NBadgeAuthInterface.Badge[]",
+            "name": "badges",
+            "type": "tuple[]"
+          }
+        ],
+        "internalType": "struct NBadgeAuthInterface.Node[]",
+        "name": "_nodes",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_requestId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "_uri",
+        "type": "string"
+      }
+    ],
+    "name": "provide",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "submissionId",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_requestId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_submissionId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_score",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "_uri",
+        "type": "string"
+      }
+    ],
+    "name": "review",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_requestId",
+        "type": "uint256"
+      }
+    ],
+    "name": "signal",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_requestId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint24",
+        "name": "_quantity",
+        "type": "uint24"
+      }
+    ],
+    "name": "signalReview",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "_blockNonce",
+        "type": "uint8"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint48",
+            "name": "signalExp",
+            "type": "uint48"
+          },
+          {
+            "internalType": "uint48",
+            "name": "submissionExp",
+            "type": "uint48"
+          },
+          {
+            "internalType": "uint48",
+            "name": "enforcementExp",
+            "type": "uint48"
+          },
+          {
+            "internalType": "uint64",
+            "name": "providerLimit",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "reviewerLimit",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint256",
+            "name": "pTokenProviderTotal",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "pTokenReviewerTotal",
+            "type": "uint256"
+          },
+          {
+            "internalType": "contract IERC20",
+            "name": "pTokenProvider",
+            "type": "address"
+          },
+          {
+            "internalType": "contract IERC20",
+            "name": "pTokenReviewer",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct LaborMarketInterface.ServiceRequest",
+        "name": "_request",
+        "type": "tuple"
+      },
+      {
+        "internalType": "string",
+        "name": "_uri",
+        "type": "string"
+      }
+    ],
+    "name": "submitRequest",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "requestId",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_requestId",
+        "type": "uint256"
+      }
+    ],
+    "name": "withdrawRequest",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   }
 ] as const

@@ -17,6 +17,14 @@ The key for the types of changes are as follows:
 
 -   CINAD (sigh-nad): Chain Is Not A Database
 
+## [2.0.5] - 2023-05-15
+
+-   🐛 Math issues and bugs solved.
+-   ✨ V2 contract deployed.
+-   ✨ Base Enforcement Criterias fully simulated and tested.
+-   ✨ Test suite fully covers full features.
+-   👷 Package updated.
+
 ## [2.0.4] - 2023-05-10
 
 -   👷 Changed `transferFrom` to `transfer` in LaborMarket to prevent the need for approval.

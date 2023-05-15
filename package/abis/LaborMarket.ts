@@ -40,6 +40,69 @@ export const abi = [
     "anonymous": false,
     "inputs": [
       {
+        "indexed": false,
+        "internalType": "bytes4[]",
+        "name": "sigs",
+        "type": "bytes4[]"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bool",
+            "name": "deployerAllowed",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "required",
+            "type": "uint256"
+          },
+          {
+            "components": [
+              {
+                "internalType": "contract IERC1155",
+                "name": "badge",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "id",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "min",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "max",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "points",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct NBadgeAuthInterface.Badge[]",
+            "name": "badges",
+            "type": "tuple[]"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct NBadgeAuthInterface.Node[]",
+        "name": "nodes",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "NodesUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": true,
         "internalType": "address",
         "name": "user",
@@ -59,7 +122,7 @@ export const abi = [
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "address",
         "name": "claimer",
         "type": "address"
@@ -77,7 +140,7 @@ export const abi = [
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "bool",
         "name": "settled",
         "type": "bool"
@@ -96,7 +159,7 @@ export const abi = [
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "uint256",
         "name": "requestId",
         "type": "uint256"
@@ -144,13 +207,13 @@ export const abi = [
         "type": "uint256"
       },
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "contract IERC20",
         "name": "pTokenProvider",
         "type": "address"
       },
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "contract IERC20",
         "name": "pTokenReviewer",
         "type": "address"
@@ -252,6 +315,12 @@ export const abi = [
         "indexed": true,
         "internalType": "uint256",
         "name": "submissionId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "reviewId",
         "type": "uint256"
       },
       {
@@ -429,6 +498,60 @@ export const abi = [
         "internalType": "uint256[]",
         "name": "_betas",
         "type": "uint256[]"
+      },
+      {
+        "internalType": "bytes4[]",
+        "name": "_sigs",
+        "type": "bytes4[]"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bool",
+            "name": "deployerAllowed",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "required",
+            "type": "uint256"
+          },
+          {
+            "components": [
+              {
+                "internalType": "contract IERC1155",
+                "name": "badge",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "id",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "min",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "max",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "points",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct NBadgeAuthInterface.Badge[]",
+            "name": "badges",
+            "type": "tuple[]"
+          }
+        ],
+        "internalType": "struct NBadgeAuthInterface.Node[]",
+        "name": "_nodes",
+        "type": "tuple[]"
       }
     ],
     "name": "initialize",
