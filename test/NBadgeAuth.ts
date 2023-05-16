@@ -101,7 +101,7 @@ describe('Labor Market', function () {
 
         const criteria = enforcement.address; // EnforcementCriteriaInterface _criteria,
 
-        const auxilaries = [4];
+        const auxilaries = [100];
         const alphas = [0, 25, 50, 75, 90];
         const betas = [0, 25, 50, 75, 100];
 
