@@ -137,7 +137,7 @@ describe('Likert Enforcement', function () {
             // Market Parameters
             const providerLimit = 20;
             const reviewerLimit = 100;
-            const pTokenProviderTotal = ethers.utils.parseEther('100000');
+            const pTokenProviderTotal = ethers.utils.parseEther('5000');
             const pTokenReviewerTotal = ethers.utils.parseEther('1000');
 
             // Outcome parameters

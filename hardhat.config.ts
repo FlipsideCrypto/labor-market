@@ -120,12 +120,11 @@ const config: HardhatUserConfig = {
             chainId: 137,
             url: `https://polygon-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}`,
             accounts: [`0x${PRIVATE_KEY}`],
-            gasPrice: 100000000000 // 100 gwei,
+            gasPrice: 100000000000, // 100 gwei,
         },
     },
     paths: {
         sources: './src', // Use ./src rather than ./contracts as Hardhat expects
-        cache: './cache_hardhat', // Use a different cache for Hardhat than Foundry
         tests: './test/',
     },
     typechain: {

@@ -17,6 +17,11 @@ The key for the types of changes are as follows:
 
 -   CINAD (sigh-nad): Chain Is Not A Database
 
+## [2.0.7] - 2023-05-15
+
+-   👷 Update README in npm package.
+-   🐛 Fix misnamed Factory export in package/index.ts.
+
 ## [2.0.5] - 2023-05-15
 
 -   🐛 Math issues and bugs solved.
