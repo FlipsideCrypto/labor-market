@@ -91,7 +91,7 @@ describe('Pass Fail Enforcement', function () {
         return { factory, enforcement, laborMarketSingleton, ERC20s };
     }
 
-    async function createMarket(auxilaries: number[] = [1], alphas: number[] = [0, 1], betas: number[] = [0, 1]) {
+    async function createMarket(auxilaries: number[] = [100], alphas: number[] = [0, 70], betas: number[] = [0, 100]) {
         const { factory, enforcement, ERC20s } = await loadFixture(deployFactory);
         const [deployer] = await ethers.getSigners();
 
