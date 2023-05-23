@@ -42,19 +42,18 @@ async function main(verify) {
         'Labor Market Factory': factory.address,
         'Enforcement Criteria': enforcement.address,
     });
-  
 
     if (verify === true) {
         await new Promise((r) => setTimeout(r, 60000));
 
-        const verifications = await Promise.all([
-            hre.run('verify:verify', { address: market.address, constructorArguments: [] }),
-            hre.run('verify:verify', { address: factory.address, constructorArguments: [market.address] }),
-            hre.run('verify:verify', { address: enforcement.address, constructorArguments: [] }),
-        ]);
+        hre.run('verify:verify', { address: market.address, constructorArguments: [] });
+        console.log('Implementation Verified');
 
-        console.log(verifications);
-        console.log('Protocol Deployed and Verified!');
+        hre.run('verify:verify', { address: factory.address, constructorArguments: [market.address] });
+        console.log('Factory Verified');
+
+        hre.run('verify:verify', { address: enforcement.address, constructorArguments: [] });
+        console.log('Enforcement Verified');
     }
 }
 

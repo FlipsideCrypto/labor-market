@@ -13,18 +13,18 @@ async function main() {
         'Balance': balance,
     });
 
-    const LaborMarketImplementation = '0xc8f98075fcfA38024069Be0b2202d25bA22C682c';
-    const LaborMarketFactory = '0x95be852eCa7d66A406e283b1d79DB268Dff698a0';
+    const LaborMarketImplementation = '0x6C257AeEdeF026c4e25fB1b8DC0CfB78c0495629';
+    const LaborMarketFactory = '0x04E76d1FC8653c3914cEAb2D013D6D2a82858732';
     const EnforcementCriteria = '0x7207dDC1A67d18A953e97E373617F338efe1677E';
 
-    const verifications = await Promise.all([
-        hre.run('verify:verify', { address: LaborMarketImplementation, constructorArguments: [] }),
-        hre.run('verify:verify', { address: LaborMarketFactory, constructorArguments: [LaborMarketImplementation] }),
-        hre.run('verify:verify', { address: EnforcementCriteria, constructorArguments: [] }),
-    ]);
+    hre.run('verify:verify', { address: LaborMarketImplementation, constructorArguments: [] });
+    console.log('Implementation Verified');
 
-    console.log(verifications);
-    console.log('Protocol Deployed and Verified!');
+    hre.run('verify:verify', { address: LaborMarketFactory, constructorArguments: [LaborMarketImplementation] });
+    console.log('Factory Verified');
+
+    hre.run('verify:verify', { address: EnforcementCriteria, constructorArguments: [] });
+    console.log('Enforcement Verified');
 }
 
 main();
