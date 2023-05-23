@@ -10,6 +10,12 @@ export const abi = [
       },
       {
         "indexed": false,
+        "internalType": "string",
+        "name": "uri",
+        "type": "string"
+      },
+      {
+        "indexed": false,
         "internalType": "address",
         "name": "criteria",
         "type": "address"
@@ -365,6 +371,11 @@ export const abi = [
         "internalType": "address",
         "name": "_deployer",
         "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "_uri",
+        "type": "string"
       },
       {
         "internalType": "contract EnforcementCriteriaInterface",
