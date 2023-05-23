@@ -37,6 +37,7 @@ contract LaborMarketFactory is LaborMarketFactoryInterface {
      */
     function createLaborMarket(
         address _deployer,
+        string calldata _uri,
         EnforcementCriteriaInterface _criteria,
         uint256[] calldata _auxilaries,
         uint256[] calldata _alphas,
@@ -51,7 +52,7 @@ contract LaborMarketFactory is LaborMarketFactoryInterface {
         LaborMarket laborMarket = LaborMarket(marketAddress);
 
         /// @notice Deploy the clone contract to serve as the Labor Market.
-        laborMarket.initialize(_deployer, _criteria, _auxilaries, _alphas, _betas, _sigs, _nodes);
+        laborMarket.initialize(_deployer, _uri, _criteria, _auxilaries, _alphas, _betas, _sigs, _nodes);
 
         /// @notice Announce the creation of the Labor Market.
         emit LaborMarketCreated(marketAddress, _deployer, implementation);

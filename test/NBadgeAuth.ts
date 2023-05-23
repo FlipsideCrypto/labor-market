@@ -113,15 +113,33 @@ describe('Labor Market', function () {
         );
         ERC1155s = await Promise.all(ERC1155s.map((e) => e.deployed()));
 
-        const sigs: any = [laborMarketSingleton.interface.getSighash('signal(uint256)')];
+        const sigs: any = [
+            laborMarketSingleton.interface.getSighash('submitRequest'),
+            laborMarketSingleton.interface.getSighash('signal'),
+            laborMarketSingleton.interface.getSighash('signalReview'),
+        ];
 
         const badges: NBadgeAuthInterface.BadgeStruct[] = [
             {
                 badge: ERC1155s[0].address,
                 id: 0,
                 min: 1,
-                max: 1,
-                points: 2,
+                max: 2,
+                points: 1,
+            },
+            {
+                badge: ERC1155s[1].address,
+                id: 0,
+                min: 1,
+                max: 100,
+                points: 1,
+            },
+            {
+                badge: ERC1155s[2].address,
+                id: 0,
+                min: 1,
+                max: 100,
+                points: 1,
             },
         ];
 
@@ -131,16 +149,27 @@ describe('Labor Market', function () {
                 badges: badges,
                 required: 1,
             },
+            {
+                deployerAllowed: true,
+                badges: badges,
+                required: 2,
+            },
+            {
+                deployerAllowed: true,
+                badges: badges,
+                required: 3,
+            },
         ];
 
         const args = [
             deployer.address, // address _deployer,
+            'uri', // string calldata _uri,
             criteria, // EnforcementCriteriaInterface _criteria,
-            auxilaries, // uint256[] memory _auxilaries,
-            alphas, // uint256[] memory _alphas,
-            betas, // uint256[] memory _betas
-            sigs, // bytes4[] memory _sigs,
-            nodes, // Node[] memory _nodes,
+            auxilaries, // uint256[] calldata _auxilaries,
+            alphas, // uint256[] calldata _alphas,
+            betas, // uint256[] calldata _betas
+            sigs, // bytes4[] calldata _sigs,
+            nodes, // Node[] calldata _nodes,
         ];
 
         const tx = await factory.createLaborMarket(...args);
@@ -173,20 +202,18 @@ describe('Labor Market', function () {
             const requester = await ethers.getSigner(1);
             const phony = await ethers.getSigner(2);
 
-            const badge = ERC1155s[0];
-
-            const badgeMint = await badge.freeMint(requester.address, 1, 1);
+            const badgeMint = await ERC1155s[0].freeMint(requester.address, 0, 1);
             await badgeMint.wait();
 
             const now = await getCurrentBlockTimestamp();
 
-            const erc20Mints = await Promise.all([
+            const ERC20mints = await Promise.all([
                 ERC20s.pepe.connect(requester).freeMint(requester.address, ethers.utils.parseEther('100000')),
                 ERC20s.usdc.connect(requester).freeMint(requester.address, ethers.utils.parseEther('100000')),
                 ERC20s.usdc.connect(phony).freeMint(phony.address, ethers.utils.parseEther('100000')),
                 ERC20s.pepe.connect(phony).freeMint(phony.address, ethers.utils.parseEther('100000')),
             ]);
-            await Promise.all(erc20Mints.map((e) => e.wait()));
+            await Promise.all(ERC20mints.map((e) => e.wait()));
 
             const approvals = await Promise.all([
                 ERC20s.pepe.connect(requester).approve(market.address, ethers.utils.parseEther('100000')),
@@ -217,7 +244,7 @@ describe('Labor Market', function () {
                 requestId,
             );
 
-            expect(await market.connect(phony).submitRequest(0, request, 'uri')).to.be.revertedWith(
+            await expect(market.connect(phony).submitRequest(0, request, 'uri')).to.be.revertedWith(
                 'NBadgeAuth::requiresAuth: Not authorized',
             );
         });

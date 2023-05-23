@@ -43,6 +43,11 @@ const _abi = [
         type: "address",
       },
       {
+        internalType: "string",
+        name: "_uri",
+        type: "string",
+      },
+      {
         internalType: "contract EnforcementCriteriaInterface",
         name: "_criteria",
         type: "address",

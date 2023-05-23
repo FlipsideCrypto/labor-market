@@ -13,6 +13,7 @@ interface LaborMarketFactoryInterface {
     /**
      * @notice Allows an individual to deploy a new Labor Market.
      * @param _deployer The address of the individual intended to own the Labor Market.
+     * @param _uri The internet-accessible uri of the Labor Market.
      * @param _criteria The address of enforcement criteria contract.
      * @param _auxilaries The array of uints configuring the application of enforcement.
      * @param _alphas The array of uints configuring the application of enforcement.
@@ -23,6 +24,7 @@ interface LaborMarketFactoryInterface {
      */
     function createLaborMarket(
         address _deployer,
+        string calldata _uri,
         EnforcementCriteriaInterface _criteria,
         uint256[] calldata _auxilaries,
         uint256[] calldata _alphas,

@@ -82,6 +82,7 @@ describe('Labor Market', function () {
 
         const args = [
             deployer.address, // address _deployer,
+            'uri',
             criteria, // EnforcementCriteriaInterface _criteria,
             maxScore, // uint256[] memory _auxilaries,
             scoreRanges, // uint256[] memory _alphas,
@@ -168,6 +169,7 @@ describe('Labor Market', function () {
 
             const args = [
                 deployer.address, // address _deployer,
+                'uri', // string calldata _uri,
                 criteria, // EnforcementCriteriaInterface _criteria,
                 auxilaries, // uint256[] memory _auxilaries,
                 alphas, // uint256[] memory _alphas,
@@ -180,7 +182,7 @@ describe('Labor Market', function () {
 
             await expect(factory.createLaborMarket(...args))
                 .to.emit(factory, 'LaborMarketCreated')
-                .withArgs(contractAddress, deployer.address, laborMarketSingleton.address);
+                .withArgs(contractAddress, deployer.address, laborMarketSingleton.address)
         });
     });
 

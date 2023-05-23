@@ -107,7 +107,7 @@ export interface LaborMarketInterfaceInterface extends utils.Interface {
   functions: {
     "claim(uint256,uint256)": FunctionFragment;
     "claimRemainder(uint256)": FunctionFragment;
-    "initialize(address,address,uint256[],uint256[],uint256[],bytes4[],(bool,uint256,(address,uint256,uint256,uint256,uint256)[])[])": FunctionFragment;
+    "initialize(address,string,address,uint256[],uint256[],uint256[],bytes4[],(bool,uint256,(address,uint256,uint256,uint256,uint256)[])[])": FunctionFragment;
     "provide(uint256,string)": FunctionFragment;
     "review(uint256,uint256,uint256,string)": FunctionFragment;
     "signal(uint256)": FunctionFragment;
@@ -140,6 +140,7 @@ export interface LaborMarketInterfaceInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "initialize",
     values: [
+      PromiseOrValue<string>,
       PromiseOrValue<string>,
       PromiseOrValue<string>,
       PromiseOrValue<BigNumberish>[],
@@ -206,7 +207,7 @@ export interface LaborMarketInterfaceInterface extends utils.Interface {
   ): Result;
 
   events: {
-    "LaborMarketConfigured(address,address)": EventFragment;
+    "LaborMarketConfigured(address,string,address)": EventFragment;
     "RemainderClaimed(address,uint256,address,bool)": EventFragment;
     "RequestConfigured(address,uint256,uint48,uint48,uint48,uint64,uint64,uint256,uint256,address,address,string)": EventFragment;
     "RequestFulfilled(address,uint256,uint256,string)": EventFragment;
@@ -230,10 +231,11 @@ export interface LaborMarketInterfaceInterface extends utils.Interface {
 
 export interface LaborMarketConfiguredEventObject {
   deployer: string;
+  uri: string;
   criteria: string;
 }
 export type LaborMarketConfiguredEvent = TypedEvent<
-  [string, string],
+  [string, string, string],
   LaborMarketConfiguredEventObject
 >;
 
@@ -407,6 +409,7 @@ export interface LaborMarketInterface extends BaseContract {
 
     initialize(
       _deployer: PromiseOrValue<string>,
+      _uri: PromiseOrValue<string>,
       _criteria: PromiseOrValue<string>,
       _auxilaries: PromiseOrValue<BigNumberish>[],
       _alphas: PromiseOrValue<BigNumberish>[],
@@ -467,6 +470,7 @@ export interface LaborMarketInterface extends BaseContract {
 
   initialize(
     _deployer: PromiseOrValue<string>,
+    _uri: PromiseOrValue<string>,
     _criteria: PromiseOrValue<string>,
     _auxilaries: PromiseOrValue<BigNumberish>[],
     _alphas: PromiseOrValue<BigNumberish>[],
@@ -534,6 +538,7 @@ export interface LaborMarketInterface extends BaseContract {
 
     initialize(
       _deployer: PromiseOrValue<string>,
+      _uri: PromiseOrValue<string>,
       _criteria: PromiseOrValue<string>,
       _auxilaries: PromiseOrValue<BigNumberish>[],
       _alphas: PromiseOrValue<BigNumberish>[],
@@ -582,12 +587,14 @@ export interface LaborMarketInterface extends BaseContract {
   };
 
   filters: {
-    "LaborMarketConfigured(address,address)"(
+    "LaborMarketConfigured(address,string,address)"(
       deployer?: null,
+      uri?: null,
       criteria?: null
     ): LaborMarketConfiguredEventFilter;
     LaborMarketConfigured(
       deployer?: null,
+      uri?: null,
       criteria?: null
     ): LaborMarketConfiguredEventFilter;
 
@@ -720,6 +727,7 @@ export interface LaborMarketInterface extends BaseContract {
 
     initialize(
       _deployer: PromiseOrValue<string>,
+      _uri: PromiseOrValue<string>,
       _criteria: PromiseOrValue<string>,
       _auxilaries: PromiseOrValue<BigNumberish>[],
       _alphas: PromiseOrValue<BigNumberish>[],
@@ -781,6 +789,7 @@ export interface LaborMarketInterface extends BaseContract {
 
     initialize(
       _deployer: PromiseOrValue<string>,
+      _uri: PromiseOrValue<string>,
       _criteria: PromiseOrValue<string>,
       _auxilaries: PromiseOrValue<BigNumberish>[],
       _alphas: PromiseOrValue<BigNumberish>[],

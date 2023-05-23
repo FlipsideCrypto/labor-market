@@ -101,12 +101,13 @@ describe('Pass Fail Enforcement', function () {
 
         const args = [
             deployer.address, // address _deployer,
+            'uri', // string calldata _uri,
             criteria, // EnforcementCriteriaInterface _criteria,
-            auxilaries, // uint256[] memory _auxilaries,
-            alphas, // uint256[] memory _alphas,
-            betas, // uint256[] memory _betas
-            sigs, // bytes4[] memory _sigs,
-            nodes, // Node[] memory _nodes,
+            auxilaries, // uint256[] calldata _auxilaries,
+            alphas, // uint256[] calldata _alphas,
+            betas, // uint256[] calldata _betas
+            sigs, // bytes4[] calldata _sigs,
+            nodes, // Node[] calldata _nodes,
         ];
 
         const tx = await factory.createLaborMarket(...args);
@@ -260,10 +261,10 @@ describe('Pass Fail Enforcement', function () {
             });
 
             // Run the claim transactions.
-            submissions.forEach(async (submission) => {
-                const claim = await market.connect(submission.provider).claim(requestId, submission.id);
-                const receipt = await claim.wait();
-            });
+            const claims = await Promise.all(
+                submissions.map((submission) => market.connect(submission.provider).claim(requestId, submission.id)),
+            );
+            await Promise.all(claims.map((claim) => claim.wait()));
 
             // total tokens unused on less submissions than the limit
             // total / limit * (limit - participating)
@@ -308,52 +309,44 @@ describe('Pass Fail Enforcement', function () {
                 marketUsdc: await ERC20s.usdc.balanceOf(market.address),
             };
 
+            console.log(balancesAfter.providers, rewards, submissions);
+            console.log(balancesAfter.providers[0].sub(rewards[0]).toString());
+
             // Every provider received the right amount in their claim.
-            it('Providers received the right amount', () => {
-                assert(
-                    balancesAfter.providers.every(
-                        (balance, idx: number) =>
-                            balance.sub(balancesBefore.providers[idx]).sub(rewards[idx]).toString() === '0',
-                    ),
-                    'PassFail: Providers did not receive reward',
-                );
-            });
+            assert(
+                balancesAfter.providers.every(
+                    (balance, idx: number) =>
+                        balance.sub(balancesBefore.providers[idx]).sub(rewards[idx]).toString() === '0',
+                ),
+                'PassFail: Providers did not receive reward',
+            );
 
             // Every reviewer received the right amount.
-            it('Reviewers received the right amount', () => {
-                assert(
-                    balancesAfter.reviewers.every((balance, idx: number) =>
-                        balance.sub(balancesBefore.reviewers[idx]).eq(paymentPerReviewer.mul(submissions.length)),
-                    ),
-                    'PassFail: Reviewers did not receive reward',
-                );
-            });
+            assert(
+                balancesAfter.reviewers.every((balance, idx: number) =>
+                    balance.sub(balancesBefore.reviewers[idx]).eq(paymentPerReviewer.mul(submissions.length)),
+                ),
+                'PassFail: Reviewers did not receive reward',
+            );
 
             // Make sure deployer was refunded unused pTokens.
-            it('Deployer received unused provider pTokens', () => {
-                assert(
-                    balancesBefore.deployerPepe.sub(balancesAfter.deployerPepe).eq(totalRewards),
-                    'PassFail: Deployer did not receive provider pToken remainder',
-                );
-            });
 
-            it('Deployer received unused reviewer pTokens', () => {
-                assert(
-                    balancesBefore.deployerUsdc
-                        .sub(balancesAfter.deployerUsdc)
-                        .eq(pTokenReviewerTotal.sub(totalReviewerTokenRemainder)),
-                    'PassFail: Deployer did not receive reviewer pToken remainder',
-                );
-            });
+            assert(
+                balancesBefore.deployerPepe.sub(balancesAfter.deployerPepe).eq(totalRewards),
+                'PassFail: Deployer did not receive provider pToken remainder',
+            );
+
+            assert(
+                balancesBefore.deployerUsdc
+                    .sub(balancesAfter.deployerUsdc)
+                    .eq(pTokenReviewerTotal.sub(totalReviewerTokenRemainder)),
+                'PassFail: Deployer did not receive reviewer pToken remainder',
+            );
 
             // Make sure contract is fully paid out.
-            it('Contract has no pTokens', () => {
-                assert(balancesAfter.marketPepe.eq(0), 'PassFail: Contract still has provider pToken');
-            });
+            assert(balancesAfter.marketPepe.eq(0), 'PassFail: Contract still has provider pToken');
 
-            it('Contract has no reviewer pTokens', () => {
-                assert(balancesAfter.marketUsdc.eq(0), 'PassFail: Contract still has reviewer pToken');
-            });
+            assert(balancesAfter.marketUsdc.eq(0), 'PassFail: Contract still has reviewer pToken');
         });
     });
 });
