@@ -17,6 +17,11 @@ The key for the types of changes are as follows:
 
 -   CINAD (sigh-nad): Chain Is Not A Database
 
+## [2.0.8] - 2023-05-23
+
+-   🐛 Added back uri to `LaborMarketConfigured` event, `createLaborMarket` args.
+-   👷 Contracts redeployed and addresses updated.
+
 ## [2.0.7] - 2023-05-15
 
 -   👷 Update README in npm package.

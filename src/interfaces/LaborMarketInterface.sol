@@ -31,7 +31,7 @@ interface LaborMarketInterface {
     }
 
     /// @notice Emitted when labor market parameters are updated.
-    event LaborMarketConfigured(address deployer, address criteria);
+    event LaborMarketConfigured(address deployer, string uri, address criteria);
 
     /// @notice Announces when a new Request has been configured inside a Labor Market.
     event RequestConfigured(
@@ -92,6 +92,7 @@ interface LaborMarketInterface {
      * @notice Initializes the newly deployed Labor Market contract.
      * @dev An initializer can only be called once and will throw if called twice in place of the constructor.
      * @param _deployer The address of the deployer.
+     * @param _uri The internet-accessible uri of the Labor Market.
      * @param _criteria The enforcement criteria module used for this Labor Market.
      * @param _auxilaries The auxiliary values for the ennforcement criteria that is being used.
      * @param _alphas The alpha values for the enforcement criteria that is being used.
@@ -101,6 +102,7 @@ interface LaborMarketInterface {
      */
     function initialize(
         address _deployer,
+        string calldata _uri,
         EnforcementCriteriaInterface _criteria,
         uint256[] calldata _auxilaries,
         uint256[] calldata _alphas,

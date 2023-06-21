@@ -101,12 +101,13 @@ describe('Likert Enforcement', function () {
 
         const args = [
             deployer.address, // address _deployer,
+            'uri', // string calldata _uri
             criteria, // EnforcementCriteriaInterface _criteria,
-            auxilaries, // uint256[] memory _auxilaries,
-            alphas, // uint256[] memory _alphas,
-            betas, // uint256[] memory _betas
-            sigs, // bytes4[] memory _sigs,
-            nodes, // Node[] memory _nodes,
+            auxilaries, // uint256[] calldata _auxilaries,
+            alphas, // uint256[] calldata _alphas,
+            betas, // uint256[] calldata _betas
+            sigs, // bytes4[] calldata _sigs,
+            nodes, // Node[] calldata _nodes,
         ];
 
         const tx = await factory.createLaborMarket(...args);
@@ -156,9 +157,9 @@ describe('Likert Enforcement', function () {
 
             //////////////////////////
 
+            // Create a pass fail request
             const { market, ERC20s, enforcement, deployer } = await createMarket(maxScore, scoreRanges, weights);
 
-            // Create a pass fail request
             const now = await getCurrentBlockTimestamp();
 
             // Configure the request
@@ -250,6 +251,7 @@ describe('Likert Enforcement', function () {
             // total earned by providers
             const totalRewards = expectedRewards.reduce((a, b) => a.add(b), ethers.BigNumber.from('0'));
 
+            // Log our simulation
             console.table({
                 'Review Count': submissions.map((submission) => submission.scores.length),
                 'Review Sum': submissions.map((submission) => submission.scores.reduce((a, b) => a + b, 0)),

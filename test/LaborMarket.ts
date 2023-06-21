@@ -82,6 +82,7 @@ describe('Labor Market', function () {
 
         const args = [
             deployer.address, // address _deployer,
+            'uri',
             criteria, // EnforcementCriteriaInterface _criteria,
             maxScore, // uint256[] memory _auxilaries,
             scoreRanges, // uint256[] memory _alphas,
@@ -168,6 +169,7 @@ describe('Labor Market', function () {
 
             const args = [
                 deployer.address, // address _deployer,
+                'uri', // string calldata _uri,
                 criteria, // EnforcementCriteriaInterface _criteria,
                 auxilaries, // uint256[] memory _auxilaries,
                 alphas, // uint256[] memory _alphas,
@@ -181,6 +183,40 @@ describe('Labor Market', function () {
             await expect(factory.createLaborMarket(...args))
                 .to.emit(factory, 'LaborMarketCreated')
                 .withArgs(contractAddress, deployer.address, laborMarketSingleton.address);
+        });
+        it('call: createLaborMarket() get uri', async () => {
+            const { factory, enforcement, laborMarketSingleton } = await loadFixture(deployFactory);
+            const [deployer] = await ethers.getSigners();
+
+            const criteria = enforcement.address; // EnforcementCriteriaInterface _criteria,
+            const auxilaries = [4];
+            const alphas = [0, 1, 2, 3, 4];
+            const betas = [0, 0, 100, 200, 300];
+            const sigs: any = [];
+            const nodes: any = [];
+
+            const args = [
+                deployer.address, // address _deployer,
+                'uri', // string calldata _uri,
+                criteria, // EnforcementCriteriaInterface _criteria,
+                auxilaries, // uint256[] memory _auxilaries,
+                alphas, // uint256[] memory _alphas,
+                betas, // uint256[] memory _betas
+                sigs, // bytes4[] memory _sigs,
+                nodes, // Node[] memory _nodes,
+            ];
+
+            const tx = await factory.createLaborMarket(...args);
+            const receipt = await tx.wait();
+
+            const marketAddress = receipt.events.find((e: any) => e.event === 'LaborMarketCreated').args.marketAddress;
+
+            const configuredEvent = receipt.events
+                .filter((e: any) => e.address === marketAddress)
+                .map((e: any) => laborMarketSingleton.interface.parseLog(e))
+                .find((e: any) => e.name === 'LaborMarketConfigured');
+
+            assert.equal(configuredEvent.args.uri, 'uri');
         });
     });
 

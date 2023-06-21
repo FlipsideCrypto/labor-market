@@ -1,6 +1,6 @@
 {
     "name": "labor-markets-abi",
-    "version": "2.0.7",
+    "version": "2.0.8",
     "description": "Labor Markets ABI and deployed contract addresses.",
     "files": [
         "dist"

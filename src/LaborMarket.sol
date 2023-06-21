@@ -40,6 +40,7 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
      */
     function initialize(
         address _deployer,
+        string calldata _uri,
         EnforcementCriteriaInterface _criteria,
         uint256[] calldata _auxilaries,
         uint256[] calldata _alphas,
@@ -65,7 +66,7 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
         criteria.setConfiguration(_auxilaries, _alphas, _betas);
 
         /// @dev Announce the configuration of the Labor Market.
-        emit LaborMarketConfigured(_deployer, address(criteria));
+        emit LaborMarketConfigured(_deployer, _uri, address(criteria));
     }
 
     /**

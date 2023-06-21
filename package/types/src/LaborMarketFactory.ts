@@ -69,7 +69,7 @@ export declare namespace NBadgeAuthInterface {
 
 export interface LaborMarketFactoryInterface extends utils.Interface {
   functions: {
-    "createLaborMarket(address,address,uint256[],uint256[],uint256[],bytes4[],(bool,uint256,(address,uint256,uint256,uint256,uint256)[])[])": FunctionFragment;
+    "createLaborMarket(address,string,address,uint256[],uint256[],uint256[],bytes4[],(bool,uint256,(address,uint256,uint256,uint256,uint256)[])[])": FunctionFragment;
     "implementation()": FunctionFragment;
   };
 
@@ -80,6 +80,7 @@ export interface LaborMarketFactoryInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "createLaborMarket",
     values: [
+      PromiseOrValue<string>,
       PromiseOrValue<string>,
       PromiseOrValue<string>,
       PromiseOrValue<BigNumberish>[],
@@ -152,6 +153,7 @@ export interface LaborMarketFactory extends BaseContract {
   functions: {
     createLaborMarket(
       _deployer: PromiseOrValue<string>,
+      _uri: PromiseOrValue<string>,
       _criteria: PromiseOrValue<string>,
       _auxilaries: PromiseOrValue<BigNumberish>[],
       _alphas: PromiseOrValue<BigNumberish>[],
@@ -166,6 +168,7 @@ export interface LaborMarketFactory extends BaseContract {
 
   createLaborMarket(
     _deployer: PromiseOrValue<string>,
+    _uri: PromiseOrValue<string>,
     _criteria: PromiseOrValue<string>,
     _auxilaries: PromiseOrValue<BigNumberish>[],
     _alphas: PromiseOrValue<BigNumberish>[],
@@ -180,6 +183,7 @@ export interface LaborMarketFactory extends BaseContract {
   callStatic: {
     createLaborMarket(
       _deployer: PromiseOrValue<string>,
+      _uri: PromiseOrValue<string>,
       _criteria: PromiseOrValue<string>,
       _auxilaries: PromiseOrValue<BigNumberish>[],
       _alphas: PromiseOrValue<BigNumberish>[],
@@ -208,6 +212,7 @@ export interface LaborMarketFactory extends BaseContract {
   estimateGas: {
     createLaborMarket(
       _deployer: PromiseOrValue<string>,
+      _uri: PromiseOrValue<string>,
       _criteria: PromiseOrValue<string>,
       _auxilaries: PromiseOrValue<BigNumberish>[],
       _alphas: PromiseOrValue<BigNumberish>[],
@@ -223,6 +228,7 @@ export interface LaborMarketFactory extends BaseContract {
   populateTransaction: {
     createLaborMarket(
       _deployer: PromiseOrValue<string>,
+      _uri: PromiseOrValue<string>,
       _criteria: PromiseOrValue<string>,
       _auxilaries: PromiseOrValue<BigNumberish>[],
       _alphas: PromiseOrValue<BigNumberish>[],
