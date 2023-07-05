@@ -17,6 +17,10 @@ The key for the types of changes are as follows:
 
 -   CINAD (sigh-nad): Chain Is Not A Database
 
+## [2.1.1] - 2023-07-03
+
+-   👷 Redeployed BucketEnforcement for clean event data for next launch.
+
 ## [2.1.0] - 2023-07-03
 
 -   👷 Redeployed LaborMarketFactory for clean event data for next launch.

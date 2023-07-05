@@ -11,6 +11,6 @@ export const LaborMarketFactory = {
     abi: LaborMarketFactoryABI,
 };
 export const BucketEnforcement = {
-    address: '0x7207dDC1A67d18A953e97E373617F338efe1677E' as const,
+    address: '0x355A284eA2494E299Bd2E4046DA17ac28F3Dc8b4' as const,
     abi: BucketEnforcementABI,
 };
