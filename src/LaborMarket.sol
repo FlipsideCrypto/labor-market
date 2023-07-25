@@ -320,9 +320,6 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
             /// @dev Set the first two bits to 2.
             0x2;
 
-        /// @dev Add signal state to the request.
-        requestIdToSignalState[_requestId].providersArrived += 1;
-
         /// @notice Announce the submission of a Provider.
         emit RequestFulfilled(msg.sender, _requestId, submissionId, _uri);
     }
@@ -345,11 +342,12 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
             "LaborMarket::review: Cannot review own submission"
         );
 
-        /// @notice Ensure reviewing a valid submission.
+        /// @notice Ensure reviewing a valid submission by confirming that the 
+        ///         first 2 bits of of the performance state are set to 2.
         require(
-            requestIdToProviders[_requestId].contains(
+            requestIdToAddressToPerformance[_requestId][
                 address(uint160(_submissionId))
-            ),
+            ] & 0x3 == 2,
             "LaborMarket::review: Cannot review submission that does not exist"
         );
 
@@ -377,6 +375,9 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
         ///       In the case that only one response from each reviewer is wanted, then the enforcement
         ///       criteria should return `true` to indicate signal deduction is owed at all times.
         if (newSubmission) {
+            /// @dev Record that the Provider made a valid submission.
+            requestIdToProviders[_requestId].add(address(uint160(_submissionId)));
+
             /// @notice Calculate the active intent value of the Reviewer.
             uint24 intent = requestIdToAddressToPerformance[_requestId][
                 msg.sender
@@ -514,7 +515,7 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
 
         /// @notice Determine the amount of available Provider payments never redeemed.
         pTokenProviderSurplus =
-            (request.providerLimit - signalState.providersArrived) *
+            (request.providerLimit - requestIdToProviders[_requestId].length()) *
             (request.pTokenProviderTotal / request.providerLimit);
 
         /// @notice Determine the amount of available Reviewer payments never redeemed.
@@ -575,12 +576,13 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
             "LaborMarket::withdrawRequest: Not requester"
         );
 
-        /// @dev Require that the Request does not have any signal state.
+        /// @dev Require that the Request does not have any signal state and
+        ///      that no valid submission has been made.
         require(
             (requestIdToSignalState[_requestId].providers |
                 requestIdToSignalState[_requestId].reviewers |
-                requestIdToSignalState[_requestId].providersArrived |
-                requestIdToSignalState[_requestId].reviewersArrived) == 0,
+                requestIdToSignalState[_requestId].reviewersArrived |
+                requestIdToProviders[_requestId].length()) == 0,
             "LaborMarket::withdrawRequest: Already active"
         );
 
@@ -617,5 +619,34 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
 
         /// @dev Announce the withdrawal of a Request.
         emit RequestWithdrawn(_requestId);
+    }
+
+    function activity(uint256 _requestId)
+        public
+        view
+        virtual
+        returns (
+            uint256 providers,
+            uint256 reviewers,
+            uint256 providersArrived,
+            uint256 reviewersArrived
+        )
+    {
+        /// @dev Get the signal state of the Request.
+        ServiceSignalState storage signalState = requestIdToSignalState[
+            _requestId
+        ];
+
+        /// @notice Return the number of Providers that have signaled.
+        providers = signalState.providers;
+
+        /// @notice Return the number of Reviewers that have signaled.
+        reviewers = signalState.reviewers;
+
+        /// @notice Return the number of Providers that have signaled and arrived.
+        providersArrived = requestIdToProviders[_requestId].length();
+
+        /// @notice Return the number of Reviewers that have signaled and arrived.
+        reviewersArrived = signalState.reviewersArrived;
     }
 }
