@@ -3,14 +3,14 @@
 pragma solidity ^0.8.17;
 
 /// @dev Core dependencies.
-import { LaborMarketInterface } from './interfaces/LaborMarketInterface.sol';
-import { NBadgeAuth } from './auth/NBadgeAuth.sol';
+import {LaborMarketInterface} from "./interfaces/LaborMarketInterface.sol";
+import {NBadgeAuth} from "./auth/NBadgeAuth.sol";
 
 /// @dev Helper interfaces
-import { EnforcementCriteriaInterface } from './interfaces/enforcement/EnforcementCriteriaInterface.sol';
+import {EnforcementCriteriaInterface} from "./interfaces/enforcement/EnforcementCriteriaInterface.sol";
 
 /// @dev Helper libraries.
-import { EnumerableSet } from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 contract LaborMarket is LaborMarketInterface, NBadgeAuth {
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -22,7 +22,8 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
     mapping(uint256 => ServiceRequest) public requestIdToRequest;
 
     /// @dev State id for a user relative to a single Request.
-    mapping(uint256 => mapping(address => uint24)) public requestIdToAddressToPerformance;
+    mapping(uint256 => mapping(address => uint24))
+        public requestIdToAddressToPerformance;
 
     /// @dev Tracking the amount of Provider and Reviewer interested that has been signaled.
     mapping(uint256 => ServiceSignalState) public requestIdToSignalState;
@@ -82,17 +83,31 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
             block.timestamp < _request.signalExp &&
                 _request.signalExp < _request.submissionExp &&
                 _request.submissionExp < _request.enforcementExp,
-            'LaborMarket::submitRequest: Invalid timestamps'
+            "LaborMarket::submitRequest: Invalid timestamps"
         );
 
         /// @notice Ensure the Reviewer and Provider limit are not zero.
-        require(_request.providerLimit > 0 && _request.reviewerLimit > 0, 'LaborMarket::submitRequest: Invalid limits');
+        require(
+            _request.providerLimit > 0 && _request.reviewerLimit > 0,
+            "LaborMarket::submitRequest: Invalid limits"
+        );
 
         /// @notice Generate the uuid for the Request using the nonce, timestamp and address.
-        requestId = uint256(bytes32(abi.encodePacked(_blockNonce, uint88(block.timestamp), uint160(msg.sender))));
+        requestId = uint256(
+            bytes32(
+                abi.encodePacked(
+                    _blockNonce,
+                    uint88(block.timestamp),
+                    uint160(msg.sender)
+                )
+            )
+        );
 
         /// @notice Ensure the Request does not already exist.
-        require(requestIdToRequest[requestId].signalExp == 0, 'LaborMarket::submitRequest: Request already exists');
+        require(
+            requestIdToRequest[requestId].signalExp == 0,
+            "LaborMarket::submitRequest: Request already exists"
+        );
 
         /// @notice Store the Request in the Labor Market.
         requestIdToRequest[requestId] = _request;
@@ -120,12 +135,17 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
         /// @notice Provide the funding for the Request.
         if (_request.pTokenProviderTotal > 0) {
             /// @dev Transfer the Provider tokens that support the compensation of the Request.
-            _request.pTokenProvider.transferFrom(msg.sender, address(this), _request.pTokenProviderTotal);
+            _request.pTokenProvider.transferFrom(
+                msg.sender,
+                address(this),
+                _request.pTokenProviderTotal
+            );
 
             /// @notice Ensure the Provider balance is correct.
             require(
-                _request.pTokenProvider.balanceOf(msg.sender) == providerBalance - _request.pTokenProviderTotal,
-                'LaborMarket::submitRequest: Invalid Provider balance.'
+                _request.pTokenProvider.balanceOf(msg.sender) ==
+                    providerBalance - _request.pTokenProviderTotal,
+                "LaborMarket::submitRequest: Invalid Provider balance."
             );
         }
 
@@ -136,12 +156,17 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
         /// @notice Provide the funding for the Request to incentivize Reviewers.
         if (_request.pTokenReviewerTotal > 0) {
             /// @dev Transfer the Reviewer tokens that support the compensation of the Request.
-            _request.pTokenReviewer.transferFrom(msg.sender, address(this), _request.pTokenReviewerTotal);
+            _request.pTokenReviewer.transferFrom(
+                msg.sender,
+                address(this),
+                _request.pTokenReviewerTotal
+            );
 
             /// @notice Ensure the Reviewer balance is correct.
             require(
-                _request.pTokenReviewer.balanceOf(msg.sender) == reviewerBalance - _request.pTokenReviewerTotal,
-                'LaborMarket::submitRequest: Invalid Provider balance.'
+                _request.pTokenReviewer.balanceOf(msg.sender) ==
+                    reviewerBalance - _request.pTokenReviewerTotal,
+                "LaborMarket::submitRequest: Invalid Provider balance."
             );
         }
     }
@@ -156,24 +181,34 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
         /// @notice Ensure the signal phase is still active.
         require(
             block.timestamp <= requestIdToRequest[_requestId].signalExp,
-            'LaborMarket::signal: Signal deadline passed'
+            "LaborMarket::signal: Signal deadline passed"
         );
 
         /// @dev Retrieve the state of the Providers for this Request.
-        ServiceSignalState storage signalState = requestIdToSignalState[_requestId];
+        ServiceSignalState storage signalState = requestIdToSignalState[
+            _requestId
+        ];
 
         /// @dev Confirm the maximum number of Providers is never exceeded.
-        require(signalState.providers + 1 <= request.providerLimit, 'LaborMarket::signal: Exceeds signal limit');
+        require(
+            signalState.providers + 1 <= request.providerLimit,
+            "LaborMarket::signal: Exceeds signal limit"
+        );
 
         /// @notice Increment the number of Providers that have signaled.
         ++signalState.providers;
 
         /// @notice Get the performance state of the user.
-        uint24 performance = requestIdToAddressToPerformance[_requestId][msg.sender];
+        uint24 performance = requestIdToAddressToPerformance[_requestId][
+            msg.sender
+        ];
 
         /// @notice Require the user has not signaled.
         /// @dev Get the first bit of the user's signal value.
-        require(performance & 0x3 == 0, 'LaborMarket::signal: Already signaled');
+        require(
+            performance & 0x3 == 0,
+            "LaborMarket::signal: Already signaled"
+        );
 
         /// @notice Set the first two bits of the performance state to 1 to indicate the user has signaled
         ///         without affecting the rest of the performance state.
@@ -190,27 +225,37 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
     /**
      * See {LaborMarketInterface-signalReview}.
      */
-    function signalReview(uint256 _requestId, uint24 _quantity) public virtual requiresAuth {
+    function signalReview(
+        uint256 _requestId,
+        uint24 _quantity
+    ) public virtual requiresAuth {
         /// @dev Pull the Request out of the storage slot.
         ServiceRequest storage request = requestIdToRequest[_requestId];
 
         /// @notice Ensure the enforcement phase is still active.
-        require(block.timestamp <= request.enforcementExp, 'LaborMarket::signalReview: Enforcement deadline passed');
+        require(
+            block.timestamp <= request.enforcementExp,
+            "LaborMarket::signalReview: Enforcement deadline passed"
+        );
 
         /// @dev Retrieve the state of the Providers for this Request.
-        ServiceSignalState storage signalState = requestIdToSignalState[_requestId];
+        ServiceSignalState storage signalState = requestIdToSignalState[
+            _requestId
+        ];
 
         /// @notice Ensure the signal limit is not exceeded.
         require(
             signalState.reviewers + _quantity <= request.reviewerLimit,
-            'LaborMarket::signalReview: Exceeds signal limit'
+            "LaborMarket::signalReview: Exceeds signal limit"
         );
 
         /// @notice Increment the number of Reviewers that have signaled.
         signalState.reviewers += _quantity;
 
         /// @notice Get the performance state of the caller.
-        uint24 performance = requestIdToAddressToPerformance[_requestId][msg.sender];
+        uint24 performance = requestIdToAddressToPerformance[_requestId][
+            msg.sender
+        ];
 
         /// @notice Get the intent of the Reviewer.
         /// @dev Shift the performance value to the right by two bits and then mask down to
@@ -221,7 +266,7 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
         /// @dev Mask the `_quantity` down to 22 bits to prevent overflow and user error.
         require(
             reviewIntent + (_quantity & 0x3fffff) <= 4_194_304,
-            'LaborMarket::signalReview: Exceeds maximum signal value'
+            "LaborMarket::signalReview: Exceeds maximum signal value"
         );
 
         /// @notice Update the intent of reviewing by summing already signaled quantity with the new quantity
@@ -239,20 +284,28 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
     /**
      * See {LaborMarketInterface-provide}.
      */
-    function provide(uint256 _requestId, string calldata _uri) public virtual returns (uint256 submissionId) {
+    function provide(
+        uint256 _requestId,
+        string calldata _uri
+    ) public virtual returns (uint256 submissionId) {
         /// @dev Get the Request out of storage to warm the slot.
         ServiceRequest storage request = requestIdToRequest[_requestId];
 
         /// @notice Require the submission phase is still active.
-        require(block.timestamp <= request.submissionExp, 'LaborMarket::provide: Submission deadline passed');
+        require(
+            block.timestamp <= request.submissionExp,
+            "LaborMarket::provide: Submission deadline passed"
+        );
 
         /// @notice Get the performance state of the caller.
-        uint24 performance = requestIdToAddressToPerformance[_requestId][msg.sender];
+        uint24 performance = requestIdToAddressToPerformance[_requestId][
+            msg.sender
+        ];
 
         /// @notice Ensure that the Provider has signaled, but has not already submitted.
         /// @dev Get the first two bits of the user's performance value.
         ///      0: Not signaled, 1: Signaled, 2: Submitted.
-        require(performance & 0x3 == 1, 'LaborMarket::provide: Not signaled');
+        require(performance & 0x3 == 1, "LaborMarket::provide: Not signaled");
 
         /// @dev Add the Provider to the list of submissions.
         requestIdToProviders[_requestId].add(msg.sender);
@@ -287,13 +340,27 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
         uint256 reviewId = uint256(uint160(msg.sender));
 
         /// @notice Ensure that no one is grading their own Submission.
-        require(_submissionId != reviewId, 'LaborMarket::review: Cannot review own submission');
+        require(
+            _submissionId != reviewId,
+            "LaborMarket::review: Cannot review own submission"
+        );
+
+        /// @notice Ensure reviewing a valid submission.
+        require(
+            requestIdToProviders[_requestId].contains(
+                address(uint160(_submissionId))
+            ),
+            "LaborMarket::review: Cannot review submission that does not exist"
+        );
 
         /// @notice Get the Request out of storage to warm the slot.
         ServiceRequest storage request = requestIdToRequest[_requestId];
 
         /// @notice Ensure the Request is still in the enforcement phase.
-        require(block.timestamp <= request.enforcementExp, 'LaborMarket::review: Enforcement deadline passed');
+        require(
+            block.timestamp <= request.enforcementExp,
+            "LaborMarket::review: Enforcement deadline passed"
+        );
 
         /// @notice Make the external call into the enforcement module to submit the callers score.
         (bool newSubmission, uint24 intentChange) = criteria.enforce(
@@ -311,15 +378,19 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
         ///       criteria should return `true` to indicate signal deduction is owed at all times.
         if (newSubmission) {
             /// @notice Calculate the active intent value of the Reviewer.
-            uint24 intent = requestIdToAddressToPerformance[_requestId][msg.sender];
+            uint24 intent = requestIdToAddressToPerformance[_requestId][
+                msg.sender
+            ];
 
             /// @notice Get the remaining signal value of the Reviewer.
             /// @dev Uses the last 22 bits of the performance value by shifting over 2 values and then
             ///      masking down to the last 22 bits with an overlap of 0x3fffff.
-            uint24 remainingIntent = (requestIdToAddressToPerformance[_requestId][msg.sender] >> 2) & 0x3fffff;
+            uint24 remainingIntent = (requestIdToAddressToPerformance[
+                _requestId
+            ][msg.sender] >> 2) & 0x3fffff;
 
             /// @notice Ensure the Reviewer is not exceeding their signaled intent.
-            require(remainingIntent > 0, 'LaborMarket::review: Not signaled');
+            require(remainingIntent > 0, "LaborMarket::review: Not signaled");
 
             /// @notice Lower the bitpacked value representing the remaining signal value of
             ///         the caller for this Request.
@@ -337,25 +408,44 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
             /// @notice Determine if the Request incentivized Reviewers to participate.
             if (request.pTokenReviewerTotal > 0)
                 /// @notice Transfer the tokens from the Market to the Reviewer.
-                request.pTokenReviewer.transfer(msg.sender, request.pTokenReviewerTotal / request.reviewerLimit);
+                request.pTokenReviewer.transfer(
+                    msg.sender,
+                    request.pTokenReviewerTotal / request.reviewerLimit
+                );
 
             /// @notice Announce the new submission of a score by a maintainer.
-            emit RequestReviewed(msg.sender, _requestId, _submissionId, reviewId, _score, _uri);
+            emit RequestReviewed(
+                msg.sender,
+                _requestId,
+                _submissionId,
+                reviewId,
+                _score,
+                _uri
+            );
         }
     }
 
     /**
      * See {LaborMarketInterface-claim}.
      */
-    function claim(uint256 _requestId, uint256 _submissionId) external returns (bool success, uint256) {
+    function claim(
+        uint256 _requestId,
+        uint256 _submissionId
+    ) external returns (bool success, uint256) {
         /// @notice Get the Request out of storage to warm the slot.
         ServiceRequest storage request = requestIdToRequest[_requestId];
 
         /// @notice Ensure the Request is no longer in the enforcement phase.
-        require(block.timestamp >= request.enforcementExp, 'LaborMarket::claim: Enforcement deadline not passed');
+        require(
+            block.timestamp >= request.enforcementExp,
+            "LaborMarket::claim: Enforcement deadline not passed"
+        );
 
         /// @notice Get the rewards attributed to this Submission.
-        (uint256 amount, bool requiresSubmission) = criteria.rewards(_requestId, _submissionId);
+        (uint256 amount, bool requiresSubmission) = criteria.rewards(
+            _requestId,
+            _submissionId
+        );
 
         /// @notice Ensure the Submission has funds to claim.
         if (amount != 0) {
@@ -367,14 +457,23 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
             bool removed = requestIdToProviders[_requestId].remove(provider);
 
             /// @dev Allow the enforcement criteria to perform any additional logic.
-            require(!requiresSubmission || removed, 'LaborMarket::claim: Invalid submission claim');
+            require(
+                !requiresSubmission || removed,
+                "LaborMarket::claim: Invalid submission claim"
+            );
 
             /// @notice Transfer the pTokens to the network participant.
             /// @dev Update health status for bulk processing offchain.
             success = request.pTokenProvider.transfer(provider, amount);
 
             /// @notice Announce the claiming of a service provider reward.
-            emit RequestPayClaimed(msg.sender, _requestId, _submissionId, amount, provider);
+            emit RequestPayClaimed(
+                msg.sender,
+                _requestId,
+                _submissionId,
+                amount,
+                provider
+            );
         }
 
         /// @notice If there were no funds to claim, acknowledge the failure of the transfer
@@ -387,7 +486,9 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
     /**
      * See {LaborMarketInterface-claimRemainder}.
      */
-    function claimRemainder(uint256 _requestId)
+    function claimRemainder(
+        uint256 _requestId
+    )
         public
         virtual
         returns (
@@ -403,11 +504,13 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
         /// @dev Ensure the Request is no longer in the enforcement phase.
         require(
             block.timestamp >= request.enforcementExp,
-            'LaborMarket::claimRemainder: Enforcement deadline not passed'
+            "LaborMarket::claimRemainder: Enforcement deadline not passed"
         );
 
         /// @notice Get the signal state of the Request.
-        ServiceSignalState storage signalState = requestIdToSignalState[_requestId];
+        ServiceSignalState storage signalState = requestIdToSignalState[
+            _requestId
+        ];
 
         /// @notice Determine the amount of available Provider payments never redeemed.
         pTokenProviderSurplus =
@@ -448,7 +551,8 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
         /// @notice Announce a simple event to allow for offchain processing.
         if (pTokenProviderSuccess || pTokenReviewerSuccess) {
             /// @dev Determine if there will be a remainder after the claim.
-            bool settled = pTokenProviderSurplus == 0 && pTokenReviewerSurplus == 0;
+            bool settled = pTokenProviderSurplus == 0 &&
+                pTokenReviewerSurplus == 0;
 
             /// @notice Announce the claiming of a service requester reward.
             emit RemainderClaimed(msg.sender, _requestId, requester, settled);
@@ -466,7 +570,10 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
         ServiceRequest storage request = requestIdToRequest[_requestId];
 
         /// @dev Ensure that only the Requester may withdraw the Request.
-        require(address(uint160(_requestId)) == msg.sender, 'LaborMarket::withdrawRequest: Not requester');
+        require(
+            address(uint160(_requestId)) == msg.sender,
+            "LaborMarket::withdrawRequest: Not requester"
+        );
 
         /// @dev Require that the Request does not have any signal state.
         require(
@@ -474,7 +581,7 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
                 requestIdToSignalState[_requestId].reviewers |
                 requestIdToSignalState[_requestId].providersArrived |
                 requestIdToSignalState[_requestId].reviewersArrived) == 0,
-            'LaborMarket::withdrawRequest: Already active'
+            "LaborMarket::withdrawRequest: Already active"
         );
 
         /// @dev Initialize the refund amounts before clearing storage.
@@ -491,10 +598,18 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
         delete request.pTokenReviewerTotal;
 
         /// @notice Return the Provider payment token back to the Requester.
-        if (pTokenProviderRemainder > 0) request.pTokenProvider.transfer(msg.sender, pTokenProviderRemainder);
+        if (pTokenProviderRemainder > 0)
+            request.pTokenProvider.transfer(
+                msg.sender,
+                pTokenProviderRemainder
+            );
 
         /// @notice Return the Reviewer payment token back to the Requester.
-        if (pTokenReviewerRemainder > 0) request.pTokenReviewer.transfer(msg.sender, pTokenReviewerRemainder);
+        if (pTokenReviewerRemainder > 0)
+            request.pTokenReviewer.transfer(
+                msg.sender,
+                pTokenReviewerRemainder
+            );
 
         /// @dev Delete the pToken interface references.
         delete request.pTokenProvider;
