@@ -550,10 +550,9 @@ export interface LaborMarket extends BaseContract {
       arg0: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<
-      [BigNumber, BigNumber, BigNumber, BigNumber] & {
+      [BigNumber, BigNumber, BigNumber] & {
         providers: BigNumber;
         reviewers: BigNumber;
-        providersArrived: BigNumber;
         reviewersArrived: BigNumber;
       }
     >;
@@ -664,10 +663,9 @@ export interface LaborMarket extends BaseContract {
     arg0: PromiseOrValue<BigNumberish>,
     overrides?: CallOverrides
   ): Promise<
-    [BigNumber, BigNumber, BigNumber, BigNumber] & {
+    [BigNumber, BigNumber, BigNumber] & {
       providers: BigNumber;
       reviewers: BigNumber;
-      providersArrived: BigNumber;
       reviewersArrived: BigNumber;
     }
   >;
@@ -785,10 +783,9 @@ export interface LaborMarket extends BaseContract {
       arg0: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<
-      [BigNumber, BigNumber, BigNumber, BigNumber] & {
+      [BigNumber, BigNumber, BigNumber] & {
         providers: BigNumber;
         reviewers: BigNumber;
-        providersArrived: BigNumber;
         reviewersArrived: BigNumber;
       }
     >;

@@ -399,7 +399,7 @@ describe('Labor Market', function () {
                     );
             }
         });
-        it('call: claimRemainder()', async () => {
+        it('call: claimRemainder() -- balances change', async () => {
             let { market, requestId, submissionId, ERC20s } = await loadFixture(createMarketWithSubmission);
 
             const [requester, provider, reviewer] = await ethers.getSigners();
@@ -420,9 +420,6 @@ describe('Labor Market', function () {
             const claim = await market.connect(provider).claim(requestId, submissionId);
             await claim.wait();
 
-            const staticCall = await market.connect(requester).callStatic.claimRemainder(requestId);
-            console.log('staticCall', staticCall)
-
             const claimRemainder = await market.connect(requester).claimRemainder(requestId);
             await claimRemainder.wait();
 
@@ -433,9 +430,6 @@ describe('Labor Market', function () {
                     ERC20s.usdc.balanceOf(market.address),
                     ERC20s.pepe.balanceOf(market.address),
                 ]);
-
-            // console.log('net change', requesterPepeBalanceBefore, requesterPepeBalanceAfter);
-            // console.log('reviewer payment', requesterUsdcBalanceBefore, requesterUsdcBalanceAfter);
 
             expect(marketUsdcAfter).to.eq(ethers.utils.parseEther('0'));
             expect(marketPepeAfter).to.eq(ethers.utils.parseEther('0'));
@@ -480,17 +474,15 @@ describe('Labor Market', function () {
                 'LaborMarket::withdrawRequest: Already active',
             );
         });
-        it('call: claimRemainder() - no reviewers came', async () => {
+        it('call: claimRemainder() - submissions but no reviews should return all money', async () => {
             let { market, request, requestId, ERC20s } = await loadFixture(createMarketWithRequest);
 
             const signers = await ethers.getSigners();
-
             const providers = signers.slice(2, 18);
 
             const signals = await Promise.all(
-                providers.map((provider) => market.connect(provider).signal(requestId)),
+                providers.map((provider: any) => market.connect(provider).signal(requestId)),
             );
-            
             await Promise.all(signals.map((signal) => signal.wait()));
                 
             const submissionsTx = await Promise.all(
@@ -506,11 +498,56 @@ describe('Labor Market', function () {
 
             expect(providerTokenRemainder).to.eq(request.pTokenProviderTotal);
             expect(reviewerTokenRemainder).to.eq(request.pTokenReviewerTotal);
+
+            await expect(market.connect(signers[1]).claimRemainder(requestId))
+                .to.emit(market, 'RemainderClaimed')
+                .withArgs(
+                    signers[1].address,
+                    requestId,
+                    signers[0].address,
+                    true
+                );
         });
-        // TODO: Test cases
-        // No reviewers came
-        // No reviewers reviewed
-        // more providers than reviewers
-        // more reviewers than providers
+        it('call: claimRemainder() - reviewers signaled but not reviewed', async () => {
+            const { market, request, requestId } = await loadFixture(createMarketWithRequest);
+
+            const signers = await ethers.getSigners();
+
+            const providers = signers.slice(2, 18);
+
+            const signals = await Promise.all(
+                providers.map((provider: any) => market.connect(provider).signal(requestId)),
+            );
+            
+            await Promise.all(signals.map((signal) => signal.wait()));
+                
+            const submissionsTx = await Promise.all(
+                providers.map((provider: any) => market.connect(provider).provide(requestId, 1)),
+            );
+            await Promise.all(submissionsTx.map((submission) => submission.wait()));
+
+            const reviewerSignals = await Promise.all(
+                providers.map((provider: any) => market.connect(provider).signalReview(requestId, 1)),
+            );
+            await Promise.all(reviewerSignals.map((signal) => signal.wait()));
+
+            const now = await getCurrentBlockTimestamp();
+            // skip ahead in time
+            await mine(ethers.BigNumber.from(request.enforcementExp).sub(ethers.BigNumber.from(now)).toNumber() + 1);
+
+            const [, , providerTokenRemainder, reviewerTokenRemainder] = await market.connect(signers[0]).callStatic.claimRemainder(requestId);
+
+            expect(providerTokenRemainder).to.eq(request.pTokenProviderTotal);
+            expect(reviewerTokenRemainder).to.eq(request.pTokenReviewerTotal);
+
+            await expect(market.connect(signers[1]).claimRemainder(requestId))
+                .to.emit(market, 'RemainderClaimed')
+                .withArgs(
+                    signers[1].address,
+                    requestId,
+                    signers[0].address,
+                    true
+                );
+        });
     });
 });
