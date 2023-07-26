@@ -453,13 +453,23 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
             /// @notice Recover the address by truncating the Submission id.
             address provider = address(uint160(_submissionId));
 
-            /// @notice Remove the Submission from the list of Submissions.
-            /// @dev This is done before the transfer to prevent reentrancy attacks.
-            bool removed = requestIdToProviders[_requestId].remove(provider);
+            /// @notice Determine if a verified submission was made.
+            if(
+                requestIdToAddressToPerformance[_requestId][provider] & 0x3 == 2
+            ) { 
+                /// @dev Set the performance state to zero as the Provider has concluded
+                ///      their participation in the Request.
+                /// @notice This prevents the Provider from taking any more actions within
+                ///         the protocol as well as prevents future claims unless an
+                ///         enforcement module that has `requiresSubmission` set to false
+                ///         is used in which case there may be a situation where the
+                ///         Provider is not required to submit anything.
+                requestIdToAddressToPerformance[_requestId][provider] = 0;
+            }
 
             /// @dev Allow the enforcement criteria to perform any additional logic.
             require(
-                !requiresSubmission || removed,
+                !requiresSubmission || requestIdToAddressToPerformance[_requestId][provider] == 0,
                 "LaborMarket::claim: Invalid submission claim"
             );
 
@@ -619,34 +629,5 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
 
         /// @dev Announce the withdrawal of a Request.
         emit RequestWithdrawn(_requestId);
-    }
-
-    function activity(uint256 _requestId)
-        public
-        view
-        virtual
-        returns (
-            uint256 providers,
-            uint256 reviewers,
-            uint256 providersArrived,
-            uint256 reviewersArrived
-        )
-    {
-        /// @dev Get the signal state of the Request.
-        ServiceSignalState storage signalState = requestIdToSignalState[
-            _requestId
-        ];
-
-        /// @notice Return the number of Providers that have signaled.
-        providers = signalState.providers;
-
-        /// @notice Return the number of Reviewers that have signaled.
-        reviewers = signalState.reviewers;
-
-        /// @notice Return the number of Providers that have signaled and arrived.
-        providersArrived = requestIdToProviders[_requestId].length();
-
-        /// @notice Return the number of Reviewers that have signaled and arrived.
-        reviewersArrived = signalState.reviewersArrived;
     }
 }
