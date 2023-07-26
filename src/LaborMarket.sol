@@ -541,26 +541,24 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
         /// @notice Redistribute the Provider allocated funds that were not earned.
         if (pTokenProviderSurplus != 0) {
             /// @notice Transfer the remainder of the deposit funds back to the requester.
-            request.pTokenProvider.transfer(requester, pTokenProviderSurplus);
+            pTokenProviderSuccess = request.pTokenProvider.transfer(requester, pTokenProviderSurplus);
 
-            /// @dev Bubble up the success to the return.
-            pTokenProviderSuccess = true;
+            /// @dev Clear the Provider payment token from storage.
+            delete request.pTokenProviderTotal;
         }
 
         /// @notice Redistribute the Reviewer allocated funds that were not earned.
         if (pTokenReviewerSurplus != 0) {
             /// @notice Transfer the remainder of the deposit funds back to the Requester.
-            request.pTokenReviewer.transfer(requester, pTokenReviewerSurplus);
+            pTokenReviewerSuccess = request.pTokenReviewer.transfer(requester, pTokenReviewerSurplus);
 
-            /// @notice Bubble up the success to the return.
-            pTokenReviewerSuccess = true;
+            /// @dev Clear the Reviewer payment token from storage.
+            delete request.pTokenReviewerTotal;
         }
 
-        /// @notice Announce a simple event to allow for offchain processing.
-        if (pTokenProviderSuccess || pTokenReviewerSuccess) {
+        if(request.pTokenProviderTotal == 0 || request.pTokenReviewerTotal == 0) { 
             /// @dev Determine if there will be a remainder after the claim.
-            bool settled = pTokenProviderSurplus == 0 &&
-                pTokenReviewerSurplus == 0;
+            bool settled = (request.pTokenProviderTotal == 0 && request.pTokenReviewerTotal == 0);
 
             /// @notice Announce the claiming of a service requester reward.
             emit RemainderClaimed(msg.sender, _requestId, requester, settled);
