@@ -134,7 +134,7 @@ describe('Labor Market', function () {
 
         const requestId = receipt.events.find((e: any) => e.event === 'RequestConfigured').args.requestId;
 
-        return { market, requestId, ERC20s, deployer };
+        return { market, request, requestId, ERC20s, deployer };
     }
 
     async function createMarketWithSubmission() {
@@ -420,6 +420,9 @@ describe('Labor Market', function () {
             const claim = await market.connect(provider).claim(requestId, submissionId);
             await claim.wait();
 
+            const staticCall = await market.connect(requester).callStatic.claimRemainder(requestId);
+            console.log('staticCall', staticCall)
+
             const claimRemainder = await market.connect(requester).claimRemainder(requestId);
             await claimRemainder.wait();
 
@@ -477,5 +480,37 @@ describe('Labor Market', function () {
                 'LaborMarket::withdrawRequest: Already active',
             );
         });
+        it('call: claimRemainder() - no reviewers came', async () => {
+            let { market, request, requestId, ERC20s } = await loadFixture(createMarketWithRequest);
+
+            const signers = await ethers.getSigners();
+
+            const providers = signers.slice(2, 18);
+
+            const signals = await Promise.all(
+                providers.map((provider) => market.connect(provider).signal(requestId)),
+            );
+            
+            await Promise.all(signals.map((signal) => signal.wait()));
+                
+            const submissionsTx = await Promise.all(
+                providers.map((provider: any) => market.connect(provider).provide(requestId, 1)),
+            );
+            await Promise.all(submissionsTx.map((submission) => submission.wait()));
+
+            const now = await getCurrentBlockTimestamp();
+            // skip ahead in time
+            await mine(ethers.BigNumber.from(request.enforcementExp).sub(ethers.BigNumber.from(now)).toNumber() + 1);
+
+            const [, , providerTokenRemainder, reviewerTokenRemainder] = await market.connect(signers[0]).callStatic.claimRemainder(requestId);
+
+            expect(providerTokenRemainder).to.eq(request.pTokenProviderTotal);
+            expect(reviewerTokenRemainder).to.eq(request.pTokenReviewerTotal);
+        });
+        // TODO: Test cases
+        // No reviewers came
+        // No reviewers reviewed
+        // more providers than reviewers
+        // more reviewers than providers
     });
 });

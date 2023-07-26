@@ -307,9 +307,6 @@ contract LaborMarket is LaborMarketInterface, NBadgeAuth {
         ///      0: Not signaled, 1: Signaled, 2: Submitted.
         require(performance & 0x3 == 1, "LaborMarket::provide: Not signaled");
 
-        /// @dev Add the Provider to the list of submissions.
-        requestIdToProviders[_requestId].add(msg.sender);
-
         /// @dev Set the submission ID to reflect the Providers address.
         submissionId = uint256(uint160(msg.sender));
 
