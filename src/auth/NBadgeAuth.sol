@@ -58,6 +58,9 @@ abstract contract NBadgeAuth is NBadgeAuthInterface, Initializable {
             /// @dev Initialize all the nodes related to each signature.
             sigToNode[_sigs[i]] = _nodes[i];
         }
+
+        /// @dev Announce the change in access configuration.
+        emit NodesUpdated(_sigs, _nodes);
     }
 
     /**

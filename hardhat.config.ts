@@ -37,9 +37,11 @@ const config: HardhatUserConfig = {
                 version: '0.8.17',
                 settings: {
                     optimizer: {
-                        // Keeps the amount of gas used in check
-                        enabled: true,
-                        runs: 100000,
+                        enabled: true, 
+                        details: {
+                            yul: true, 
+                            yulDetails: { optimizerSteps: 'u' }
+                        }
                     },
                     viaIR: true,
                 },
@@ -101,9 +103,9 @@ const config: HardhatUserConfig = {
             gas: 'auto',
             gasPrice: 'auto',
             saveDeployments: false,
-            mining: {
-                auto: true,
-            },
+            // mining: {
+            //     auto: true,
+            // },
         },
         sepolia: {
             url: `https://rpc.sepolia.org/`,
