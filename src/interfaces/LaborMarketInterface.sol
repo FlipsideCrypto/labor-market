@@ -26,7 +26,6 @@ interface LaborMarketInterface {
     struct ServiceSignalState {
         uint64 providers;
         uint64 reviewers;
-        uint64 providersArrived;
         uint64 reviewersArrived;
     }
 
