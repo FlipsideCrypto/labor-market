@@ -1,6 +1,6 @@
 {
     "name": "labor-markets-abi",
-    "version": "2.1.1",
+    "version": "2.2.0",
     "description": "Labor Markets ABI and deployed contract addresses.",
     "files": [
         "dist"
@@ -9,7 +9,7 @@
     "types": "dist/index.d.ts",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "build": "tsc --build",
+        "build": "node prepareTS.js && tsc --build",
         "clean": "tsc --build --clean"
     },
     "contributors": [

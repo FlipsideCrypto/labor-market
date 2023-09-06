@@ -723,11 +723,6 @@ export const abi = [
       },
       {
         "internalType": "uint64",
-        "name": "providersArrived",
-        "type": "uint64"
-      },
-      {
-        "internalType": "uint64",
         "name": "reviewersArrived",
         "type": "uint64"
       }

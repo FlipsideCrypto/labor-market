@@ -46,14 +46,11 @@ async function main(verify) {
     if (verify === true) {
         await new Promise((r) => setTimeout(r, 60000));
 
-        hre.run('verify:verify', { address: market.address, constructorArguments: [] });
-        console.log('Implementation Verified');
+        await hre.run('verify:verify', { address: market.address, constructorArguments: [] });
 
-        hre.run('verify:verify', { address: factory.address, constructorArguments: [market.address] });
-        console.log('Factory Verified');
+        await hre.run('verify:verify', { address: factory.address, constructorArguments: [market.address] });
 
-        hre.run('verify:verify', { address: enforcement.address, constructorArguments: [] });
-        console.log('Enforcement Verified');
+        await hre.run('verify:verify', { address: enforcement.address, constructorArguments: [] });
     }
 }
 

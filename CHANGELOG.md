@@ -17,6 +17,10 @@ The key for the types of changes are as follows:
 
 -   CINAD (sigh-nad): Chain Is Not A Database
 
+## [2.2.0] - 2023-9-06
+-   👷 Updated model to properly handle operations on submissions without reviews.
+-   👷 Redployed contracts for clean event data for new version.
+
 ## [2.1.1] - 2023-07-03
 
 -   👷 Redeployed BucketEnforcement for clean event data for next launch.
