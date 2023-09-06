@@ -13,18 +13,15 @@ async function main() {
         'Balance': balance,
     });
 
-    const LaborMarketImplementation = '0x6C257AeEdeF026c4e25fB1b8DC0CfB78c0495629';
-    const LaborMarketFactory = '0x04E76d1FC8653c3914cEAb2D013D6D2a82858732';
-    const EnforcementCriteria = '0x7207dDC1A67d18A953e97E373617F338efe1677E';
+    const LaborMarketImplementation = '0xF89a26006AbB9a72b2b41abAE575821eD02aC134';
+    const LaborMarketFactory = '0x1D9285FeF4a58256A2A58A1a66AC7739Ee9dAA3A';
+    const EnforcementCriteria = '0xc104a1884e9788db6426c56F44daA5121c72A97E';
 
-    hre.run('verify:verify', { address: LaborMarketImplementation, constructorArguments: [] });
-    console.log('Implementation Verified');
+    await hre.run('verify:verify', { address: LaborMarketImplementation, constructorArguments: [] });
 
-    hre.run('verify:verify', { address: LaborMarketFactory, constructorArguments: [LaborMarketImplementation] });
-    console.log('Factory Verified');
+    await hre.run('verify:verify', { address: LaborMarketFactory, constructorArguments: [LaborMarketImplementation] });
 
-    hre.run('verify:verify', { address: EnforcementCriteria, constructorArguments: [] });
-    console.log('Enforcement Verified');
+    await hre.run('verify:verify', { address: EnforcementCriteria, constructorArguments: [] });
 }
 
 main();
