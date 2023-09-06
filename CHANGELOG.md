@@ -20,6 +20,8 @@ The key for the types of changes are as follows:
 ## [2.2.0] - 2023-9-06
 -   👷 Updated model to properly handle operations on submissions without reviews.
 -   👷 Redployed contracts for clean event data for new version.
+-   🐛 Fixed bug resulting in settled state of a claimRemainder never being true.
+-   ✨ Added event `NodesUpdated` for changing NBadge config.
 
 ## [2.1.1] - 2023-07-03
 

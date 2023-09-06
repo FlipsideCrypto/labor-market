@@ -7,4 +7,5 @@
 
 ### Development
 - Update index.ts with new contract addresses
-- Run `yarn build`
+- Run `yarn build` from the package directory
+- Run `npm publish` from the package directory
